@@ -1,0 +1,3591 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "OpenAsy Infrastructure API",
+    "version": "0.1.0",
+    "summary": "Hosts, containers and Kubernetes, read without installing anything, with every change kept.",
+    "description": "Every screen of Infrastructure uses this API, and so can your scripts (ADR 0014). Within `/api/v1` changes are additive only (ADR 0024). Errors use Problem Details (RFC 9457).\n\nHosts are read over SSH as an unprivileged `openasy` account with 5-minute certificates, and clusters through their API with a read-only token (ADR 0031). Each operation names the role it needs (`x-openasy-role`). Sign-in, members and API tokens are under `/api/v1/auth`, provided by [@openasy/auth](https://github.com/openasy/auth#routes).",
+    "license": {
+      "name": "AGPL-3.0-only",
+      "identifier": "AGPL-3.0-only"
+    }
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "This Infrastructure"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Agents",
+      "description": "infra-agent: installed once, it reads hosts over SSH. Nothing is installed on the hosts (ADR 0031)."
+    },
+    {
+      "name": "Hosts",
+      "description": "Servers an agent reads over SSH."
+    },
+    {
+      "name": "Clusters",
+      "description": "Kubernetes read through its API."
+    },
+    {
+      "name": "Changes",
+      "description": "What changed, and when."
+    },
+    {
+      "name": "Setup",
+      "description": "What to put on hosts and clusters."
+    },
+    {
+      "name": "Product",
+      "description": "Version, health and overview."
+    }
+  ],
+  "paths": {
+    "/api/v1/version": {
+      "get": {
+        "operationId": "version",
+        "tags": [
+          "Product"
+        ],
+        "summary": "Version",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "product",
+                    "version"
+                  ],
+                  "properties": {
+                    "product": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/summary": {
+      "get": {
+        "operationId": "summary",
+        "tags": [
+          "Product"
+        ],
+        "summary": "Overview",
+        "description": "Needs the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Summary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/setup": {
+      "get": {
+        "operationId": "setup",
+        "tags": [
+          "Setup"
+        ],
+        "summary": "The read-only Kubernetes role",
+        "description": "What to put on hosts comes from each agent: GET /api/v1/agents/{id}/setup.\n\nNeeds the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "kubernetesRbac"
+                  ],
+                  "properties": {
+                    "kubernetesRbac": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/agents": {
+      "get": {
+        "operationId": "listAgents",
+        "tags": [
+          "Agents"
+        ],
+        "summary": "List agents",
+        "description": "Needs the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "agents"
+                  ],
+                  "properties": {
+                    "agents": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Agent"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createAgent",
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Add an agent",
+        "description": "Returns a one-time enrolment token, valid for 7 days. Start infra-agent with it; the agent then has its own secret (ADR 0023).\n\nNeeds the admin role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewAgent"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/agents/{id}": {
+      "get": {
+        "operationId": "getAgent",
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Get an agent",
+        "description": "Needs the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Agent"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteAgent",
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Remove an agent",
+        "description": "Only an agent that reads no hosts. Its secret stops working.\n\nNeeds the admin role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/agents/{id}/enroll-token": {
+      "post": {
+        "operationId": "reEnrollAgent",
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Enrol an agent again",
+        "description": "A new one-time token, for an agent that lost its volume or whose CA changed. Its old secret stops working; its hosts must trust the new CA.\n\nNeeds the admin role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewAgent"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/agents/{id}/setup": {
+      "get": {
+        "operationId": "agentSetup",
+        "tags": [
+          "Setup"
+        ],
+        "summary": "What to put on the hosts this agent reads",
+        "description": "Its CA public key, the sshd drop-in, the sudoers file that matches its script, the commands to prepare a host and the fixed key.\n\nNeeds the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSetup"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/agent/enroll": {
+      "post": {
+        "operationId": "agentEnroll",
+        "tags": [
+          "Agents"
+        ],
+        "summary": "infra-agent: enrol with a one-time token",
+        "description": "Called by infra-agent, not by people. Returns the agent's own secret for every later call.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/AgentReport"
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "token"
+                    ],
+                    "properties": {
+                      "token": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "agentId",
+                    "secret"
+                  ],
+                  "properties": {
+                    "agentId": {
+                      "type": "string"
+                    },
+                    "secret": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/agent/work": {
+      "post": {
+        "operationId": "agentWork",
+        "tags": [
+          "Agents"
+        ],
+        "summary": "infra-agent: ask for jobs",
+        "description": "Called by infra-agent with its secret every few seconds. Each job is leased for 10 minutes. Answers 409 when the agent's version differs from infra's (ADR 0019).",
+        "security": [
+          {
+            "agentSecret": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentReport"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "jobs"
+                  ],
+                  "properties": {
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Job"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/agent/results": {
+      "post": {
+        "operationId": "agentResult",
+        "tags": [
+          "Agents"
+        ],
+        "summary": "infra-agent: send what a job found",
+        "description": "Facts are parsed and masked by the agent; Infrastructure checks their shape and stores what changed. Gzip the body.",
+        "security": [
+          {
+            "agentSecret": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Result"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/hosts": {
+      "get": {
+        "operationId": "listHosts",
+        "tags": [
+          "Hosts"
+        ],
+        "summary": "List hosts",
+        "description": "Needs the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "hosts"
+                  ],
+                  "properties": {
+                    "hosts": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Host"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createHost",
+        "tags": [
+          "Hosts"
+        ],
+        "summary": "Add a host",
+        "description": "Infrastructure asks the host for its key right away. Check the fingerprint on the host and accept it before the first collection.\n\nNeeds the admin role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HostInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Host"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/hosts/{id}": {
+      "get": {
+        "operationId": "getHost",
+        "tags": [
+          "Hosts"
+        ],
+        "summary": "Get a host",
+        "description": "Needs the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Host"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateHost",
+        "tags": [
+          "Hosts"
+        ],
+        "summary": "Change a host",
+        "description": "A new address or port unpins the host key.\n\nNeeds the admin role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+                  },
+                  "agentId": {
+                    "type": "string",
+                    "description": "The agent that reads this host. Optional when there is only one."
+                  },
+                  "address": {
+                    "type": "string",
+                    "description": "Host name or IP address."
+                  },
+                  "port": {
+                    "type": "integer",
+                    "default": 22
+                  },
+                  "user": {
+                    "type": "string",
+                    "default": "openasy"
+                  },
+                  "auth": {
+                    "type": "string",
+                    "enum": [
+                      "certificate",
+                      "key"
+                    ],
+                    "default": "certificate",
+                    "description": "certificate: a 5-minute certificate from Infrastructure's CA for each collection. key: one fixed key in authorized_keys."
+                  },
+                  "jumpHostId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Reach the host through this one (ProxyJump)."
+                  },
+                  "containers": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "intervalMinutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440,
+                    "default": 5
+                  },
+                  "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Host"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteHost",
+        "tags": [
+          "Hosts"
+        ],
+        "summary": "Remove a host and its history",
+        "description": "Needs the admin role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/hosts/{id}/facts": {
+      "get": {
+        "operationId": "hostFacts",
+        "tags": [
+          "Hosts"
+        ],
+        "summary": "What the host has",
+        "description": "The last collection, or with `at` the one in effect at that time.\n\nNeeds the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "facts",
+                    "collectedAt"
+                  ],
+                  "properties": {
+                    "facts": {
+                      "$ref": "#/components/schemas/Facts"
+                    },
+                    "collectedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/hosts/{id}/changes": {
+      "get": {
+        "operationId": "hostChanges",
+        "tags": [
+          "Changes"
+        ],
+        "summary": "What changed on a host",
+        "description": "Needs the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "package, port, service, user, sudo, ssh-key, container, ..."
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Changes"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/hosts/{id}/collect": {
+      "post": {
+        "operationId": "collectHost",
+        "tags": [
+          "Hosts"
+        ],
+        "summary": "Collect now",
+        "description": "Needs the editor role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "editor",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Requested",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/hosts/{id}/host-key": {
+      "post": {
+        "operationId": "fetchHostKey",
+        "tags": [
+          "Hosts"
+        ],
+        "summary": "Ask the host for its key again",
+        "description": "Needs the admin role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Host"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/hosts/{id}/host-key/accept": {
+      "post": {
+        "operationId": "acceptHostKey",
+        "tags": [
+          "Hosts"
+        ],
+        "summary": "Accept a host key",
+        "description": "After checking on the host that `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` prints this fingerprint.\n\nNeeds the admin role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "fingerprint"
+                ],
+                "properties": {
+                  "fingerprint": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Host"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/clusters": {
+      "get": {
+        "operationId": "listClusters",
+        "tags": [
+          "Clusters"
+        ],
+        "summary": "List clusters",
+        "description": "Needs the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "clusters"
+                  ],
+                  "properties": {
+                    "clusters": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Cluster"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createCluster",
+        "tags": [
+          "Clusters"
+        ],
+        "summary": "Add a cluster",
+        "description": "Needs the admin role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClusterInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cluster"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/clusters/{id}": {
+      "get": {
+        "operationId": "getCluster",
+        "tags": [
+          "Clusters"
+        ],
+        "summary": "Get a cluster",
+        "description": "Needs the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cluster"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateCluster",
+        "tags": [
+          "Clusters"
+        ],
+        "summary": "Change a cluster",
+        "description": "Needs the admin role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+                  },
+                  "server": {
+                    "type": "string",
+                    "description": "The API server's https:// URL."
+                  },
+                  "caCert": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The cluster CA in PEM; null to use the system's."
+                  },
+                  "token": {
+                    "type": "string",
+                    "writeOnly": true,
+                    "description": "Token of the read-only service account from GET /api/v1/setup. Stored encrypted, never returned."
+                  },
+                  "intervalMinutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440,
+                    "default": 5
+                  },
+                  "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cluster"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCluster",
+        "tags": [
+          "Clusters"
+        ],
+        "summary": "Remove a cluster and its history",
+        "description": "Needs the admin role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/clusters/{id}/facts": {
+      "get": {
+        "operationId": "clusterFacts",
+        "tags": [
+          "Clusters"
+        ],
+        "summary": "What the cluster runs",
+        "description": "Needs the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClusterFacts"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/clusters/{id}/changes": {
+      "get": {
+        "operationId": "clusterChanges",
+        "tags": [
+          "Changes"
+        ],
+        "summary": "What changed in a cluster",
+        "description": "Needs the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "package, port, service, user, sudo, ssh-key, container, ..."
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Changes"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/clusters/{id}/collect": {
+      "post": {
+        "operationId": "collectCluster",
+        "tags": [
+          "Clusters"
+        ],
+        "summary": "Collect now",
+        "description": "Needs the editor role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "editor",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Requested",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/containers": {
+      "get": {
+        "operationId": "listContainers",
+        "tags": [
+          "Hosts"
+        ],
+        "summary": "Containers on every host",
+        "description": "Needs the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "containers"
+                  ],
+                  "properties": {
+                    "containers": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Container"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/changes": {
+      "get": {
+        "operationId": "listChanges",
+        "tags": [
+          "Changes"
+        ],
+        "summary": "What changed everywhere",
+        "description": "Needs the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "host",
+                "cluster"
+              ]
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "package, port, service, user, sudo, ssh-key, container, ..."
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Changes"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "operationId": "healthz",
+        "tags": [
+          "Product"
+        ],
+        "summary": "Liveness",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "operationId": "readyz",
+        "tags": [
+          "Product"
+        ],
+        "summary": "Readiness",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "operationId": "metrics",
+        "tags": [
+          "Product"
+        ],
+        "summary": "Prometheus metrics",
+        "responses": {
+          "200": {
+            "description": "Prometheus text format",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "session": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-openasy-session",
+        "description": "The browser session after signing in (`openasy-session` on plain http://localhost)."
+      },
+      "apiToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "An API token from Settings → API tokens (`oa_infra_...`): one role, always an expiry (ADR 0003)."
+      },
+      "agentSecret": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "infra-agent's own secret (`oia_...`), from enrolment (ADR 0023)."
+      }
+    },
+    "responses": {
+      "Problem": {
+        "description": "An error, as RFC 9457 Problem Details.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "required": [
+          "type",
+          "title",
+          "status",
+          "code"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "invalid-json",
+              "invalid-body",
+              "not-found",
+              "conflict",
+              "not-configured",
+              "internal-error",
+              "unauthenticated",
+              "invalid-token",
+              "mfa-setup-required",
+              "forbidden",
+              "cross-site",
+              "rate-limited"
+            ],
+            "description": "Stable; match on this."
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "HostKey": {
+        "type": "object",
+        "required": [
+          "type",
+          "fingerprint"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "fingerprint": {
+            "type": "string",
+            "pattern": "^SHA256:"
+          }
+        }
+      },
+      "HostSummary": {
+        "anyOf": [
+          {
+            "type": "object",
+            "required": [
+              "hostname",
+              "os",
+              "kernel",
+              "arch",
+              "virtualization",
+              "uptimeSec",
+              "load",
+              "cpuThreads",
+              "memoryTotalKb",
+              "memoryAvailableKb",
+              "fullestDisk",
+              "packages",
+              "listeningPorts",
+              "processes",
+              "containers",
+              "unreadable"
+            ],
+            "properties": {
+              "hostname": {
+                "type": "string"
+              },
+              "os": {
+                "type": "string"
+              },
+              "kernel": {
+                "type": "string"
+              },
+              "arch": {
+                "type": "string"
+              },
+              "virtualization": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "uptimeSec": {
+                "type": "integer"
+              },
+              "load": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "cpuThreads": {
+                "type": "integer"
+              },
+              "memoryTotalKb": {
+                "type": "integer"
+              },
+              "memoryAvailableKb": {
+                "type": "integer"
+              },
+              "fullestDisk": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "mount",
+                      "pct"
+                    ],
+                    "properties": {
+                      "mount": {
+                        "type": "string"
+                      },
+                      "pct": {
+                        "type": "integer"
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "packages": {
+                "type": "integer"
+              },
+              "listeningPorts": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "processes": {
+                "type": "integer"
+              },
+              "containers": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "unreadable": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "What needs the sudo rules or the container switch to be read."
+              }
+            }
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "Host": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "address",
+          "port",
+          "user",
+          "auth",
+          "agent",
+          "jumpHost",
+          "containers",
+          "intervalMinutes",
+          "tags",
+          "hostKeys",
+          "pendingHostKeys",
+          "status",
+          "statusDetail",
+          "lastAttemptAt",
+          "lastSuccessAt",
+          "createdAt",
+          "summary"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          },
+          "user": {
+            "type": "string"
+          },
+          "auth": {
+            "type": "string",
+            "enum": [
+              "certificate",
+              "key"
+            ]
+          },
+          "agent": {
+            "type": "object",
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "jumpHost": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "containers": {
+            "type": "boolean",
+            "description": "Read containers through the host's Docker or Podman. Access to the socket is equivalent to root (ADR 0031)."
+          },
+          "intervalMinutes": {
+            "type": "integer"
+          },
+          "tags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "hostKeys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HostKey"
+            },
+            "description": "Pinned. Collection stops when the host presents another key."
+          },
+          "pendingHostKeys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HostKey"
+            },
+            "description": "What the host presents now, waiting to be checked and accepted."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "host-key-pending",
+              "host-key-changed",
+              "pending",
+              "ok",
+              "unreachable",
+              "auth-failed",
+              "timeout",
+              "error"
+            ],
+            "description": "Of the last collection. new and host-key-pending wait for an admin to accept the host key."
+          },
+          "statusDetail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastAttemptAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastSuccessAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/HostSummary"
+          }
+        }
+      },
+      "HostInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "address"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          },
+          "agentId": {
+            "type": "string",
+            "description": "The agent that reads this host. Optional when there is only one."
+          },
+          "address": {
+            "type": "string",
+            "description": "Host name or IP address."
+          },
+          "port": {
+            "type": "integer",
+            "default": 22
+          },
+          "user": {
+            "type": "string",
+            "default": "openasy"
+          },
+          "auth": {
+            "type": "string",
+            "enum": [
+              "certificate",
+              "key"
+            ],
+            "default": "certificate",
+            "description": "certificate: a 5-minute certificate from Infrastructure's CA for each collection. key: one fixed key in authorized_keys."
+          },
+          "jumpHostId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Reach the host through this one (ProxyJump)."
+          },
+          "containers": {
+            "type": "boolean",
+            "default": false
+          },
+          "intervalMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440,
+            "default": 5
+          },
+          "tags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Facts": {
+        "type": "object",
+        "description": "Everything read from the host in one collection. Values that look like secrets are masked; container environment variables are names only.",
+        "required": [
+          "collectedAt",
+          "system",
+          "packages",
+          "users",
+          "unreadable"
+        ],
+        "properties": {
+          "collectedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "account": {
+            "type": "object",
+            "required": [
+              "user",
+              "uid",
+              "sudo"
+            ],
+            "properties": {
+              "user": {
+                "type": "string"
+              },
+              "uid": {
+                "type": "integer"
+              },
+              "sudo": {
+                "type": "string",
+                "enum": [
+                  "all",
+                  "rules"
+                ]
+              }
+            }
+          },
+          "system": {
+            "type": "object"
+          },
+          "cpu": {
+            "type": "object"
+          },
+          "memory": {
+            "type": "object"
+          },
+          "disks": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "filesystems": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "interfaces": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "routes": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "dns": {
+            "type": "object"
+          },
+          "ports": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "proto",
+                    "address",
+                    "port",
+                    "process",
+                    "pid"
+                  ],
+                  "properties": {
+                    "proto": {
+                      "type": "string"
+                    },
+                    "address": {
+                      "type": "string"
+                    },
+                    "port": {
+                      "type": "integer"
+                    },
+                    "process": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "pid": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "processes": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "services": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "timers": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cron": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "crontabUsers": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "sudo": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "authorizedKeys": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sshd": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sysctl": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "firewall": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "packages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "manager",
+                "name",
+                "version",
+                "arch"
+              ],
+              "properties": {
+                "manager": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                },
+                "arch": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "containers": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Container"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unreadable": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Container": {
+        "type": "object",
+        "required": [
+          "engine",
+          "id",
+          "name",
+          "image",
+          "state",
+          "envNames"
+        ],
+        "properties": {
+          "engine": {
+            "type": "string",
+            "enum": [
+              "docker",
+              "podman"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "imageId": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "health": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "restarts": {
+            "type": "integer"
+          },
+          "restartPolicy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "command": {
+            "type": "string"
+          },
+          "ports": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mounts": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "networks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "envNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Names only: values are never collected."
+          },
+          "memoryLimitBytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cpuLimit": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "privileged": {
+            "type": "boolean"
+          },
+          "user": {
+            "type": "string"
+          },
+          "host": {
+            "type": "object",
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Cluster": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "server",
+          "intervalMinutes",
+          "tags",
+          "status",
+          "statusDetail",
+          "lastAttemptAt",
+          "lastSuccessAt",
+          "createdAt",
+          "summary"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "server": {
+            "type": "string"
+          },
+          "intervalMinutes": {
+            "type": "integer"
+          },
+          "tags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string"
+          },
+          "statusDetail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastAttemptAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastSuccessAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "version",
+                  "nodes",
+                  "nodesReady",
+                  "namespaces",
+                  "workloads",
+                  "pods",
+                  "podsNotRunning",
+                  "restarts",
+                  "warnings"
+                ],
+                "properties": {
+                  "version": {
+                    "type": "string"
+                  },
+                  "nodes": {
+                    "type": "integer"
+                  },
+                  "nodesReady": {
+                    "type": "integer"
+                  },
+                  "namespaces": {
+                    "type": "integer"
+                  },
+                  "workloads": {
+                    "type": "integer"
+                  },
+                  "pods": {
+                    "type": "integer"
+                  },
+                  "podsNotRunning": {
+                    "type": "integer"
+                  },
+                  "restarts": {
+                    "type": "integer"
+                  },
+                  "warnings": {
+                    "type": "integer"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ClusterInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "server",
+          "token"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
+          },
+          "server": {
+            "type": "string",
+            "description": "The API server's https:// URL."
+          },
+          "caCert": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The cluster CA in PEM; null to use the system's."
+          },
+          "token": {
+            "type": "string",
+            "writeOnly": true,
+            "description": "Token of the read-only service account from GET /api/v1/setup. Stored encrypted, never returned."
+          },
+          "intervalMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440,
+            "default": 5
+          },
+          "tags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ClusterFacts": {
+        "type": "object",
+        "required": [
+          "collectedAt",
+          "version",
+          "nodes",
+          "workloads",
+          "pods"
+        ],
+        "description": "Nodes, namespaces, workloads, pods, services, ingresses, volumes, cluster-admin bindings and recent warnings."
+      },
+      "Change": {
+        "type": "object",
+        "required": [
+          "id",
+          "target",
+          "at",
+          "category",
+          "item",
+          "change",
+          "before",
+          "after"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "target": {
+            "type": "object",
+            "required": [
+              "kind",
+              "id",
+              "name"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "host",
+                  "cluster"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "category": {
+            "type": "string"
+          },
+          "item": {
+            "type": "string"
+          },
+          "change": {
+            "type": "string",
+            "enum": [
+              "added",
+              "removed",
+              "changed"
+            ]
+          },
+          "before": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "Changes": {
+        "type": "object",
+        "required": [
+          "changes"
+        ],
+        "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Change"
+            }
+          },
+          "nextCursor": {
+            "type": "string"
+          }
+        }
+      },
+      "Agent": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "status",
+          "version",
+          "caFingerprint",
+          "lastSeenAt",
+          "lastError",
+          "hosts",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "waiting-to-enrol",
+              "online",
+              "offline",
+              "version-mismatch"
+            ]
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "caFingerprint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Of the SSH certificate authority the agent made; hosts read by it trust this CA."
+          },
+          "lastSeenAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastError": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hosts": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "NewAgent": {
+        "type": "object",
+        "required": [
+          "agent",
+          "enrollToken",
+          "enrollExpiresAt"
+        ],
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/Agent"
+          },
+          "enrollToken": {
+            "type": "string",
+            "description": "One-time; start infra-agent with INFRA_ENROLL_TOKEN set to it. Shown once."
+          },
+          "enrollExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AgentSetup": {
+        "type": "object",
+        "required": [
+          "agent",
+          "caPublicKey",
+          "caFingerprint",
+          "keyPublicKey",
+          "sshdConfig",
+          "sudoers",
+          "hostSetup",
+          "authorizedKey"
+        ],
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/Agent"
+          },
+          "caPublicKey": {
+            "type": "string"
+          },
+          "caFingerprint": {
+            "type": "string"
+          },
+          "keyPublicKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sshdConfig": {
+            "type": "string"
+          },
+          "sudoers": {
+            "type": "string"
+          },
+          "hostSetup": {
+            "type": "string"
+          },
+          "authorizedKey": {
+            "type": "string"
+          }
+        }
+      },
+      "AgentReport": {
+        "type": "object",
+        "required": [
+          "version",
+          "caPublicKey",
+          "keyPublicKey",
+          "setup"
+        ],
+        "description": "What infra-agent says about itself on every call: its version (it must equal infra's, ADR 0019), its public keys, and the host setup that matches its script.",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "caPublicKey": {
+            "type": "string"
+          },
+          "keyPublicKey": {
+            "type": "string"
+          },
+          "setup": {
+            "type": "object",
+            "required": [
+              "sshdConfig",
+              "sudoers",
+              "hostSetup",
+              "authorizedKey"
+            ],
+            "properties": {
+              "sshdConfig": {
+                "type": "string"
+              },
+              "sudoers": {
+                "type": "string"
+              },
+              "hostSetup": {
+                "type": "string"
+              },
+              "authorizedKey": {
+                "type": "string"
+              }
+            }
+          },
+          "running": {
+            "type": "integer"
+          }
+        }
+      },
+      "Job": {
+        "type": "object",
+        "required": [
+          "id",
+          "hostId",
+          "action",
+          "target",
+          "jump"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "hostId": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "collect",
+              "host-key"
+            ]
+          },
+          "target": {
+            "type": "object",
+            "required": [
+              "address",
+              "port",
+              "user",
+              "hostKeys",
+              "auth",
+              "containers"
+            ],
+            "properties": {
+              "address": {
+                "type": "string"
+              },
+              "port": {
+                "type": "integer"
+              },
+              "user": {
+                "type": "string"
+              },
+              "hostKeys": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "auth": {
+                "type": "string",
+                "enum": [
+                  "certificate",
+                  "key"
+                ]
+              },
+              "containers": {
+                "type": "boolean"
+              }
+            }
+          },
+          "jump": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "address",
+                  "port",
+                  "user",
+                  "hostKeys"
+                ],
+                "properties": {
+                  "address": {
+                    "type": "string"
+                  },
+                  "port": {
+                    "type": "integer"
+                  },
+                  "user": {
+                    "type": "string"
+                  },
+                  "hostKeys": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "Result": {
+        "type": "object",
+        "required": [
+          "jobId",
+          "hostId",
+          "ok"
+        ],
+        "description": "One of: facts (a collection), hostKeys (the keys a host presents), or error.",
+        "properties": {
+          "jobId": {
+            "type": "string"
+          },
+          "hostId": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "facts": {
+            "$ref": "#/components/schemas/Facts"
+          },
+          "hostKeys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "error": {
+            "type": "object",
+            "required": [
+              "kind",
+              "message"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Summary": {
+        "type": "object",
+        "required": [
+          "agents",
+          "hosts",
+          "clusters",
+          "containers",
+          "changesLastDay"
+        ],
+        "properties": {
+          "agents": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          },
+          "hosts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          },
+          "clusters": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          },
+          "containers": {
+            "type": "integer"
+          },
+          "changesLastDay": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}

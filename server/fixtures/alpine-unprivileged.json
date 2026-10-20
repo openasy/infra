@@ -1,0 +1,661 @@
+{
+ "collectedAt": "2026-10-20T11:06:06.000Z",
+ "account": {
+  "user": "nobody",
+  "uid": 65534,
+  "sudo": "rules"
+ },
+ "system": {
+  "hostname": "80af8e21878f",
+  "machineId": null,
+  "os": {
+   "id": "alpine",
+   "name": "Alpine Linux v3.22",
+   "version": "3.22.6"
+  },
+  "kernel": "7.0.12-linuxkit",
+  "arch": "aarch64",
+  "bootedAt": "2026-10-20T10:35:33.000Z",
+  "uptimeSec": 1833,
+  "load": [
+   0.34,
+   0.37,
+   0.31
+  ],
+  "virtualization": null,
+  "hardware": {},
+  "serial": null
+ },
+ "cpu": {
+  "model": null,
+  "threads": 14,
+  "cores": null
+ },
+ "memory": {
+  "totalKb": 8124000,
+  "availableKb": 6165568,
+  "swapTotalKb": 1048572,
+  "swapFreeKb": 1048572
+ },
+ "disks": [],
+ "filesystems": [
+  {
+   "device": "overlay",
+   "mount": "/",
+   "type": "overlay",
+   "sizeKb": 474095688,
+   "usedKb": 26795864,
+   "options": "rw,relatime,lowerdir=/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/4363/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/4218/fs,upperdir=/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/4364/fs,workdir=/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/4364/work,nouserxattr"
+  },
+  {
+   "device": "tmpfs",
+   "mount": "/dev",
+   "type": "tmpfs",
+   "sizeKb": 65536,
+   "usedKb": 0,
+   "options": "rw,nosuid,size=65536k,mode=755"
+  },
+  {
+   "device": "shm",
+   "mount": "/dev/shm",
+   "type": "tmpfs",
+   "sizeKb": 65536,
+   "usedKb": 0,
+   "options": "rw,nosuid,nodev,noexec,relatime,size=65536k"
+  },
+  {
+   "device": "/dev/vda1",
+   "mount": "/etc/hostname",
+   "type": "ext4",
+   "sizeKb": 474095688,
+   "usedKb": 26795864,
+   "options": "rw,relatime,discard"
+  },
+  {
+   "device": "/dev/vda1",
+   "mount": "/etc/hosts",
+   "type": "ext4",
+   "sizeKb": 474095688,
+   "usedKb": 26795864,
+   "options": "rw,relatime,discard"
+  },
+  {
+   "device": "/dev/vda1",
+   "mount": "/etc/resolv.conf",
+   "type": "ext4",
+   "sizeKb": 474095688,
+   "usedKb": 26795864,
+   "options": "rw,relatime,discard"
+  },
+  {
+   "device": "tmpfs",
+   "mount": "/proc/interrupts",
+   "type": "tmpfs",
+   "sizeKb": 65536,
+   "usedKb": 0,
+   "options": "rw,nosuid,size=65536k,mode=755"
+  },
+  {
+   "device": "tmpfs",
+   "mount": "/proc/kcore",
+   "type": "tmpfs",
+   "sizeKb": 65536,
+   "usedKb": 0,
+   "options": "rw,nosuid,size=65536k,mode=755"
+  },
+  {
+   "device": "tmpfs",
+   "mount": "/proc/keys",
+   "type": "tmpfs",
+   "sizeKb": 65536,
+   "usedKb": 0,
+   "options": "rw,nosuid,size=65536k,mode=755"
+  },
+  {
+   "device": "tmpfs",
+   "mount": "/proc/scsi",
+   "type": "tmpfs",
+   "sizeKb": 4,
+   "usedKb": 0,
+   "options": "ro,relatime,size=4k,nr_inodes=1"
+  },
+  {
+   "device": "tmpfs",
+   "mount": "/proc/timer_list",
+   "type": "tmpfs",
+   "sizeKb": 65536,
+   "usedKb": 0,
+   "options": "rw,nosuid,size=65536k,mode=755"
+  },
+  {
+   "device": "tmpfs",
+   "mount": "/sys/firmware",
+   "type": "tmpfs",
+   "sizeKb": 4,
+   "usedKb": 0,
+   "options": "ro,relatime,size=4k,nr_inodes=1"
+  }
+ ],
+ "interfaces": [],
+ "routes": [],
+ "dns": {
+  "nameservers": [
+   "192.168.65.7"
+  ],
+  "search": []
+ },
+ "ports": [],
+ "processes": [],
+ "services": null,
+ "timers": null,
+ "cron": [],
+ "crontabUsers": [
+  "root"
+ ],
+ "users": [
+  {
+   "name": "root",
+   "uid": 0,
+   "gid": 0,
+   "home": "/root",
+   "shell": "/bin/sh",
+   "login": true,
+   "password": null
+  },
+  {
+   "name": "bin",
+   "uid": 1,
+   "gid": 1,
+   "home": "/bin",
+   "shell": "/sbin/nologin",
+   "login": false,
+   "password": null
+  },
+  {
+   "name": "daemon",
+   "uid": 2,
+   "gid": 2,
+   "home": "/sbin",
+   "shell": "/sbin/nologin",
+   "login": false,
+   "password": null
+  },
+  {
+   "name": "lp",
+   "uid": 4,
+   "gid": 7,
+   "home": "/var/spool/lpd",
+   "shell": "/sbin/nologin",
+   "login": false,
+   "password": null
+  },
+  {
+   "name": "sync",
+   "uid": 5,
+   "gid": 0,
+   "home": "/sbin",
+   "shell": "/bin/sync",
+   "login": false,
+   "password": null
+  },
+  {
+   "name": "shutdown",
+   "uid": 6,
+   "gid": 0,
+   "home": "/sbin",
+   "shell": "/sbin/shutdown",
+   "login": false,
+   "password": null
+  },
+  {
+   "name": "halt",
+   "uid": 7,
+   "gid": 0,
+   "home": "/sbin",
+   "shell": "/sbin/halt",
+   "login": false,
+   "password": null
+  },
+  {
+   "name": "mail",
+   "uid": 8,
+   "gid": 12,
+   "home": "/var/mail",
+   "shell": "/sbin/nologin",
+   "login": false,
+   "password": null
+  },
+  {
+   "name": "news",
+   "uid": 9,
+   "gid": 13,
+   "home": "/usr/lib/news",
+   "shell": "/sbin/nologin",
+   "login": false,
+   "password": null
+  },
+  {
+   "name": "uucp",
+   "uid": 10,
+   "gid": 14,
+   "home": "/var/spool/uucppublic",
+   "shell": "/sbin/nologin",
+   "login": false,
+   "password": null
+  },
+  {
+   "name": "cron",
+   "uid": 16,
+   "gid": 16,
+   "home": "/var/spool/cron",
+   "shell": "/sbin/nologin",
+   "login": false,
+   "password": null
+  },
+  {
+   "name": "ftp",
+   "uid": 21,
+   "gid": 21,
+   "home": "/var/lib/ftp",
+   "shell": "/sbin/nologin",
+   "login": false,
+   "password": null
+  },
+  {
+   "name": "sshd",
+   "uid": 22,
+   "gid": 22,
+   "home": "/dev/null",
+   "shell": "/sbin/nologin",
+   "login": false,
+   "password": null
+  },
+  {
+   "name": "games",
+   "uid": 35,
+   "gid": 35,
+   "home": "/usr/games",
+   "shell": "/sbin/nologin",
+   "login": false,
+   "password": null
+  },
+  {
+   "name": "ntp",
+   "uid": 123,
+   "gid": 123,
+   "home": "/var/empty",
+   "shell": "/sbin/nologin",
+   "login": false,
+   "password": null
+  },
+  {
+   "name": "guest",
+   "uid": 405,
+   "gid": 100,
+   "home": "/dev/null",
+   "shell": "/sbin/nologin",
+   "login": false,
+   "password": null
+  },
+  {
+   "name": "nobody",
+   "uid": 65534,
+   "gid": 65534,
+   "home": "/",
+   "shell": "/sbin/nologin",
+   "login": false,
+   "password": null
+  }
+ ],
+ "groups": [
+  {
+   "name": "root",
+   "gid": 0,
+   "members": [
+    "root"
+   ]
+  },
+  {
+   "name": "bin",
+   "gid": 1,
+   "members": [
+    "root",
+    "bin",
+    "daemon"
+   ]
+  },
+  {
+   "name": "daemon",
+   "gid": 2,
+   "members": [
+    "root",
+    "bin",
+    "daemon"
+   ]
+  },
+  {
+   "name": "sys",
+   "gid": 3,
+   "members": [
+    "root",
+    "bin"
+   ]
+  },
+  {
+   "name": "adm",
+   "gid": 4,
+   "members": [
+    "root",
+    "daemon"
+   ]
+  },
+  {
+   "name": "tty",
+   "gid": 5,
+   "members": []
+  },
+  {
+   "name": "disk",
+   "gid": 6,
+   "members": [
+    "root"
+   ]
+  },
+  {
+   "name": "lp",
+   "gid": 7,
+   "members": [
+    "lp"
+   ]
+  },
+  {
+   "name": "kmem",
+   "gid": 9,
+   "members": []
+  },
+  {
+   "name": "wheel",
+   "gid": 10,
+   "members": [
+    "root"
+   ]
+  },
+  {
+   "name": "floppy",
+   "gid": 11,
+   "members": [
+    "root"
+   ]
+  },
+  {
+   "name": "mail",
+   "gid": 12,
+   "members": [
+    "mail"
+   ]
+  },
+  {
+   "name": "news",
+   "gid": 13,
+   "members": [
+    "news"
+   ]
+  },
+  {
+   "name": "uucp",
+   "gid": 14,
+   "members": [
+    "uucp"
+   ]
+  },
+  {
+   "name": "cron",
+   "gid": 16,
+   "members": [
+    "cron"
+   ]
+  },
+  {
+   "name": "audio",
+   "gid": 18,
+   "members": []
+  },
+  {
+   "name": "cdrom",
+   "gid": 19,
+   "members": []
+  },
+  {
+   "name": "dialout",
+   "gid": 20,
+   "members": [
+    "root"
+   ]
+  },
+  {
+   "name": "ftp",
+   "gid": 21,
+   "members": []
+  },
+  {
+   "name": "sshd",
+   "gid": 22,
+   "members": []
+  },
+  {
+   "name": "input",
+   "gid": 23,
+   "members": []
+  },
+  {
+   "name": "tape",
+   "gid": 26,
+   "members": [
+    "root"
+   ]
+  },
+  {
+   "name": "video",
+   "gid": 27,
+   "members": [
+    "root"
+   ]
+  },
+  {
+   "name": "netdev",
+   "gid": 28,
+   "members": []
+  },
+  {
+   "name": "kvm",
+   "gid": 34,
+   "members": [
+    "kvm"
+   ]
+  },
+  {
+   "name": "games",
+   "gid": 35,
+   "members": []
+  },
+  {
+   "name": "shadow",
+   "gid": 42,
+   "members": []
+  },
+  {
+   "name": "www-data",
+   "gid": 82,
+   "members": []
+  },
+  {
+   "name": "users",
+   "gid": 100,
+   "members": [
+    "games"
+   ]
+  },
+  {
+   "name": "ntp",
+   "gid": 123,
+   "members": []
+  },
+  {
+   "name": "abuild",
+   "gid": 300,
+   "members": []
+  },
+  {
+   "name": "utmp",
+   "gid": 406,
+   "members": []
+  },
+  {
+   "name": "ping",
+   "gid": 999,
+   "members": []
+  },
+  {
+   "name": "nogroup",
+   "gid": 65533,
+   "members": []
+  },
+  {
+   "name": "nobody",
+   "gid": 65534,
+   "members": []
+  }
+ ],
+ "sudo": null,
+ "authorizedKeys": null,
+ "sshd": null,
+ "modules": [
+  "fakeowner",
+  "grpcfuse",
+  "rosetta",
+  "selfowner",
+  "shiftfs"
+ ],
+ "sysctl": {
+  "net.ipv4.ip_forward": "1",
+  "net.ipv6.conf.all.forwarding": "0",
+  "net.ipv4.conf.all.rp_filter": "0",
+  "net.ipv4.tcp_syncookies": "1",
+  "kernel.randomize_va_space": "2",
+  "kernel.kptr_restrict": "0",
+  "kernel.dmesg_restrict": "1",
+  "kernel.unprivileged_bpf_disabled": "0",
+  "fs.protected_symlinks": "1",
+  "fs.protected_hardlinks": "1",
+  "fs.suid_dumpable": "0"
+ },
+ "firewall": null,
+ "packages": [
+  {
+   "manager": "apk",
+   "name": "alpine-baselayout",
+   "version": "3.7.0-r0",
+   "arch": null
+  },
+  {
+   "manager": "apk",
+   "name": "alpine-baselayout-data",
+   "version": "3.7.0-r0",
+   "arch": null
+  },
+  {
+   "manager": "apk",
+   "name": "alpine-keys",
+   "version": "2.5-r0",
+   "arch": null
+  },
+  {
+   "manager": "apk",
+   "name": "alpine-release",
+   "version": "3.22.6-r0",
+   "arch": null
+  },
+  {
+   "manager": "apk",
+   "name": "apk-tools",
+   "version": "2.14.12-r0",
+   "arch": null
+  },
+  {
+   "manager": "apk",
+   "name": "busybox",
+   "version": "1.37.0-r20",
+   "arch": null
+  },
+  {
+   "manager": "apk",
+   "name": "busybox-binsh",
+   "version": "1.37.0-r20",
+   "arch": null
+  },
+  {
+   "manager": "apk",
+   "name": "ca-certificates-bundle",
+   "version": "20260909-r0",
+   "arch": null
+  },
+  {
+   "manager": "apk",
+   "name": "libapk2",
+   "version": "2.14.12-r0",
+   "arch": null
+  },
+  {
+   "manager": "apk",
+   "name": "libcrypto3",
+   "version": "3.5.8-r0",
+   "arch": null
+  },
+  {
+   "manager": "apk",
+   "name": "libssl3",
+   "version": "3.5.8-r0",
+   "arch": null
+  },
+  {
+   "manager": "apk",
+   "name": "musl",
+   "version": "1.2.5-r12",
+   "arch": null
+  },
+  {
+   "manager": "apk",
+   "name": "musl-utils",
+   "version": "1.2.5-r12",
+   "arch": null
+  },
+  {
+   "manager": "apk",
+   "name": "scanelf",
+   "version": "1.3.8-r1",
+   "arch": null
+  },
+  {
+   "manager": "apk",
+   "name": "ssl_client",
+   "version": "1.37.0-r20",
+   "arch": null
+  },
+  {
+   "manager": "apk",
+   "name": "zlib",
+   "version": "1.3.2-r0",
+   "arch": null
+  }
+ ],
+ "containers": null,
+ "unreadable": [
+  "firewall rules",
+  "hardware serial number",
+  "sudo rules",
+  "SSH keys that may log in",
+  "SSH server settings",
+  "whether accounts have a password",
+  "which process listens on a port"
+ ]
+}
