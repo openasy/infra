@@ -1,6 +1,6 @@
 import { AppShell, BrandProvider, Button, Callout, EmptyState, KpiCard, KpiGrid, PageHeader, Panel, SegmentedControl, SelectField, Tabs, type Column } from "@openasy/ui";
-import { AccountSettings, AuthGate, MembersSettings, TokensSettings, useAuth } from "@openasy/auth/react";
-import { Bot, Boxes, GitCompare, KeyRound, LayoutDashboard, LogOut, Server, Settings2, UserRound, Users, Network } from "lucide-react";
+import { AccountSettings, AuthGate, MembersSettings, SignInSettings, TokensSettings, useAuth } from "@openasy/auth/react";
+import { Bot, Boxes, GitCompare, KeyRound, LayoutDashboard, LogIn, LogOut, Server, Settings2, UserRound, Users, Network } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Agent, AgentSetup, Change, Container, Host, Setup, Summary } from "./api.ts";
 import { AgentsPage } from "./agents.tsx";
@@ -9,7 +9,7 @@ import { ContainerTable, HostPage } from "./host.tsx";
 import { HostsPage } from "./hosts.tsx";
 import { ChangeList, Code, List, Status, useApi, useData, type Call } from "./shared.tsx";
 
-const PAGES = ["overview", "hosts", "containers", "clusters", "changes", "setup", "agents", "account", "members", "tokens"] as const;
+const PAGES = ["overview", "hosts", "containers", "clusters", "changes", "setup", "agents", "account", "members", "signin", "tokens"] as const;
 type Page = (typeof PAGES)[number];
 type Route = { page: Page } | { page: "host"; id: string } | { page: "cluster"; id: string };
 
@@ -161,6 +161,7 @@ function SetupPage({ call }: { call: Call }) {
 const SETTINGS = {
   account: ["Account", "Your profile, password, two-step verification and where you are signed in."],
   members: ["Members", "Who can sign in, and with which role. Viewers see everything; editors also start collections; admins also add and remove agents, hosts and clusters, accept host keys, and manage members and tokens."],
+  signin: ["Sign-in", "Identity providers people can sign in with, such as OpenAsy Identity, Keycloak or Microsoft Entra ID, and which of their groups give which role."],
   tokens: ["API tokens", "For scripts. Each token has one role and an expiry; the secret is shown once."],
 } as const;
 
@@ -188,6 +189,7 @@ function Product() {
     ...(can("admin")
       ? [
           { id: "members", label: "Members", icon: Users },
+          { id: "signin", label: "Sign-in", icon: LogIn },
           { id: "tokens", label: "API tokens", icon: KeyRound },
         ]
       : []),
@@ -214,7 +216,7 @@ function Product() {
         <SetupPage call={call} />
       ) : page === "agents" ? (
         <AgentsPage call={call} />
-      ) : page === "account" || page === "members" || page === "tokens" ? (
+      ) : page === "account" || page === "members" || page === "signin" || page === "tokens" ? (
         page !== "account" && !can("admin") ? (
           <EmptyState title="Admins only">Ask an admin of this Infrastructure for access.</EmptyState>
         ) : (
@@ -230,7 +232,7 @@ function Product() {
                 )
               }
             />
-            {page === "account" ? <AccountSettings /> : page === "members" ? <MembersSettings /> : <TokensSettings />}
+            {page === "account" ? <AccountSettings /> : page === "members" ? <MembersSettings /> : page === "signin" ? <SignInSettings /> : <TokensSettings />}
           </>
         )
       ) : (
