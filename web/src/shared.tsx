@@ -46,8 +46,6 @@ export function useData<T>(call: Call, path: string | null, everyMs = 15_000) {
   return { data, error, reload: load };
 }
 
-export const go = (hash: string) => (window.location.hash = hash);
-
 export function ago(iso: string | null | undefined): string {
   if (!iso) return "never";
   const s = Math.round((Date.now() - Date.parse(iso)) / 1000);
@@ -167,7 +165,7 @@ export function ChangeList({ changes, showTarget = false }: { changes: Change[] 
   const columns: Column<Change>[] = [
     { id: "at", header: "When", width: "120px", cell: (c) => <span title={new Date(c.at).toLocaleString()}>{ago(c.at)}</span>, sortValue: (c) => c.at },
     ...(showTarget
-      ? [{ id: "target", header: "Where", width: "160px", cell: (c: Change) => <a href={`#/${c.target.kind === "host" ? "hosts" : "clusters"}/${c.target.id}`}>{c.target.name}</a> } satisfies Column<Change>]
+      ? [{ id: "target", header: "Where", width: "160px", cell: (c: Change) => <a href={`/${c.target.kind === "host" ? "hosts" : "clusters"}/${c.target.id}`}>{c.target.name}</a> } satisfies Column<Change>]
       : []),
     { id: "change", header: "Change", width: "100px", cell: (c) => <Badge tone={CHANGE_TONE[c.change]}>{c.change}</Badge> },
     { id: "category", header: "What", width: "120px", cell: (c) => c.category },

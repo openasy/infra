@@ -270,6 +270,8 @@ describe("product", () => {
     expect(setup.kubernetesRbac).toContain("openasy-infra-read");
     expect((await call("viewer", "GET", "/api/v1/summary")).body).toMatchObject({ agents: { online: 1 }, hosts: { ok: 2 } });
     await call("none", "GET", "/api/v1/version");
+    expect((await call("viewer", "GET", "/api/v1/products")).body).toEqual({ products: [] });
+    await call("none", "GET", "/api/v1/products");
     await call("none", "GET", "/healthz");
     await call("none", "GET", "/readyz");
     const metrics = await call("none", "GET", "/metrics");
@@ -287,5 +289,15 @@ describe("product", () => {
   it("covers every operation in openapi.json", () => {
     const all = Object.entries(spec.paths).flatMap(([path, ops]) => Object.keys(ops).map((m) => `${m.toUpperCase()} ${path}`));
     expect([...covered].sort()).toEqual(all.sort());
+  });
+});
+
+describe("other products", () => {
+  it("lists the configured products to anyone signed in", async () => {
+    const products = [{ id: "vpn", url: "https://vpn.example.com" }];
+    const linked = await startApp({ version, products });
+    expect(await (await linked.viewer("/api/v1/products")).json()).toEqual({ products });
+    expect((await fetch(`${linked.base}/api/v1/products`)).status).toBe(401);
+    await linked.close();
   });
 });

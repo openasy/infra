@@ -1,8 +1,9 @@
 // The UI is an ordinary client of the public API (ADR 0014, 0018). Types follow openapi.json and server/facts.ts.
 import type { Container, Facts } from "../../server/facts.ts";
 import type { ClusterFacts } from "../../server/k8s.ts";
+import type { ProductLink } from "../../server/products.ts";
 
-export type { Container, Facts, ClusterFacts };
+export type { Container, Facts, ClusterFacts, ProductLink };
 
 export interface HostKey {
   type: string;

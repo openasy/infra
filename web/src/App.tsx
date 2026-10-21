@@ -1,20 +1,20 @@
-import { AppShell, BrandProvider, Button, Callout, EmptyState, KpiCard, KpiGrid, PageHeader, Panel, SegmentedControl, SelectField, Tabs, type Column } from "@openasy/ui";
+import { AppShell, BrandProvider, Button, Callout, EmptyState, KpiCard, KpiGrid, navigate, PageHeader, Panel, PRODUCT_IDS, SegmentedControl, SelectField, Tabs, usePath, type Column, type ProductId } from "@openasy/ui";
 import { AccountSettings, AuthGate, MembersSettings, SignInSettings, TokensSettings, useAuth } from "@openasy/auth/react";
 import { Bot, Boxes, GitCompare, KeyRound, LayoutDashboard, LogIn, LogOut, Server, Settings2, UserRound, Users, Network } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { Agent, AgentSetup, Change, Container, Host, Setup, Summary } from "./api.ts";
+import type { Agent, AgentSetup, Change, Container, Host, ProductLink, Setup, Summary } from "./api.ts";
 import { AgentsPage } from "./agents.tsx";
 import { ClusterPage, ClustersPage } from "./clusters.tsx";
 import { ContainerTable, HostPage } from "./host.tsx";
 import { HostsPage } from "./hosts.tsx";
 import { ChangeList, Code, List, Status, useApi, useData, type Call } from "./shared.tsx";
 
-const PAGES = ["overview", "hosts", "containers", "clusters", "changes", "setup", "agents", "account", "members", "signin", "tokens"] as const;
+export const PAGES = ["overview", "hosts", "containers", "clusters", "changes", "setup", "agents", "account", "members", "signin", "tokens"] as const;
 type Page = (typeof PAGES)[number];
 type Route = { page: Page } | { page: "host"; id: string } | { page: "cluster"; id: string };
 
-function parseRoute(hash: string): Route {
-  const [page, id] = hash.replace(/^#\/?/, "").split("/");
+function parseRoute(path: string): Route {
+  const [page, id] = path.replace(/^\//, "").split("/");
   if (page === "hosts" && id) return { page: "host", id: decodeURIComponent(id) };
   if (page === "clusters" && id) return { page: "cluster", id: decodeURIComponent(id) };
   if ((PAGES as readonly string[]).includes(page ?? "")) return { page: page as Page };
@@ -32,14 +32,14 @@ function OverviewPage({ call }: { call: Call }) {
     return (
       <>
         <PageHeader title="Get started" description="An agent reads hosts over SSH, and Infrastructure reads clusters through their API. Nothing is installed on them." />
-        <EmptyState title="Nothing to read yet" action={<Button variant="primary" onClick={() => (window.location.hash = total(s.agents) ? "#/setup" : "#/agents")}>{total(s.agents) ? "Prepare a host" : "Add an agent"}</Button>}>
+        <EmptyState title="Nothing to read yet" action={<Button variant="primary" onClick={() => navigate(total(s.agents) ? "/setup" : "/agents")}>{total(s.agents) ? "Prepare a host" : "Add an agent"}</Button>}>
           Add an agent and start it, prepare a host with the commands under Setup, add the host, check its key, and the first collection follows within a minute.
         </EmptyState>
       </>
     );
   }
   const cols: Column<Host>[] = [
-    { id: "name", header: "Host", cell: (h) => <a href={`#/hosts/${h.id}`}>{h.name}</a> },
+    { id: "name", header: "Host", cell: (h) => <a href={`/hosts/${h.id}`}>{h.name}</a> },
     { id: "status", header: "Status", width: "180px", cell: (h) => <Status status={h.status} /> },
     { id: "why", header: "Why", cell: (h) => (h.status !== "ok" ? (h.statusDetail ?? "") : `${h.summary!.fullestDisk!.mount} is ${h.summary!.fullestDisk!.pct}% full`) },
   ];
@@ -47,10 +47,10 @@ function OverviewPage({ call }: { call: Call }) {
     <>
       <PageHeader title="Overview" description="Every host, container and cluster, and what changed." />
       <KpiGrid>
-        <KpiCard label="Hosts collected" value={`${s?.hosts.ok ?? 0}/${total(s?.hosts)}`} tone={s && (s.hosts.ok ?? 0) < total(s.hosts) ? "warning" : undefined} href="#/hosts" />
-        <KpiCard label="Containers" value={s?.containers ?? "–"} href="#/containers" />
-        <KpiCard label="Clusters collected" value={`${s?.clusters.ok ?? 0}/${total(s?.clusters)}`} href="#/clusters" />
-        <KpiCard label="Changes in 24 h" value={s?.changesLastDay ?? "–"} href="#/changes" />
+        <KpiCard label="Hosts collected" value={`${s?.hosts.ok ?? 0}/${total(s?.hosts)}`} tone={s && (s.hosts.ok ?? 0) < total(s.hosts) ? "warning" : undefined} href="/hosts" />
+        <KpiCard label="Containers" value={s?.containers ?? "–"} href="/containers" />
+        <KpiCard label="Clusters collected" value={`${s?.clusters.ok ?? 0}/${total(s?.clusters)}`} href="/clusters" />
+        <KpiCard label="Changes in 24 h" value={s?.changesLastDay ?? "–"} href="/changes" />
       </KpiGrid>
       {attention.length > 0 && (
         <Panel title="Needs attention" flush>
@@ -116,7 +116,7 @@ function SetupPage({ call }: { call: Call }) {
       {tab !== "kubernetes" &&
         (enrolled.length === 0 ? (
           <EmptyState title="No agent yet">
-            Hosts trust the certificate authority of the agent that reads them. Add one under <a href="#/agents">Agents</a> and start it; its setup shows here.
+            Hosts trust the certificate authority of the agent that reads them. Add one under <a href="/agents">Agents</a> and start it; its setup shows here.
           </EmptyState>
         ) : (
           <>
@@ -168,13 +168,16 @@ const SETTINGS = {
 function Product() {
   const { me, can, signOut } = useAuth();
   const call = useApi();
-  const [route, setRoute] = useState<Route>(() => parseRoute(window.location.hash));
+  const route = parseRoute(usePath());
+  const [products, setProducts] = useState<Array<ProductLink & { id: ProductId }>>([]);
   const summary = useData<Summary>(call, "/api/v1/summary", 30_000);
+  // The install's other products (OPENASY_PRODUCTS), for the switcher; ids this UI does not know are left out.
   useEffect(() => {
-    const onHash = () => setRoute(parseRoute(window.location.hash));
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
-  }, []);
+    void call<{ products: ProductLink[] }>("/api/v1/products").then(
+      (r) => setProducts(r.products.filter((p): p is ProductLink & { id: ProductId } => p.id !== "infrastructure" && (PRODUCT_IDS as readonly string[]).includes(p.id))),
+      () => {},
+    );
+  }, [call]);
   const total = (r: Record<string, number> | undefined) => Object.values(r ?? {}).reduce((a, b) => a + b, 0);
   const nav = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -199,7 +202,19 @@ function Product() {
   const roleName = me.user.role.charAt(0).toUpperCase() + me.user.role.slice(1);
   const page = route.page;
   return (
-    <AppShell product="infrastructure" nav={nav} activeNav={active} onNavigate={(id) => (window.location.hash = `#/${id}`)} footerNav={footerNav} user={{ name: me.user.name, role: roleName }}>
+    <AppShell
+      product="infrastructure"
+      nav={nav}
+      activeNav={active}
+      onNavigate={(id) => navigate(`/${id}`)}
+      connectedProducts={products.map((p) => p.id)}
+      onSwitchProduct={(id) => {
+        const to = products.find((p) => p.id === id);
+        if (to) window.location.assign(to.url);
+      }}
+      footerNav={footerNav}
+      user={{ name: me.user.name, role: roleName }}
+    >
       {route.page === "host" ? (
         <HostPage key={route.id} call={call} id={route.id} />
       ) : route.page === "cluster" ? (

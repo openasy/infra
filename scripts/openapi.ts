@@ -216,6 +216,10 @@ const schemas: Record<string, S> = {
     description: "One of: facts (a collection), hostKeys (the keys a host presents), or error.",
     properties: { jobId: str, hostId: str, ok: bool, facts: ref("Facts"), hostKeys: arr(str), error: obj({ kind: str, message: str }) },
   },
+  ProductLink: obj({
+    id: { type: "string", description: "The product, as OpenAsy names it.", examples: ["vpn"] },
+    url: { type: "string", format: "uri", description: "The address people open it at.", examples: ["https://vpn.example.com"] },
+  }),
   Summary: obj({ agents: { type: "object", additionalProperties: int }, hosts: { type: "object", additionalProperties: int }, clusters: { type: "object", additionalProperties: int }, containers: int, changesLastDay: int }),
 };
 
@@ -265,6 +269,9 @@ const spec = {
   ],
   paths: {
     "/api/v1/version": { get: op({ id: "version", tag: "Product", summary: "Version", responses: { "200": ok(obj({ product: str, version: str })) } }) },
+    "/api/v1/products": {
+      get: op({ id: "listProducts", tag: "Product", summary: "Other OpenAsy products", description: "The OpenAsy products of this install and their addresses, from `OPENASY_PRODUCTS`, for the product switcher. Empty when it is not set.", role: "viewer", responses: { "200": ok(obj({ products: arr(ref("ProductLink")) }), "The products, in the order they are configured."), ...R("v") } }),
+    },
     "/api/v1/summary": { get: op({ id: "summary", tag: "Product", summary: "Overview", role: "viewer", responses: { "200": ok(ref("Summary")), ...R("v") } }) },
     "/api/v1/setup": {
       get: op({ id: "setup", tag: "Setup", summary: "The read-only Kubernetes role", description: "What to put on hosts comes from each agent: GET /api/v1/agents/{id}/setup.", role: "viewer", responses: { "200": ok(obj({ kubernetesRbac: str })), ...R("v") } }),

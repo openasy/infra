@@ -1,9 +1,9 @@
-import { Button, Callout, EmptyState, PageHeader, Panel, SelectField, Switch, TextField, type Column } from "@openasy/ui";
+import { Button, Callout, EmptyState, navigate, PageHeader, Panel, SelectField, Switch, TextField, type Column } from "@openasy/ui";
 import { useAuth } from "@openasy/auth/react";
 import { Plus, ShieldCheck } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import type { Agent, Host } from "./api.ts";
-import { ago, duration, go, List, Status, Usage, useData, type Call } from "./shared.tsx";
+import { ago, duration, List, Status, Usage, useData, type Call } from "./shared.tsx";
 
 export function HostsPage({ call }: { call: Call }) {
   const { can } = useAuth();
@@ -12,7 +12,7 @@ export function HostsPage({ call }: { call: Call }) {
   const [adding, setAdding] = useState(false);
   const hosts = data?.hosts;
   const columns: Column<Host>[] = [
-    { id: "name", header: "Host", cell: (h) => <a href={`#/hosts/${h.id}`}>{h.name}</a>, sortValue: (h) => h.name },
+    { id: "name", header: "Host", cell: (h) => <a href={`/hosts/${h.id}`}>{h.name}</a>, sortValue: (h) => h.name },
     { id: "status", header: "Status", width: "180px", cell: (h) => <Status status={h.status} />, sortValue: (h) => h.status },
     { id: "agent", header: "Agent", width: "130px", cell: (h) => h.agent.name, sortValue: (h) => h.agent.name },
     { id: "os", header: "System", cell: (h) => (h.summary ? `${h.summary.os} · ${h.summary.arch}` : "–") },
@@ -42,14 +42,14 @@ export function HostsPage({ call }: { call: Call }) {
         }
       />
       {agents.data?.agents.length === 0 && (
-        <Callout tone="info" title="Add an agent first" action={can("admin") && <Button size="sm" onClick={() => go("#/agents")}>Agents</Button>}>
+        <Callout tone="info" title="Add an agent first" action={can("admin") && <Button size="sm" onClick={() => navigate("/agents")}>Agents</Button>}>
           An agent reads the hosts over SSH. Install it once, next to Infrastructure or in the network of the hosts.
         </Callout>
       )}
-      {adding && <AddHost call={call} hosts={hosts ?? []} agents={agents.data?.agents ?? []} onDone={(h) => (setAdding(false), reload(), h && go(`#/hosts/${h.id}`))} />}
+      {adding && <AddHost call={call} hosts={hosts ?? []} agents={agents.data?.agents ?? []} onDone={(h) => (setAdding(false), reload(), h && navigate(`/hosts/${h.id}`))} />}
       {hosts?.length === 0 && !adding ? (
         <EmptyState title="No hosts yet" action={can("admin") && <Button onClick={() => setAdding(true)}>Add the first host</Button>}>
-          Prepare a host with the commands under <a href="#/setup">Setup</a>, then add it here.
+          Prepare a host with the commands under <a href="/setup">Setup</a>, then add it here.
         </EmptyState>
       ) : (
         <Panel flush>

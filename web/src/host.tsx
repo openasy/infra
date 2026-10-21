@@ -1,10 +1,10 @@
-import { Badge, Button, Callout, EmptyState, KpiCard, KpiGrid, PageHeader, Panel, SearchInput, Tabs, type Column } from "@openasy/ui";
+import { Badge, Button, Callout, EmptyState, KpiCard, KpiGrid, navigate, PageHeader, Panel, SearchInput, Tabs, type Column } from "@openasy/ui";
 import { useAuth } from "@openasy/auth/react";
 import { Play, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Change, Container, Facts, Host } from "./api.ts";
 import { HostKeyCheck } from "./hosts.tsx";
-import { ago, bytes, ChangeList, duration, go, List, Pairs, Status, Usage, useData, type Call } from "./shared.tsx";
+import { ago, bytes, ChangeList, duration, List, Pairs, Status, Usage, useData, type Call } from "./shared.tsx";
 
 type Tab = "overview" | "ports" | "processes" | "services" | "access" | "packages" | "containers" | "network" | "storage" | "changes";
 
@@ -141,7 +141,7 @@ function Packages({ f }: { f: F }) {
 export function ContainerTable({ rows, showHost = false }: { rows: Array<Container & { host?: { id: string; name: string } }> | undefined; showHost?: boolean }) {
   const cols: Column<Container & { host?: { id: string; name: string } }>[] = [
     { id: "name", header: "Container", cell: (c) => c.name, sortValue: (c) => c.name },
-    ...(showHost ? [{ id: "host", header: "Host", cell: (c: Container & { host?: { id: string; name: string } }) => c.host && <a href={`#/hosts/${c.host.id}`}>{c.host.name}</a> }] : []),
+    ...(showHost ? [{ id: "host", header: "Host", cell: (c: Container & { host?: { id: string; name: string } }) => c.host && <a href={`/hosts/${c.host.id}`}>{c.host.name}</a> }] : []),
     { id: "image", header: "Image", cell: (c) => <span className="infra-wrap font-mono text-xs">{c.image}</span> },
     {
       id: "state",
@@ -278,13 +278,13 @@ export function HostPage({ call, id }: { call: Call; id: string }) {
   if (!h) return null;
   const f = facts.data?.facts;
   const collect = () => void call(`/api/v1/hosts/${id}/collect`, { method: "POST" }).then(() => setTimeout(host.reload, 3000));
-  const remove = () => window.confirm(`Remove ${h.name} and its history?`) && void call(`/api/v1/hosts/${id}`, { method: "DELETE" }).then(() => go("#/hosts"));
+  const remove = () => window.confirm(`Remove ${h.name} and its history?`) && void call(`/api/v1/hosts/${id}`, { method: "DELETE" }).then(() => navigate("/hosts"));
   const waitingForKey = h.status === "new" || h.status === "host-key-pending" || h.status === "host-key-changed";
   return (
     <>
       <PageHeader
         title={h.name}
-        breadcrumbs={[{ label: "Hosts", href: "#/hosts" }, { label: h.name }]}
+        breadcrumbs={[{ label: "Hosts", href: "/hosts" }, { label: h.name }]}
         description={f ? `${f.system.os.name} · ${f.system.kernel} · collected ${ago(h.lastSuccessAt)}` : `${h.address}:${h.port}`}
         meta={<Status status={h.status} />}
         actions={
@@ -310,7 +310,7 @@ export function HostPage({ call, id }: { call: Call; id: string }) {
       )}
       {f && f.unreadable.length > 0 && (
         <Callout tone="info" title="Some details need the sudo rules">
-          Not readable as the openasy account: {f.unreadable.join(", ")}. Add the sudoers file from <a href="#/setup">Setup</a> to this host to read them.
+          Not readable as the openasy account: {f.unreadable.join(", ")}. Add the sudoers file from <a href="/setup">Setup</a> to this host to read them.
         </Callout>
       )}
       {f && (

@@ -6,6 +6,7 @@ import { openDb } from "./db.ts";
 import { createInfra } from "./infra.ts";
 import { createKeyring } from "./kek.ts";
 import { log } from "./log.ts";
+import { parseProducts } from "./products.ts";
 
 const { version } = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
 const port = Number(process.env.PORT ?? 8080);
@@ -44,6 +45,8 @@ const auth = createAuth({
 });
 
 const metricsPort = process.env.INFRA_METRICS_PORT ? Number(process.env.INFRA_METRICS_PORT) : undefined;
+const products = parseProducts(process.env.OPENASY_PRODUCTS);
+if (products.invalid.length) log("warn", "OPENASY_PRODUCTS: left out entries that are not id=https://address", { entries: products.invalid });
 const server = createServer(
   createApp({
     db,
@@ -53,6 +56,7 @@ const server = createServer(
     webDir: !headless && existsSync(webDir) ? webDir : undefined,
     docsDir: existsSync(docsDir) ? docsDir : undefined,
     openapi,
+    products: products.products,
     serveMetrics: metricsPort === undefined,
   }),
 );

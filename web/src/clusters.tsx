@@ -1,16 +1,16 @@
-import { Badge, Button, Callout, EmptyState, KpiCard, KpiGrid, PageHeader, Panel, Tabs, TextField, type Column } from "@openasy/ui";
+import { Badge, Button, Callout, EmptyState, KpiCard, KpiGrid, navigate, PageHeader, Panel, Tabs, TextField, type Column } from "@openasy/ui";
 import { useAuth } from "@openasy/auth/react";
 import { Play, Plus, Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import type { Change, Cluster, ClusterFacts } from "./api.ts";
-import { ago, ChangeList, go, List, Status, useData, type Call } from "./shared.tsx";
+import { ago, ChangeList, List, Status, useData, type Call } from "./shared.tsx";
 
 export function ClustersPage({ call }: { call: Call }) {
   const { can } = useAuth();
   const { data, reload } = useData<{ clusters: Cluster[] }>(call, "/api/v1/clusters");
   const [adding, setAdding] = useState(false);
   const cols: Column<Cluster>[] = [
-    { id: "name", header: "Cluster", cell: (c) => <a href={`#/clusters/${c.id}`}>{c.name}</a>, sortValue: (c) => c.name },
+    { id: "name", header: "Cluster", cell: (c) => <a href={`/clusters/${c.id}`}>{c.name}</a>, sortValue: (c) => c.name },
     { id: "status", header: "Status", width: "150px", cell: (c) => <Status status={c.status} /> },
     { id: "version", header: "Version", width: "110px", mono: true, cell: (c) => c.summary?.version ?? "–" },
     { id: "nodes", header: "Nodes ready", width: "110px", cell: (c) => (c.summary ? `${c.summary.nodesReady}/${c.summary.nodes}` : "–") },
@@ -31,10 +31,10 @@ export function ClustersPage({ call }: { call: Call }) {
           )
         }
       />
-      {adding && <AddCluster call={call} onDone={(c) => (setAdding(false), reload(), c && go(`#/clusters/${c.id}`))} />}
+      {adding && <AddCluster call={call} onDone={(c) => (setAdding(false), reload(), c && navigate(`/clusters/${c.id}`))} />}
       {data?.clusters.length === 0 && !adding ? (
         <EmptyState title="No clusters yet">
-          Apply the read-only role from <a href="#/setup">Setup</a> to a cluster, then add it here with its token.
+          Apply the read-only role from <a href="/setup">Setup</a> to a cluster, then add it here with its token.
         </EmptyState>
       ) : (
         <Panel flush>
@@ -101,12 +101,12 @@ export function ClusterPage({ call, id }: { call: Call; id: string }) {
   if (cluster.error && !c) return <EmptyState title="Not found">This cluster no longer exists.</EmptyState>;
   if (!c) return null;
   const f = facts.data;
-  const remove = () => window.confirm(`Remove ${c.name} and its history?`) && void call(`/api/v1/clusters/${id}`, { method: "DELETE" }).then(() => go("#/clusters"));
+  const remove = () => window.confirm(`Remove ${c.name} and its history?`) && void call(`/api/v1/clusters/${id}`, { method: "DELETE" }).then(() => navigate("/clusters"));
   return (
     <>
       <PageHeader
         title={c.name}
-        breadcrumbs={[{ label: "Kubernetes", href: "#/clusters" }, { label: c.name }]}
+        breadcrumbs={[{ label: "Kubernetes", href: "/clusters" }, { label: c.name }]}
         description={`${c.server}${f ? ` · ${f.version.gitVersion}` : ""} · collected ${ago(c.lastSuccessAt)}`}
         meta={<Status status={c.status} />}
         actions={

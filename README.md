@@ -64,6 +64,7 @@ to reach infra and the hosts of its network; infra never connects to it.
 | --- | --- | --- |
 | `PORT` | `8080` | HTTP port |
 | `INFRA_PUBLIC_URL` | `http://localhost:8080` | The address people open, with `https://` behind your TLS proxy |
+| `OPENASY_PRODUCTS` | | The install's other OpenAsy products, for the product switcher: `identity=https://id.example.com,vpn=https://vpn.example.com`. Give every product the same value |
 | `INFRA_SECRETS_KEY_FILE` | `/run/secrets/openasy-kek` | 32-byte key-encryption key |
 | `INFRA_DB` | `/data/infra.db` | SQLite file (WAL), on the `/data` volume |
 | `INFRA_RETENTION_DAYS` | `365` | Changes and snapshots older than this are deleted; the newest snapshot of each host stays |
