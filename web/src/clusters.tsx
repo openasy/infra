@@ -1,4 +1,4 @@
-import { Badge, Button, Callout, EmptyState, KpiCard, KpiGrid, navigate, PageHeader, Panel, Tabs, TextField, type Column } from "@openasy/ui";
+import { Badge, Button, Callout, Dialog, EmptyState, KpiCard, KpiGrid, navigate, PageHeader, Panel, Tabs, TextField, type Column } from "@openasy/ui";
 import { useAuth } from "@openasy/auth/react";
 import { Play, Plus, Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
@@ -32,7 +32,7 @@ export function ClustersPage({ call }: { call: Call }) {
         }
       />
       {adding && <AddCluster call={call} onDone={(c) => (setAdding(false), reload(), c && navigate(`/clusters/${c.id}`))} />}
-      {data?.clusters.length === 0 && !adding ? (
+      {data?.clusters.length === 0 ? (
         <EmptyState title="No clusters yet">
           Apply the read-only role from <a href="/setup">Setup</a> to a cluster, then add it here with its token.
         </EmptyState>
@@ -60,32 +60,39 @@ function AddCluster({ call, onDone }: { call: Call; onDone: (c?: Cluster) => voi
     }
   };
   return (
-    <Panel title="Add a cluster" description="kubectl -n openasy get secret openasy-infra-token -o jsonpath='{.data.token}' | base64 -d prints the token. It is stored encrypted and never shown again.">
-      <form onSubmit={submit} className="flex flex-col gap-3" style={{ maxWidth: 640 }}>
-        {error && (
-          <Callout tone="danger" title="Not added">
-            {error}
-          </Callout>
-        )}
-        <div className="grid grid-cols-2 gap-2">
-          <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="prod-fra" />
-          <TextField label="API server" value={server} onChange={(e) => setServer(e.target.value)} placeholder="https://10.0.0.10:6443" />
-        </div>
-        <label className="flex flex-col gap-1 text-xs font-medium">
-          Cluster CA (PEM), empty to use the system's
-          <textarea value={ca} onChange={(e) => setCa(e.target.value)} rows={4} className="infra-code" style={{ whiteSpace: "pre-wrap" }} />
-        </label>
-        <TextField label="Token" type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} mono />
-        <div className="flex gap-2">
+    <Dialog
+      open
+      onOpenChange={(open) => !open && onDone()}
+      size="lg"
+      title="Add a cluster"
+      description="kubectl -n openasy get secret openasy-infra-token -o jsonpath='{.data.token}' | base64 -d prints the token. It is stored encrypted and never shown again."
+      onSubmit={submit}
+      footer={
+        <>
+          <Button type="button" onClick={() => onDone()}>
+            Cancel
+          </Button>
           <Button type="submit" variant="primary" disabled={!name || !server || !token}>
             Add cluster
           </Button>
-          <Button type="button" variant="ghost" onClick={() => onDone()}>
-            Cancel
-          </Button>
-        </div>
-      </form>
-    </Panel>
+        </>
+      }
+    >
+      {error && (
+        <Callout tone="danger" title="Not added">
+          {error}
+        </Callout>
+      )}
+      <div className="grid grid-cols-2 gap-2">
+        <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="prod-fra" />
+        <TextField label="API server" value={server} onChange={(e) => setServer(e.target.value)} placeholder="https://10.0.0.10:6443" />
+      </div>
+      <label className="flex flex-col gap-1 text-xs font-medium">
+        Cluster CA (PEM), empty to use the system's
+        <textarea value={ca} onChange={(e) => setCa(e.target.value)} rows={4} className="infra-code" style={{ whiteSpace: "pre-wrap" }} />
+      </label>
+      <TextField label="Token" type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} mono />
+    </Dialog>
   );
 }
 

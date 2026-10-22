@@ -1,6 +1,6 @@
-import { Badge, Button, Callout, EmptyState, PageHeader, Panel, TextField, type Column } from "@openasy/ui";
+import { Badge, Button, Callout, Dialog, EmptyState, PageHeader, Panel, TextField, type Column } from "@openasy/ui";
 import { useAuth } from "@openasy/auth/react";
-import { Plus, RotateCw, Trash2 } from "lucide-react";
+import { Check, Plus, RotateCw, Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import type { Agent, NewAgent } from "./api.ts";
 import { ago, Code, List, useData, type Call } from "./shared.tsx";
@@ -13,12 +13,25 @@ const STATUS: Record<string, { tone: "success" | "warning" | "danger" | "info"; 
 };
 
 /** How to start infra-agent with its one-time token, next to Infrastructure or in another network. */
-function EnrollCommand({ token, expiresAt, version }: { token: string; expiresAt: string; version?: string }) {
+function EnrollCommand({ token, expiresAt, version, onDone }: { token: string; expiresAt: string; version?: string; onDone: () => void }) {
   const here = window.location.origin;
   return (
-    <Callout tone="warning" title="Start the agent with this one-time token">
+    <Dialog
+      open
+      onOpenChange={(open) => !open && onDone()}
+      size="lg"
+      icon={<Check aria-hidden className="size-4" />}
+      iconTone="success"
+      title="Start the agent with this one-time token"
+      description={`It works once, until ${new Date(expiresAt).toLocaleString()}, and is not shown again.`}
+      footer={
+        <Button variant="primary" onClick={onDone}>
+          Done
+        </Button>
+      }
+    >
       <span className="flex flex-col gap-2">
-        <span>It works once, until {new Date(expiresAt).toLocaleString()}, and is not shown again. With the compose file of Infrastructure:</span>
+        <span>With the compose file of Infrastructure:</span>
         <Code label="Start the agent next to Infrastructure">{`INFRA_ENROLL_TOKEN=${token} docker compose up -d infra-agent`}</Code>
         <span>In another network, on any server that reaches the hosts there and reaches Infrastructure:</span>
         <Code label="Start the agent in another network">
@@ -30,7 +43,10 @@ docker run -d --name infra-agent --restart unless-stopped --read-only --tmpfs /t
   ghcr.io/openasy/infra-agent:${version ?? "<the version of Infrastructure>"}`}
         </Code>
       </span>
-    </Callout>
+      <Callout tone="warning" title="Closing this dialog hides the token">
+        If it is lost, enrol the agent again from its row.
+      </Callout>
+    </Dialog>
   );
 }
 
@@ -41,12 +57,15 @@ export function AgentsPage({ call }: { call: Call }) {
   const version = useData<{ version: string }>(call, "/api/v1/version", 0).data?.version;
   const [name, setName] = useState("");
   const [created, setCreated] = useState<NewAgent>();
+  const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string>();
+  const close = () => (setAdding(false), setName(""), setError(undefined));
   const add = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      setCreated(await call<NewAgent>("/api/v1/agents", { method: "POST", body: JSON.stringify({ name }) }));
-      setName("");
+      const r = await call<NewAgent>("/api/v1/agents", { method: "POST", body: JSON.stringify({ name }) });
+      close();
+      setCreated(r);
       reload();
     } catch (err) {
       setError((err as Error).message);
@@ -83,18 +102,35 @@ export function AgentsPage({ call }: { call: Call }) {
       <PageHeader
         title="Agents"
         description="infra-agent is installed once, next to Infrastructure or in another network, and reads the hosts there over SSH. It keeps the SSH certificate authority; Infrastructure only says which host to read. Nothing is installed on the hosts."
-      />
-      {can("admin") && (
-        <Panel title="Add an agent">
-          <form onSubmit={add} className="flex flex-wrap items-end gap-2">
-            <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="dc-frankfurt" error={error} />
-            <Button type="submit" variant="primary" icon={<Plus />} disabled={!name}>
+        actions={
+          can("admin") && (
+            <Button variant="primary" icon={<Plus />} onClick={() => setAdding(true)}>
               Add agent
             </Button>
-          </form>
-        </Panel>
-      )}
-      {created && <EnrollCommand token={created.enrollToken} expiresAt={created.enrollExpiresAt} version={version} />}
+          )
+        }
+      />
+      <Dialog
+        open={adding}
+        onOpenChange={(open) => !open && close()}
+        size="sm"
+        title="Add an agent"
+        description="Name it after where it runs. You get a one-time token to start it with."
+        onSubmit={add}
+        footer={
+          <>
+            <Button type="button" onClick={close}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" disabled={!name}>
+              Add agent
+            </Button>
+          </>
+        }
+      >
+        <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="dc-frankfurt" error={error} />
+      </Dialog>
+      {created && <EnrollCommand token={created.enrollToken} expiresAt={created.enrollExpiresAt} version={version} onDone={() => setCreated(undefined)} />}
       {data?.agents.length === 0 ? (
         <EmptyState title="No agents yet">Add one; it reads the hosts you add under Hosts.</EmptyState>
       ) : (

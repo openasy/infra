@@ -1,4 +1,4 @@
-import { AppShell, BrandProvider, Button, Callout, EmptyState, KpiCard, KpiGrid, navigate, PageHeader, Panel, PRODUCT_IDS, SegmentedControl, SelectField, Tabs, usePath, type Column, type ProductId } from "@openasy/ui";
+import { AppShell, BrandProvider, Button, Callout, EmptyState, KpiCard, KpiGrid, navigate, PageHeader, Panel, PRODUCT_IDS, SegmentedControl, SelectField, Tabs, usePath, type Column, type ProductId, useThemePreference } from "@openasy/ui";
 import { AccountSettings, AuthGate, MembersSettings, SignInSettings, TokensSettings, useAuth } from "@openasy/auth/react";
 import { Bot, Boxes, GitCompare, KeyRound, LayoutDashboard, LogIn, LogOut, Server, Settings2, UserRound, Users, Network } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -166,6 +166,7 @@ const SETTINGS = {
 } as const;
 
 function Product() {
+  const [theme, setTheme] = useThemePreference();
   const { me, can, signOut } = useAuth();
   const call = useApi();
   const route = parseRoute(usePath());
@@ -214,6 +215,8 @@ function Product() {
       }}
       footerNav={footerNav}
       user={{ name: me.user.name, role: roleName }}
+      theme={theme}
+      onThemeChange={setTheme}
     >
       {route.page === "host" ? (
         <HostPage key={route.id} call={call} id={route.id} />
@@ -258,9 +261,10 @@ function Product() {
 }
 
 export function App() {
+  const [theme] = useThemePreference();
   return (
     // No organization until branding is configurable (ADR 0004); the library's default is a placeholder.
-    <BrandProvider brand={{ name: "OpenAsy", organization: undefined }} className="min-h-screen">
+    <BrandProvider theme={theme} brand={{ name: "OpenAsy", organization: undefined }} className="min-h-screen">
       <AuthGate product="OpenAsy Infrastructure">
         <Product />
       </AuthGate>

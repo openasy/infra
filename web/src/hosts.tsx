@@ -1,4 +1,4 @@
-import { Button, Callout, EmptyState, navigate, PageHeader, Panel, SelectField, Switch, TextField, type Column } from "@openasy/ui";
+import { Button, Callout, Dialog, EmptyState, navigate, PageHeader, Panel, SelectField, Switch, TextField, type Column } from "@openasy/ui";
 import { useAuth } from "@openasy/auth/react";
 import { Plus, ShieldCheck } from "lucide-react";
 import { useState, type FormEvent } from "react";
@@ -47,7 +47,7 @@ export function HostsPage({ call }: { call: Call }) {
         </Callout>
       )}
       {adding && <AddHost call={call} hosts={hosts ?? []} agents={agents.data?.agents ?? []} onDone={(h) => (setAdding(false), reload(), h && navigate(`/hosts/${h.id}`))} />}
-      {hosts?.length === 0 && !adding ? (
+      {hosts?.length === 0 ? (
         <EmptyState title="No hosts yet" action={can("admin") && <Button onClick={() => setAdding(true)}>Add the first host</Button>}>
           Prepare a host with the commands under <a href="/setup">Setup</a>, then add it here.
         </EmptyState>
@@ -80,40 +80,47 @@ function AddHost({ call, hosts, agents, onDone }: { call: Call; hosts: Host[]; a
   };
   const jumps = hosts.filter((h) => !h.jumpHost && h.hostKeys.length && h.agent.id === agentId);
   return (
-    <Panel title="Add a host" description="The agent asks the host for its key next; you check it before anything is read. Prepare the host first with the commands under Setup for that agent.">
-      <form onSubmit={submit} className="flex flex-col gap-3" style={{ maxWidth: 560 }}>
-        {error && (
-          <Callout tone="danger" title="Not added">
-            {error}
-          </Callout>
-        )}
-        <div className="grid grid-cols-2 gap-2">
-          <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="web-1" />
-          <SelectField label="Read by" value={agentId} onChange={(e) => setAgentId(e.target.value)} options={agents.map((a) => ({ value: a.id, label: a.name }))} />
-          <TextField label="Address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="10.0.0.5" />
-          <TextField label="SSH port" value={port} onChange={(e) => setPort(e.target.value)} inputMode="numeric" />
-          <SelectField
-            label="Login"
-            value={auth}
-            onChange={(e) => setAuth(e.target.value as "certificate" | "key")}
-            options={[
-              { value: "certificate", label: "Certificate from Infrastructure's CA" },
-              { value: "key", label: "Fixed key in authorized_keys" },
-            ]}
-          />
-          <SelectField label="Reach it through" value={jump} onChange={(e) => setJump(e.target.value)} options={[{ value: "", label: "Directly" }, ...jumps.map((h) => ({ value: h.id, label: `${h.name} (jump host)` }))]} />
-        </div>
-        <Switch checked={containers} onCheckedChange={setContainers} label="Read containers" description="Through Docker or Podman on the host. The openasy account needs the socket, which is equivalent to root on that host." />
-        <div className="flex gap-2">
+    <Dialog
+      open
+      onOpenChange={(open) => !open && onDone()}
+      size="lg"
+      title="Add a host"
+      description="The agent asks the host for its key next; you check it before anything is read. Prepare the host first with the commands under Setup for that agent."
+      onSubmit={submit}
+      footer={
+        <>
+          <Button type="button" onClick={() => onDone()}>
+            Cancel
+          </Button>
           <Button type="submit" variant="primary" disabled={!name || !address || !agentId}>
             Add host
           </Button>
-          <Button type="button" variant="ghost" onClick={() => onDone()}>
-            Cancel
-          </Button>
-        </div>
-      </form>
-    </Panel>
+        </>
+      }
+    >
+      {error && (
+        <Callout tone="danger" title="Not added">
+          {error}
+        </Callout>
+      )}
+      <div className="grid grid-cols-2 gap-2">
+        <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="web-1" />
+        <SelectField label="Read by" value={agentId} onChange={(e) => setAgentId(e.target.value)} options={agents.map((a) => ({ value: a.id, label: a.name }))} />
+        <TextField label="Address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="10.0.0.5" />
+        <TextField label="SSH port" value={port} onChange={(e) => setPort(e.target.value)} inputMode="numeric" />
+        <SelectField
+          label="Login"
+          value={auth}
+          onChange={(e) => setAuth(e.target.value as "certificate" | "key")}
+          options={[
+            { value: "certificate", label: "Certificate from Infrastructure's CA" },
+            { value: "key", label: "Fixed key in authorized_keys" },
+          ]}
+        />
+        <SelectField label="Reach it through" value={jump} onChange={(e) => setJump(e.target.value)} options={[{ value: "", label: "Directly" }, ...jumps.map((h) => ({ value: h.id, label: `${h.name} (jump host)` }))]} />
+      </div>
+      <Switch checked={containers} onCheckedChange={setContainers} label="Read containers" description="Through Docker or Podman on the host. The openasy account needs the socket, which is equivalent to root on that host." />
+    </Dialog>
   );
 }
 
