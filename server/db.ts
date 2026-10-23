@@ -91,6 +91,10 @@ const MIGRATIONS = [
    );
    CREATE INDEX changes_target ON changes (target_kind, target_id, at);
    CREATE INDEX changes_at ON changes (at)`,
+  `-- Hosts from the hosts file (OPENASY_HOSTS, ADR 0052) are changed there, not here. file_host_key is the fingerprint
+   -- the file gives: a host that presents that key is trusted without an admin comparing it.
+   ALTER TABLE hosts ADD COLUMN source TEXT NOT NULL DEFAULT 'ui' CHECK (source IN ('ui', 'file'));
+   ALTER TABLE hosts ADD COLUMN file_host_key TEXT`,
 ];
 
 /** Opens the product's single SQLite file in WAL mode (ADR 0011) and migrates it forward. */

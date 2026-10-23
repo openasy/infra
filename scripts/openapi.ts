@@ -57,6 +57,8 @@ const schemas: Record<string, S> = {
     auth: { type: "string", enum: ["certificate", "key"] },
     agent: obj({ id: str, name: str }),
     jumpHost: nul(obj({ id: str, name: str })),
+    source: { type: "string", enum: ["ui", "file"], description: "file: from the hosts file (OPENASY_HOSTS, ADR 0052); changed there, so PATCH and DELETE answer 409. Fetching its key still works." },
+    fileHostKey: { ...nul(str), description: "The fingerprint hostKey gives in the hosts file: a host that presents that key is trusted without an admin, and no other key can be accepted here." },
     containers: { ...bool, description: "Read containers through the host's Docker or Podman. Access to the socket is equivalent to root (ADR 0031)." },
     intervalMinutes: int,
     tags: map,
@@ -220,7 +222,24 @@ const schemas: Record<string, S> = {
     id: { type: "string", description: "The product, as OpenAsy names it.", examples: ["vpn"] },
     url: { type: "string", format: "uri", description: "The address people open it at.", examples: ["https://vpn.example.com"] },
   }),
-  Summary: obj({ agents: { type: "object", additionalProperties: int }, hosts: { type: "object", additionalProperties: int }, clusters: { type: "object", additionalProperties: int }, containers: int, changesLastDay: int }),
+  Summary: obj({
+    agents: { type: "object", additionalProperties: int },
+    hosts: { type: "object", additionalProperties: int },
+    clusters: { type: "object", additionalProperties: int },
+    containers: int,
+    changesLastDay: int,
+    hostsFile: { ...nul(ref("HostsFile")), description: "null when OPENASY_HOSTS is not set." },
+  }),
+  HostsFile: {
+    ...obj({
+      path: str,
+      appliedAt: { ...nul(dt), description: "When it was last read and applied; null if it never was." },
+      entries: int,
+      error: { ...nul(str), description: "Why the file on disk is not applied." },
+      warnings: { ...arr(str), description: "What to fix that did not stop the file from being applied, such as a host whose agent is not enrolled yet." },
+    }),
+    description: "The hosts file (ADR 0052), shared with Logs. It is read again within a minute of a change; a file that cannot be applied leaves the hosts from its last good version.",
+  },
 };
 
 const P = (...codes: number[]) => Object.fromEntries(codes.map((c) => [String(c), { $ref: "#/components/responses/Problem" }]));
@@ -315,7 +334,7 @@ const spec = {
     "/api/v1/hosts/{id}/collect": { post: op({ id: "collectHost", tag: "Hosts", summary: "Collect now", role: "editor", params: [id], responses: { "202": ok(obj({ status: str }), "Requested"), ...R("e"), ...P(404, 409) } }) },
     "/api/v1/hosts/{id}/host-key": { post: op({ id: "fetchHostKey", tag: "Hosts", summary: "Ask the host for its key again", role: "admin", params: [id], responses: { "200": ok(ref("Host")), ...R("a"), ...P(404) } }) },
     "/api/v1/hosts/{id}/host-key/accept": {
-      post: op({ id: "acceptHostKey", tag: "Hosts", summary: "Accept a host key", description: "After checking on the host that `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` prints this fingerprint.", role: "admin", params: [id], body: obj({ fingerprint: str }), responses: { "200": ok(ref("Host")), ...R("a"), ...P(400, 404, 422) } }),
+      post: op({ id: "acceptHostKey", tag: "Hosts", summary: "Accept a host key", description: "After checking on the host that `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` prints this fingerprint.", role: "admin", params: [id], body: obj({ fingerprint: str }), responses: { "200": ok(ref("Host")), ...R("a"), ...P(400, 404, 409, 422) } }),
     },
     "/api/v1/clusters": {
       get: op({ id: "listClusters", tag: "Clusters", summary: "List clusters", role: "viewer", responses: { "200": ok(obj({ clusters: arr(ref("Cluster")) })), ...R("v") } }),

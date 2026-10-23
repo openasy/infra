@@ -19,11 +19,14 @@ services:
       - "127.0.0.1:8080:8080"   # UI and API; put a TLS proxy in front to reach it from elsewhere
     volumes:
       - infra-data:/data   # SQLite database: agents, hosts, clusters, collections and changes
+      # - ./hosts.yaml:/config/hosts.yaml:ro   # the install's servers, shared with Logs
     secrets:
       - openasy-kek   # mounted at /run/secrets/openasy-kek
     environment:
       # The address people open Infrastructure at; with a TLS proxy in front, its https:// URL.
       INFRA_PUBLIC_URL: ${INFRA_PUBLIC_URL:-http://localhost:8080}
+      # Hosts from the hosts file, the same file Logs reads (ADR 0052):
+      # OPENASY_HOSTS: /config/hosts.yaml
       # Sign in with your identity provider (OIDC), see the README:
       # OPENASY_OIDC_ISSUER: https://login.example.com
       # OPENASY_OIDC_CLIENT_ID: infra

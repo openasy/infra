@@ -4,6 +4,7 @@ import { extname, join, normalize } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { createGunzip } from "node:zlib";
 import { AuthError, mergeOpenApi, sendProblem, type Auth, type Role } from "@openasy/auth";
+import type { HostsFileState } from "./hosts.ts";
 import { InfraError, type Infra, type ProblemCode } from "./infra.ts";
 import { log } from "./log.ts";
 import { countRequest, renderMetrics } from "./metrics.ts";
@@ -23,6 +24,8 @@ export interface AppOptions {
   openapi?: Record<string, unknown>;
   /** The install's OpenAsy products and their addresses, from OPENASY_PRODUCTS, for the product switcher. */
   products?: ProductLink[];
+  /** Where the hosts file stands (OPENASY_HOSTS, ADR 0052); absent when there is none. */
+  hostsFile?: () => HostsFileState;
   /** false when /metrics is served on its own port instead (ADR 0026). */
   serveMetrics?: boolean;
 }
@@ -155,7 +158,7 @@ function timeOf(url: URL, name: string) {
   return new Date(v).toISOString();
 }
 
-export function createApp({ db, infra, version, auth, webDir, docsDir, openapi, products = [], serveMetrics = true }: AppOptions) {
+export function createApp({ db, infra, version, auth, webDir, docsDir, openapi, products = [], serveMetrics = true, hostsFile }: AppOptions) {
   const spec = openapi && JSON.stringify({ ...mergeOpenApi(openapi), info: { ...(openapi.info as object), version } });
   const created = (res: ServerResponse, data: unknown) => (json(res, 201, data), undefined);
   const noContent = (res: ServerResponse) => {
@@ -171,7 +174,7 @@ export function createApp({ db, infra, version, auth, webDir, docsDir, openapi, 
   const routes: Route[] = [
     { method: "GET", path: "/api/v1/version", auth: "none", handle: () => ({ product: "infra", version }) },
     { method: "GET", path: "/api/v1/products", auth: "viewer", handle: () => ({ products }) },
-    { method: "GET", path: "/api/v1/summary", auth: "viewer", handle: () => infra.summary() },
+    { method: "GET", path: "/api/v1/summary", auth: "viewer", handle: () => ({ ...infra.summary(), hostsFile: hostsFile?.() ?? null }) },
 
     // The read-only Kubernetes role. What to put on hosts comes from each agent.
     { method: "GET", path: "/api/v1/setup", auth: "viewer", handle: () => ({ kubernetesRbac: infra.kubernetesRbac() }) },

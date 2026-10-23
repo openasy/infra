@@ -69,6 +69,7 @@ to reach infra and the hosts of its network; infra never connects to it.
 | `INFRA_DB` | `/data/infra.db` | SQLite file (WAL), on the `/data` volume |
 | `INFRA_RETENTION_DAYS` | `365` | Changes and snapshots older than this are deleted; the newest snapshot of each host stays |
 | `INFRA_CONCURRENCY` | `4` | Cluster collections at the same time |
+| `OPENASY_HOSTS` | | A YAML file of hosts, shared with Logs; see [From a file](#from-a-file) |
 | `INFRA_METRICS_PORT` | | Serve `/metrics` on this port only (ADR 0026) |
 | `INFRA_HEADLESS` | `false` | `true` serves only the API |
 | `INFRA_PASSWORD_SIGN_IN`, `OPENASY_OIDC_*` | | Sign-in, as in every OpenAsy product ([@openasy/auth](https://github.com/openasy/auth)). Owners can also add identity providers under Settings, Sign-in |
@@ -119,6 +120,37 @@ What this means if something is compromised (ADR 0031): a compromised infra can 
 compromised agent can run commands as the unprivileged `openasy` account on the hosts that trust its CA, and the
 read-only sudo commands where you allowed them; it cannot log in as anyone else, and a certificate is useless five
 minutes after the agent is stopped. Run one agent per network so each CA is trusted only where it is needed.
+
+### From a file
+
+Hosts can also come from a file the install keeps, the same file Logs reads (ADR 0052). Mount it and set
+`OPENASY_HOSTS`; Infrastructure reads it at start and again within a minute of a change.
+
+```yaml
+hosts:
+  - name: bastion
+    address: 203.0.113.2
+    agent: dc1                        # the agent that reaches it, by name; may be left out when there is one
+  - name: web-1
+    address: 10.0.0.5
+    port: 22                          # 22 by default
+    user: openasy                     # openasy by default
+    containers: true
+    jump: bastion                     # another host in the file, reached directly by the same agent
+    agent: dc1
+    hostKey: SHA256:...               # optional: ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub on the host
+    tags: { env: prod }
+```
+
+- **hostKey is a trust decision made in the file.** A host that presents that key is trusted without an admin; one
+  that presents another waits, and no other key can be accepted in the UI until hostKey changes. Without hostKey, the
+  key is checked and accepted here as for any host. Whoever can change the file can already change the install.
+- A host from the file shows **From file** and is changed there: the API answers 409 to a change or delete, while
+  fetching its key again and collecting still work. Hosts added in the UI stay as they are.
+- A host that cannot be added yet, because its agent is not enrolled or there are several agents and it names none,
+  is a warning, and it is added once it can be. A host removed from the file is removed with its history.
+- A file with a mistake is not applied at all: the hosts from its last good version stay, and the Hosts page and the
+  log say what to fix. Endpoints in the endpoints file name these hosts with `server:`.
 
 ## Add a Kubernetes cluster
 

@@ -67,6 +67,10 @@ export interface Host {
   user: string;
   auth: "certificate" | "key";
   jumpHost: { id: string; name: string } | null;
+  /** file: from the hosts file (OPENASY_HOSTS); changed there, not here. */
+  source: "ui" | "file";
+  /** The fingerprint the hosts file trusts for this host. */
+  fileHostKey: string | null;
   containers: boolean;
   intervalMinutes: number;
   tags: Record<string, string>;
@@ -115,6 +119,16 @@ export interface Summary {
   clusters: Record<string, number>;
   containers: number;
   changesLastDay: number;
+  hostsFile: HostsFile | null;
+}
+
+/** The hosts file (ADR 0052): a file that cannot be applied leaves the hosts from its last good version. */
+export interface HostsFile {
+  path: string;
+  appliedAt: string | null;
+  entries: number;
+  error: string | null;
+  warnings: string[];
 }
 
 export class Unauthorized extends Error {}

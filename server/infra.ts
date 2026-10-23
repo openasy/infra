@@ -7,6 +7,7 @@ import { gunzipSync, gzipSync } from "node:zlib";
 import { diff, hostItems, itemsHash, type Change, type Item } from "./changes.ts";
 import { checkFacts, type Facts } from "./facts.ts";
 import { clusterItems, collectCluster, K8sError, RBAC, type ClusterFacts } from "./k8s.ts";
+import type { HostEntry } from "./hosts.ts";
 import type { Keyring } from "./kek.ts";
 import { log } from "./log.ts";
 
@@ -62,6 +63,8 @@ interface HostRow {
   lease_until: string | null;
   latest_facts: Uint8Array | null;
   created_at: string;
+  source: "ui" | "file";
+  file_host_key: string | null;
 }
 
 interface ClusterRow {
@@ -255,13 +258,26 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
     const keys = b.hostKeys;
     const keyList = Array.isArray(keys) && keys.length > 0 && keys.length <= 8 && keys.every((k) => typeof k === "string" && HOST_KEY.test(k)) ? (keys as string[]) : undefined;
     if (b.ok === true && keyList && b.facts === undefined) {
+      // The hosts file vouches for a key with its fingerprint (ADR 0052): that key is pinned without an admin.
+      const vouched = h.file_host_key ? keyList.find((k) => fingerprint(k) === h.file_host_key) : undefined;
+      if (vouched) {
+        db.prepare("UPDATE hosts SET key_requested = 0, host_keys = ?, pending_host_keys = '[]', status = 'pending', status_detail = NULL, collect_requested = 1 WHERE id = ?").run(JSON.stringify([vouched]), h.id);
+        log("info", "host key trusted from the hosts file", { host: h.name, fingerprint: h.file_host_key });
+        return { status: "accepted" };
+      }
       // The key the host presents: pinned only after an admin compares it.
       const pinned = JSON.parse(h.host_keys) as string[];
       const same = pinned.length > 0 && keyList.every((k) => pinned.includes(k));
       db.prepare("UPDATE hosts SET key_requested = 0, pending_host_keys = ?, status = ?, status_detail = ? WHERE id = ?").run(
         JSON.stringify(same ? [] : keyList),
         same ? (h.status === "host-key-changed" ? "pending" : h.status) : pinned.length ? "host-key-changed" : "host-key-pending",
-        same ? h.status_detail : pinned.length ? "The host presents a different key. Check it on the host, then accept it." : "Check the fingerprint on the host, then accept it.",
+        same
+          ? h.status_detail
+          : h.file_host_key
+            ? `The host presents a key that is not ${h.file_host_key} from the hosts file. Check the host, then fix hostKey in the file.`
+            : pinned.length
+              ? "The host presents a different key. Check it on the host, then accept it."
+              : "Check the fingerprint on the host, then accept it.",
         h.id,
       );
       return { status: "accepted" };
@@ -333,6 +349,8 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
       user: h.ssh_user,
       auth: h.auth,
       jumpHost: jump ? { id: jump.id, name: jump.name } : null,
+      source: h.source,
+      fileHostKey: h.file_host_key,
       containers: h.containers === 1,
       intervalMinutes: h.interval_minutes,
       tags: JSON.parse(h.tags) as Record<string, string>,
@@ -423,8 +441,13 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
     return toHost(requireHost(id));
   }
 
+  const fromFile = (h: HostRow, what: string) => {
+    if (h.source === "file") throw new InfraError(409, "conflict", `This host comes from the hosts file (OPENASY_HOSTS). ${what}`);
+    return h;
+  };
+
   function updateHost(id: string, b: Record<string, unknown>) {
-    const h = requireHost(id);
+    const h = fromFile(requireHost(id), "Change it there.");
     const v = hostInput(b, true);
     if (v.name && v.name !== h.name && db.prepare("SELECT 1 FROM hosts WHERE name = ?").get(v.name)) throw new InfraError(409, "conflict", `A host named ${v.name} exists.`);
     const agentId = v.agentId ?? h.agent_id;
@@ -456,6 +479,7 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
 
   function acceptHostKey(id: string, fp: unknown) {
     const h = requireHost(id);
+    if (h.file_host_key) fromFile(h, "Its key is the one hostKey names there; change hostKey to trust another.");
     const key = (JSON.parse(h.pending_host_keys) as string[]).find((k) => fingerprint(k) === fp);
     if (typeof fp !== "string" || !key) throw new InfraError(422, "invalid-body", "fingerprint must be one of the pending host keys, as SHA256:...");
     db.prepare("UPDATE hosts SET host_keys = ?, pending_host_keys = '[]', status = 'pending', status_detail = NULL, collect_requested = 1, lease_until = NULL WHERE id = ?").run(JSON.stringify([key]), id);
@@ -463,7 +487,11 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
   }
 
   function deleteHost(id: string) {
-    requireHost(id);
+    fromFile(requireHost(id), "Remove it there.");
+    removeHost(id);
+  }
+
+  function removeHost(id: string) {
     if (db.prepare("SELECT 1 FROM hosts WHERE jump_host_id = ?").get(id)) throw new InfraError(409, "conflict", "Other hosts are reached through this one. Change their jump host first.");
     db.exec("BEGIN");
     try {
@@ -475,6 +503,81 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
       db.exec("ROLLBACK");
       throw err;
     }
+  }
+
+  /**
+   * Makes the hosts from the hosts file match it (ADR 0052): adds, changes and removes them, and leaves hosts added
+   * here alone. An entry that cannot be added yet, such as one whose agent is not enrolled, is a warning, and a host it
+   * made before is kept rather than removed with its history. A new address, port or agent, or another hostKey than
+   * the pinned key, is a new trust decision, as in the UI. Returns what to fix.
+   */
+  function syncFile(entries: HostEntry[]): string[] {
+    const warnings: string[] = [];
+    const agents = db.prepare("SELECT id, name FROM agents").all() as Array<{ id: string; name: string }>;
+    const agentOf = (e: HostEntry) => {
+      if (e.agent) {
+        const a = agents.find((x) => x.name === e.agent);
+        if (!a) warnings.push(`${e.name}: no agent is named ${e.agent}; it is added once one is.`);
+        return a?.id;
+      }
+      if (agents.length === 1) return agents[0]!.id;
+      warnings.push(agents.length ? `${e.name}: name the agent that reaches it with agent:, as there are ${agents.length}.` : `${e.name}: it is added once an agent is, under Settings, Agents.`);
+      return undefined;
+    };
+    const planned = new Map<string, { e: HostEntry; agentId: string }>();
+    for (const e of entries) {
+      const agentId = agentOf(e);
+      if (!agentId) continue;
+      const same = db.prepare("SELECT source FROM hosts WHERE name = ?").get(e.name) as { source: string } | undefined;
+      if (same?.source === "ui") {
+        warnings.push(`${e.name}: a host with this name was added in Infrastructure; remove it there to let the file manage it.`);
+        continue;
+      }
+      planned.set(e.name, { e, agentId });
+    }
+    // A jump host must be added too, and read by the same agent; the parser already made sure it is reached directly.
+    for (const [name, p] of planned) {
+      if (!p.e.jump) continue;
+      const j = planned.get(p.e.jump);
+      if (!j) warnings.push(`${name}: its jump host ${p.e.jump} is not added, so neither is it.`);
+      else if (j.agentId !== p.agentId) warnings.push(`${name}: its jump host ${p.e.jump} is read by another agent; a jump host must be read by the same agent.`);
+      else continue;
+      planned.delete(name);
+    }
+
+    const ids = new Map<string, string>();
+    for (const [name, { e, agentId }] of planned) {
+      const h = db.prepare("SELECT * FROM hosts WHERE name = ?").get(name) as HostRow | undefined;
+      if (!h) {
+        const id = randomUUID();
+        db.prepare(
+          "INSERT INTO hosts (id, name, agent_id, address, port, ssh_user, auth, containers, interval_minutes, tags, created_at, source, file_host_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 5, ?, ?, 'file', ?)",
+        ).run(id, name, agentId, e.address, e.port, e.user, e.auth, e.containers ? 1 : 0, JSON.stringify(e.tags), iso(), e.hostKey);
+        ids.set(name, id);
+        continue;
+      }
+      ids.set(name, h.id);
+      const pinned = JSON.parse(h.host_keys) as string[];
+      const moved = e.address !== h.address || e.port !== h.port || agentId !== h.agent_id;
+      const vouchesOther = !!e.hostKey && e.hostKey !== h.file_host_key && pinned.length > 0 && !pinned.some((k) => fingerprint(k) === e.hostKey);
+      db.prepare("UPDATE hosts SET agent_id = ?, address = ?, port = ?, ssh_user = ?, auth = ?, containers = ?, tags = ?, file_host_key = ? WHERE id = ?").run(
+        agentId, e.address, e.port, e.user, e.auth, e.containers ? 1 : 0, JSON.stringify(e.tags), e.hostKey, h.id,
+      );
+      if (moved || vouchesOther) db.prepare("UPDATE hosts SET host_keys = '[]', pending_host_keys = '[]', status = 'new', status_detail = NULL, key_requested = 1, lease_until = NULL WHERE id = ?").run(h.id);
+      // A hostKey given now for a host whose key is not pinned yet: ask for the key again, to trust it if it matches.
+      else if (e.hostKey && e.hostKey !== h.file_host_key && !pinned.length) db.prepare("UPDATE hosts SET key_requested = 1, lease_until = NULL WHERE id = ?").run(h.id);
+    }
+    for (const [name, { e }] of planned) db.prepare("UPDATE hosts SET jump_host_id = ? WHERE id = ?").run(e.jump ? ids.get(e.jump)! : null, ids.get(name)!);
+
+    // Hosts that left the file go, those reached through another first; one a host added here still goes through stays.
+    const named = new Set(entries.map((e) => e.name));
+    const gone = (db.prepare("SELECT * FROM hosts WHERE source = 'file'").all() as unknown as HostRow[]).filter((h) => !named.has(h.name));
+    for (const h of gone.sort((a, b) => Number(!a.jump_host_id) - Number(!b.jump_host_id))) {
+      const through = db.prepare("SELECT name FROM hosts WHERE jump_host_id = ?").all(h.id) as Array<{ name: string }>;
+      if (through.length) warnings.push(`${h.name} left the file but stays: ${through.map((x) => x.name).join(", ")} is reached through it.`);
+      else removeHost(h.id);
+    }
+    return warnings;
   }
 
   // ---- Snapshots and changes --------------------------------------------------------------------------------------
@@ -748,6 +851,7 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
     createHost,
     updateHost,
     deleteHost,
+    syncFile,
     requestHostKey,
     acceptHostKey,
     hostFacts,

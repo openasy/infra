@@ -1361,6 +1361,9 @@
           "404": {
             "$ref": "#/components/responses/Problem"
           },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
           "422": {
             "$ref": "#/components/responses/Problem"
           }
@@ -2317,6 +2320,8 @@
           "auth",
           "agent",
           "jumpHost",
+          "source",
+          "fileHostKey",
           "containers",
           "intervalMinutes",
           "tags",
@@ -2388,6 +2393,25 @@
                 "type": "null"
               }
             ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "ui",
+              "file"
+            ],
+            "description": "file: from the hosts file (OPENASY_HOSTS, ADR 0052); changed there, so PATCH and DELETE answer 409. Fetching its key still works."
+          },
+          "fileHostKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The fingerprint hostKey gives in the hosts file: a host that presents that key is trusted without an admin, and no other key can be accepted here."
           },
           "containers": {
             "type": "boolean",
@@ -3629,7 +3653,8 @@
           "hosts",
           "clusters",
           "containers",
-          "changesLastDay"
+          "changesLastDay",
+          "hostsFile"
         ],
         "properties": {
           "agents": {
@@ -3655,8 +3680,68 @@
           },
           "changesLastDay": {
             "type": "integer"
+          },
+          "hostsFile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HostsFile"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null when OPENASY_HOSTS is not set."
           }
         }
+      },
+      "HostsFile": {
+        "type": "object",
+        "required": [
+          "path",
+          "appliedAt",
+          "entries",
+          "error",
+          "warnings"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "appliedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When it was last read and applied; null if it never was."
+          },
+          "entries": {
+            "type": "integer"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why the file on disk is not applied."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What to fix that did not stop the file from being applied, such as a host whose agent is not enrolled yet."
+          }
+        },
+        "description": "The hosts file (ADR 0052), shared with Logs. It is read again within a minute of a change; a file that cannot be applied leaves the hosts from its last good version."
       }
     }
   }

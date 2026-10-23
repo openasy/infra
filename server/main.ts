@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { createAuth, oidcFromEnv, readSecretsKey } from "@openasy/auth";
 import { createApp, createMetricsHandler } from "./app.ts";
 import { openDb } from "./db.ts";
+import { watchHosts } from "./hosts.ts";
 import { createInfra } from "./infra.ts";
 import { createKeyring } from "./kek.ts";
 import { log } from "./log.ts";
@@ -45,6 +46,16 @@ const auth = createAuth({
 });
 
 const metricsPort = process.env.INFRA_METRICS_PORT ? Number(process.env.INFRA_METRICS_PORT) : undefined;
+// The install's servers, one file for every product that reaches them (ADR 0052).
+const hostsPath = process.env.OPENASY_HOSTS?.trim() || undefined;
+const hostsFile = hostsPath
+  ? watchHosts(hostsPath, (list) => infra.syncFile(list), {
+      onChange: (s) =>
+        s.error
+          ? log("error", "hosts file not applied; the hosts from its last good version stay", { path: s.path, error: s.error })
+          : log(s.warnings.length ? "warn" : "info", "hosts file applied", { path: s.path, entries: s.entries, warnings: s.warnings }),
+    })
+  : undefined;
 const products = parseProducts(process.env.OPENASY_PRODUCTS);
 if (products.invalid.length) log("warn", "OPENASY_PRODUCTS: left out entries that are not id=https://address", { entries: products.invalid });
 const server = createServer(
@@ -58,6 +69,7 @@ const server = createServer(
     openapi,
     products: products.products,
     serveMetrics: metricsPort === undefined,
+    hostsFile: hostsFile && (() => hostsFile.state),
   }),
 );
 const metricsServer = metricsPort !== undefined ? createServer(createMetricsHandler(infra, version)) : undefined;
@@ -88,6 +100,7 @@ const timers: NodeJS.Timeout[] = [
 function shutdown(signal: string) {
   log("info", "shutting down", { signal });
   for (const t of timers) clearInterval(t);
+  hostsFile?.stop();
   metricsServer?.close();
   server.close(() => {
     db.close();

@@ -286,7 +286,12 @@ export function HostPage({ call, id }: { call: Call; id: string }) {
         title={h.name}
         breadcrumbs={[{ label: "Hosts", href: "/hosts" }, { label: h.name }]}
         description={f ? `${f.system.os.name} · ${f.system.kernel} · collected ${ago(h.lastSuccessAt)}` : `${h.address}:${h.port}`}
-        meta={<Status status={h.status} />}
+        meta={
+          <span className="flex items-center gap-1.5">
+            <Status status={h.status} />
+            {h.source === "file" && <Badge tone="neutral">From file</Badge>}
+          </span>
+        }
         actions={
           <>
             {can("editor") && !waitingForKey && (
@@ -294,7 +299,7 @@ export function HostPage({ call, id }: { call: Call; id: string }) {
                 Collect now
               </Button>
             )}
-            {can("admin") && (
+            {can("admin") && h.source === "ui" && (
               <Button variant="danger" icon={<Trash2 />} onClick={remove}>
                 Remove
               </Button>

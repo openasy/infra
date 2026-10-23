@@ -1,18 +1,29 @@
-import { Button, Callout, Dialog, EmptyState, navigate, PageHeader, Panel, SelectField, Switch, TextField, type Column } from "@openasy/ui";
+import { Badge, Button, Callout, Dialog, EmptyState, navigate, PageHeader, Panel, SelectField, Switch, TextField, type Column } from "@openasy/ui";
 import { useAuth } from "@openasy/auth/react";
 import { Plus, ShieldCheck } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import type { Agent, Host } from "./api.ts";
+import type { Agent, Host, Summary } from "./api.ts";
 import { ago, duration, List, Status, Usage, useData, type Call } from "./shared.tsx";
 
 export function HostsPage({ call }: { call: Call }) {
   const { can } = useAuth();
   const { data, reload } = useData<{ hosts: Host[] }>(call, "/api/v1/hosts");
   const agents = useData<{ agents: Agent[] }>(call, "/api/v1/agents", 0);
+  const file = useData<Summary>(call, "/api/v1/summary").data?.hostsFile;
   const [adding, setAdding] = useState(false);
   const hosts = data?.hosts;
   const columns: Column<Host>[] = [
-    { id: "name", header: "Host", cell: (h) => <a href={`/hosts/${h.id}`}>{h.name}</a>, sortValue: (h) => h.name },
+    {
+      id: "name",
+      header: "Host",
+      cell: (h) => (
+        <span className="flex flex-wrap items-center gap-1.5">
+          <a href={`/hosts/${h.id}`}>{h.name}</a>
+          {h.source === "file" && <Badge tone="neutral">From file</Badge>}
+        </span>
+      ),
+      sortValue: (h) => h.name,
+    },
     { id: "status", header: "Status", width: "180px", cell: (h) => <Status status={h.status} />, sortValue: (h) => h.status },
     { id: "agent", header: "Agent", width: "130px", cell: (h) => h.agent.name, sortValue: (h) => h.agent.name },
     { id: "os", header: "System", cell: (h) => (h.summary ? `${h.summary.os} · ${h.summary.arch}` : "–") },
@@ -44,6 +55,16 @@ export function HostsPage({ call }: { call: Call }) {
       {agents.data?.agents.length === 0 && (
         <Callout tone="info" title="Add an agent first" action={can("admin") && <Button size="sm" onClick={() => navigate("/agents")}>Agents</Button>}>
           An agent reads the hosts over SSH. Install it once, next to Infrastructure or in the network of the hosts.
+        </Callout>
+      )}
+      {file?.error && (
+        <Callout tone="danger" title="The hosts file is not applied">
+          {file.error} The hosts from its last good version stay until it is fixed ({file.path}).
+        </Callout>
+      )}
+      {!!file?.warnings.length && (
+        <Callout tone="warning" title="The hosts file has something to fix">
+          {file.warnings.join(" ")}
         </Callout>
       )}
       {adding && <AddHost call={call} hosts={hosts ?? []} agents={agents.data?.agents ?? []} onDone={(h) => (setAdding(false), reload(), h && navigate(`/hosts/${h.id}`))} />}
@@ -141,6 +162,11 @@ export function HostKeyCheck({ host, call, onDone }: { host: Host; call: Call; o
   return (
     <Callout tone={changed ? "danger" : "warning"} title={changed ? "The host key changed" : "Check the host key"}>
       <span className="flex flex-col gap-2">
+        {host.fileHostKey && (
+          <span>
+            The hosts file trusts <code className="infra-wrap font-mono text-xs">{host.fileHostKey}</code> for this host, and the host presents another key. Check the host; if the key is right, change hostKey in the file.
+          </span>
+        )}
         <span>
           {changed
             ? "The host presents a different key than the one pinned. If the host was not reinstalled, someone may be in between. Nothing is read until an admin accepts the new key."
@@ -150,7 +176,7 @@ export function HostKeyCheck({ host, call, onDone }: { host: Host; call: Call; o
         {host.pendingHostKeys.map((k) => (
           <span key={k.fingerprint} className="flex flex-wrap items-center gap-2">
             <code className="infra-wrap font-mono text-sm">{k.fingerprint}</code> <span className="text-xs text-fg-muted">{k.type}</span>
-            {can("admin") && (
+            {can("admin") && !host.fileHostKey && (
               <Button size="sm" icon={<ShieldCheck />} onClick={() => void accept(k.fingerprint)}>
                 It matches, accept
               </Button>
