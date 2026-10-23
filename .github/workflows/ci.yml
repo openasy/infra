@@ -44,6 +44,11 @@ jobs:
           repository: openasy/infra-agent
           path: infra-agent
 
+      # infra and infra-agent ship with one version (ADR 0019), and main of infra-agent keeps the last one until its release
+      # commit is pushed: give it this version, so the pair is tested as it will ship.
+      - name: Give infra-agent the version of infra
+        run: cd infra-agent && npm pkg set version="$(node -p 'require("../infra/package.json").version')"
+
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: infra/.nvmrc
