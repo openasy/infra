@@ -18,7 +18,8 @@ describe("the hosts file", () => {
       "web-1 10.0.0.5:22 openasy bastion dc1",
       "db-1 10.0.0.6:2222 reader - dc1",
     ]);
-    expect(list[1]).toMatchObject({ auth: "certificate", containers: true, hostKey: fingerprint(HOST_KEY), tags: { env: "prod" } });
+    expect(list[1]).toMatchObject({ auth: "certificate", keyFile: null, containers: true, hostKey: fingerprint(HOST_KEY), tags: { env: "prod" } });
+    expect(list[2]).toMatchObject({ auth: "key", keyFile: "db-1.key" });
     expect(parseHosts("")).toEqual([]);
   });
 
@@ -32,6 +33,9 @@ describe("the hosts file", () => {
     expect(one("{ name: a, address: 10.0.0.1, port: 0 }")).toThrow(/port is 1 to 65535/);
     expect(one("{ name: a, address: 10.0.0.1, hostKey: 'ssh-ed25519 AAAA' }")).toThrow(/fingerprint as ssh-keygen -lf prints it/);
     expect(one("{ name: a, address: 10.0.0.1, interval: 5 }")).toThrow(/unknown interval/);
+    for (const file of ["../id_rsa", "keys/id_rsa", ".id_rsa", "/etc/shadow"])
+      expect(one(`{ name: a, address: 10.0.0.1, auth: key, keyFile: '${file}' }`)).toThrow(/keyFile is a file name in the agent's key folder/);
+    expect(one("{ name: a, address: 10.0.0.1, keyFile: a.key }")).toThrow(/keyFile needs auth: key/);
     expect(one("{ name: a, address: 10.0.0.1, jump: nowhere }")).toThrow(/nowhere is not a host in the file/);
     expect(one("{ name: a, address: 10.0.0.1, jump: a }")).toThrow(/its own jump host/);
     expect(() => parseHosts("hosts:\n  - { name: a, address: x }\n  - { name: b, address: y, jump: a }\n  - { name: c, address: z, jump: b }")).toThrow(
@@ -101,7 +105,12 @@ describe("hosts from the file", () => {
     agent.hosts.set("10.0.0.2", { key: OTHER_KEY, facts: facts("debian-sudo") });
     agent.hosts.set("10.0.0.5", { key: HOST_KEY, facts: facts("debian-sudo") });
     agent.hosts.set("10.0.0.6", { key: OTHER_KEY, facts: facts("debian-sudo") });
-    await agent.round();
+    const jobs = (await agent.round()) as Array<{ target: Record<string, unknown> }>;
+    // The key file is named to the agent, which reads it from its own folder; the other hosts use certificates.
+    expect(jobs.map((j) => `${j.target.address} ${j.target.auth} ${j.target.keyFile ?? "-"}`).sort()).toEqual([
+      "10.0.0.2 certificate -",
+      "10.0.0.6 key db-1.key",
+    ]);
     // No hostKey: an admin checks it, as for a host added here.
     expect(await host("bastion")).toMatchObject({ status: "host-key-pending", hostKeys: [] });
     const bastion = await host("bastion");

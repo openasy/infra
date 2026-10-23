@@ -9,7 +9,7 @@
 #   INFRA_ENROLL_TOKEN=oie_... docker compose up -d infra-agent
 services:
   infra:
-    image: ghcr.io/openasy/infra:0.2.1
+    image: ghcr.io/openasy/infra:0.3.0
     restart: unless-stopped
     read_only: true
     cap_drop: [ALL]
@@ -33,7 +33,7 @@ services:
       # OPENASY_OIDC_CLIENT_SECRET: ${OPENASY_OIDC_CLIENT_SECRET}
 
   infra-agent:
-    image: ghcr.io/openasy/infra-agent:0.2.1 # always the same version as infra
+    image: ghcr.io/openasy/infra-agent:0.3.0 # always the same version as infra
     restart: unless-stopped
     read_only: true
     cap_drop: [ALL]

@@ -112,14 +112,16 @@ sshd -t && systemctl reload ssh
 - **Containers are opt-in per host.** The `openasy` account needs the Docker socket, which is equivalent to root on
   that host; switch it on only where you accept that.
 - **Hosts that cannot change `sshd_config`** take one fixed key in `~openasy/.ssh/authorized_keys`, prefixed with
-  `restrict`. Prefer certificates: a fixed key lasts until it is removed.
+  `restrict`: the agent's own key, which Setup prints, or a key of yours (see `keyFile` below). A fixed key lasts
+  until it is removed.
 - **Other networks** are reached through a jump host: add it as a host, set `AllowTcpForwarding yes` for `openasy`
   on it only, and choose it when adding hosts behind it.
 
 What this means if something is compromised (ADR 0031): a compromised infra can make agents collect, nothing else. A
 compromised agent can run commands as the unprivileged `openasy` account on the hosts that trust its CA, and the
-read-only sudo commands where you allowed them; it cannot log in as anyone else, and a certificate is useless five
-minutes after the agent is stopped. Run one agent per network so each CA is trusted only where it is needed.
+read-only sudo commands where you allowed them; it cannot log in as anyone else. A certificate it signed is useless
+five minutes later, but its CA, like a fixed key, opens the hosts until they stop trusting it: after a compromise,
+remove the CA or key from the hosts. Run one agent per network so each CA is trusted only where it is needed.
 
 ### From a file
 
@@ -140,8 +142,15 @@ hosts:
     agent: dc1
     hostKey: SHA256:...               # optional: ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub on the host
     tags: { env: prod }
+  - name: shop
+    address: shop.example.com
+    auth: key                         # a fixed key instead of a certificate
+    keyFile: shop.key                 # optional: a private key in the agent's /keys folder, else the agent's own
 ```
 
+- **keyFile is read by the agent alone.** Mount the folder into the agent, read-only, at `/keys`
+  (`OPENASY_KEYS_DIR`); Infrastructure keeps and sends only the file name. It is a name, not a path, and the key has
+  no passphrase. Put its public key, prefixed with `restrict`, in `~openasy/.ssh/authorized_keys` on the host.
 - **hostKey is a trust decision made in the file.** A host that presents that key is trusted without an admin; one
   that presents another waits, and no other key can be accepted in the UI until hostKey changes. Without hostKey, the
   key is checked and accepted here as for any host. Whoever can change the file can already change the install.
@@ -173,8 +182,8 @@ host keys, and manage members and API tokens (ADR 0003).
 ### To 0.2.0
 
 - The sign-in variables lose the `INFRA_` prefix and have the same names in every product (ADR 0002):
-  `INFRA_OIDC_ISSUER` is now `OPENASY_OIDC_ISSUER`, and so on for every `INFRA_OIDC_*`. Rename them before upgrading:
-  with the old names, sign-in through the provider is off and only passwords work.
+  `INFRA_OIDC_ISSUER` is now `OPENASY_OIDC_ISSUER`, and so on for every `INFRA_OIDC_*`. The old names still work, with
+  a warning in the log, and go in a later release: rename them.
 - Upgrade infra-agent to the same version.
 
 ## Develop
