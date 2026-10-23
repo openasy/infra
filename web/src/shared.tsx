@@ -1,8 +1,9 @@
-import { Badge, Button, DataTable, EmptyState, StatusBadge, type Column } from "@openasy/ui";
+import { Badge, Button, DataTable, EmptyState, StatusBadge, type Column, useAgo } from "@openasy/ui";
 import { useAuth } from "@openasy/auth/react";
 import { Copy } from "lucide-react";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { api, MfaSetupRequired, Unauthorized, type Change } from "./api.ts";
+import { useT, type T } from "./i18n.ts";
 
 /** Data loading with the session; when it ends, the sign-in screen comes back. */
 export function useApi() {
@@ -46,15 +47,6 @@ export function useData<T>(call: Call, path: string | null, everyMs = 15_000) {
   return { data, error, reload: load };
 }
 
-export function ago(iso: string | null | undefined): string {
-  if (!iso) return "never";
-  const s = Math.round((Date.now() - Date.parse(iso)) / 1000);
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.round(s / 60)} min ago`;
-  if (s < 86_400) return `${Math.round(s / 3600)} h ago`;
-  return `${Math.round(s / 86_400)} d ago`;
-}
-
 export function duration(sec: number): string {
   if (sec < 3600) return `${Math.round(sec / 60)} min`;
   if (sec < 86_400) return `${Math.round(sec / 3600)} h`;
@@ -70,20 +62,21 @@ export const bytes = (n: number | null | undefined) => {
   return `${v >= 10 || i === 0 ? Math.round(v) : v.toFixed(1)} ${u[i]}`;
 };
 
-const STATUS: Record<string, { tone: "success" | "warning" | "danger" | "info" | "neutral"; label: string }> = {
-  ok: { tone: "success", label: "OK" },
-  new: { tone: "info", label: "New" },
-  pending: { tone: "info", label: "Waiting for the first collection" },
-  "host-key-pending": { tone: "warning", label: "Check the host key" },
-  "host-key-changed": { tone: "danger", label: "Host key changed" },
-  unreachable: { tone: "danger", label: "Unreachable" },
-  "auth-failed": { tone: "danger", label: "Login refused" },
-  forbidden: { tone: "danger", label: "Not allowed" },
-  timeout: { tone: "warning", label: "Timed out" },
-  error: { tone: "danger", label: "Failed" },
-};
+const STATUS = (t: T): Record<string, { tone: "success" | "warning" | "danger" | "info" | "neutral"; label: string }> => ({
+  ok: { tone: "success", label: t("status.ok") },
+  new: { tone: "info", label: t("status.new") },
+  pending: { tone: "info", label: t("status.waitingForTheFirstCollection") },
+  "host-key-pending": { tone: "warning", label: t("status.checkTheHostKey") },
+  "host-key-changed": { tone: "danger", label: t("status.hostKeyChanged") },
+  unreachable: { tone: "danger", label: t("status.unreachable") },
+  "auth-failed": { tone: "danger", label: t("status.loginRefused") },
+  forbidden: { tone: "danger", label: t("status.notAllowed") },
+  timeout: { tone: "warning", label: t("status.timedOut") },
+  error: { tone: "danger", label: t("status.failed") },
+});
 export function Status({ status }: { status: string }) {
-  const s = STATUS[status] ?? { tone: "neutral" as const, label: status };
+  const t = useT();
+  const s = STATUS(t)[status] ?? { tone: "neutral" as const, label: status };
   return <StatusBadge tone={s.tone}>{s.label}</StatusBadge>;
 }
 
@@ -93,6 +86,7 @@ export function copy(text: string) {
 
 /** A file or commands to copy onto a host. */
 export function Code({ children, label }: { children: string; label: string }) {
+  const t = useT();
   return (
     <div className="flex flex-col gap-1.5">
       <pre tabIndex={0} aria-label={label} className="infra-code">
@@ -100,7 +94,7 @@ export function Code({ children, label }: { children: string; label: string }) {
       </pre>
       <div>
         <Button size="xs" icon={<Copy />} onClick={() => copy(children)}>
-          Copy
+          {t("code.copy")}
         </Button>
       </div>
     </div>
@@ -162,16 +156,18 @@ const pretty = (v: string | null) => {
 
 /** What changed, newest first. */
 export function ChangeList({ changes, showTarget = false }: { changes: Change[] | undefined; showTarget?: boolean }) {
+  const ago = useAgo();
+  const t = useT();
   const columns: Column<Change>[] = [
-    { id: "at", header: "When", width: "120px", cell: (c) => <span title={new Date(c.at).toLocaleString()}>{ago(c.at)}</span>, sortValue: (c) => c.at },
+    { id: "at", header: t("changeList.when"), width: "120px", cell: (c) => <span title={new Date(c.at).toLocaleString()}>{ago(c.at)}</span>, sortValue: (c) => c.at },
     ...(showTarget
-      ? [{ id: "target", header: "Where", width: "160px", cell: (c: Change) => <a href={`/${c.target.kind === "host" ? "hosts" : "clusters"}/${c.target.id}`}>{c.target.name}</a> } satisfies Column<Change>]
+      ? [{ id: "target", header: t("changeList.where"), width: "160px", cell: (c: Change) => <a href={`/${c.target.kind === "host" ? "hosts" : "clusters"}/${c.target.id}`}>{c.target.name}</a> } satisfies Column<Change>]
       : []),
-    { id: "change", header: "Change", width: "100px", cell: (c) => <Badge tone={CHANGE_TONE[c.change]}>{c.change}</Badge> },
-    { id: "category", header: "What", width: "120px", cell: (c) => c.category },
+    { id: "change", header: t("changeList.change"), width: "100px", cell: (c) => <Badge tone={CHANGE_TONE[c.change]}>{c.change}</Badge> },
+    { id: "category", header: t("changeList.what"), width: "120px", cell: (c) => c.category },
     {
       id: "item",
-      header: "Item",
+      header: t("changeList.item"),
       cell: (c) => (
         <span className="infra-wrap flex flex-col gap-0.5 font-mono text-xs">
           <span>{c.item}</span>
@@ -181,5 +177,5 @@ export function ChangeList({ changes, showTarget = false }: { changes: Change[] 
       ),
     },
   ];
-  return <List label="Changes" rows={changes} columns={columns} empty="No changes yet. The first collection is the starting point; what changes after it shows here." getRowId={(c) => String(c.id)} />;
+  return <List label={t("changeList.changes")} rows={changes} columns={columns} empty={t("changeList.noChangesYetTheFirst")} getRowId={(c) => String(c.id)} />;
 }

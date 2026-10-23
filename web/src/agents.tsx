@@ -1,19 +1,21 @@
-import { Badge, Button, Callout, Dialog, EmptyState, PageHeader, Panel, TextField, type Column } from "@openasy/ui";
+import { Badge, Button, Callout, Dialog, EmptyState, PageHeader, Panel, TextField, type Column, useAgo } from "@openasy/ui";
 import { useAuth } from "@openasy/auth/react";
 import { Check, Plus, RotateCw, Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import type { Agent, NewAgent } from "./api.ts";
-import { ago, Code, List, useData, type Call } from "./shared.tsx";
+import { Code, List, useData, type Call } from "./shared.tsx";
+import { useT, type T } from "./i18n.ts";
 
-const STATUS: Record<string, { tone: "success" | "warning" | "danger" | "info"; label: string }> = {
-  online: { tone: "success", label: "Online" },
-  offline: { tone: "danger", label: "Offline" },
-  "waiting-to-enrol": { tone: "info", label: "Waiting to enrol" },
-  "version-mismatch": { tone: "danger", label: "Other version" },
-};
+const STATUS = (t: T): Record<string, { tone: "success" | "warning" | "danger" | "info"; label: string }> => ({
+  online: { tone: "success", label: t("status.online") },
+  offline: { tone: "danger", label: t("status.offline") },
+  "waiting-to-enrol": { tone: "info", label: t("status.waitingToEnrol") },
+  "version-mismatch": { tone: "danger", label: t("status.otherVersion") },
+});
 
 /** How to start infra-agent with its one-time token, next to Infrastructure or in another network. */
 function EnrollCommand({ token, expiresAt, version, onDone }: { token: string; expiresAt: string; version?: string; onDone: () => void }) {
+  const t = useT();
   const here = window.location.origin;
   return (
     <Dialog
@@ -22,19 +24,19 @@ function EnrollCommand({ token, expiresAt, version, onDone }: { token: string; e
       size="lg"
       icon={<Check aria-hidden className="size-4" />}
       iconTone="success"
-      title="Start the agent with this one-time token"
-      description={`It works once, until ${new Date(expiresAt).toLocaleString()}, and is not shown again.`}
+      title={t("enrollCommand.startTheAgentWithThis")}
+      description={t("enrollCommand.itWorksOnceUntilAnd", { value: new Date(expiresAt).toLocaleString() })}
       footer={
         <Button variant="primary" onClick={onDone}>
-          Done
+          {t("enrollCommand.done")}
         </Button>
       }
     >
       <span className="flex flex-col gap-2">
-        <span>With the compose file of Infrastructure:</span>
-        <Code label="Start the agent next to Infrastructure">{`INFRA_ENROLL_TOKEN=${token} docker compose up -d infra-agent`}</Code>
-        <span>In another network, on any server that reaches the hosts there and reaches Infrastructure:</span>
-        <Code label="Start the agent in another network">
+        <span>{t("enrollCommand.withTheComposeFileOf")}</span>
+        <Code label={t("enrollCommand.startTheAgentNextTo")}>{`INFRA_ENROLL_TOKEN=${token} docker compose up -d infra-agent`}</Code>
+        <span>{t("enrollCommand.inAnotherNetworkOnAny")}</span>
+        <Code label={t("enrollCommand.startTheAgentInAnother")}>
           {`openssl rand -hex 32 > openasy-agent-kek
 docker run -d --name infra-agent --restart unless-stopped --read-only --tmpfs /tmp \\
   --cap-drop ALL --security-opt no-new-privileges \\
@@ -43,14 +45,16 @@ docker run -d --name infra-agent --restart unless-stopped --read-only --tmpfs /t
   ghcr.io/openasy/infra-agent:${version ?? "<the version of Infrastructure>"}`}
         </Code>
       </span>
-      <Callout tone="warning" title="Closing this dialog hides the token">
-        If it is lost, enrol the agent again from its row.
+      <Callout tone="warning" title={t("enrollCommand.closingThisDialogHidesThe")}>
+        {t("enrollCommand.ifItIsLostEnrol")}
       </Callout>
     </Dialog>
   );
 }
 
 export function AgentsPage({ call }: { call: Call }) {
+  const ago = useAgo();
+  const t = useT();
   const { can } = useAuth();
   const { data, reload } = useData<{ agents: Agent[] }>(call, "/api/v1/agents", 10_000);
   // The agent must be the same version as Infrastructure (ADR 0019).
@@ -72,12 +76,12 @@ export function AgentsPage({ call }: { call: Call }) {
     }
   };
   const cols: Column<Agent>[] = [
-    { id: "name", header: "Agent", cell: (a) => a.name, sortValue: (a) => a.name },
-    { id: "status", header: "Status", width: "150px", cell: (a) => <Badge tone={STATUS[a.status]?.tone ?? "neutral"}>{STATUS[a.status]?.label ?? a.status}</Badge> },
-    { id: "hosts", header: "Hosts", width: "80px", align: "right", cell: (a) => a.hosts },
-    { id: "version", header: "Version", width: "90px", mono: true, cell: (a) => a.version ?? "–" },
-    { id: "ca", header: "CA fingerprint", cell: (a) => <span className="infra-wrap font-mono text-xs">{a.caFingerprint ?? "–"}</span> },
-    { id: "seen", header: "Last seen", width: "110px", cell: (a) => <span title={a.lastError ?? undefined}>{ago(a.lastSeenAt)}</span> },
+    { id: "name", header: t("agentsPage.agent"), cell: (a) => a.name, sortValue: (a) => a.name },
+    { id: "status", header: t("agentsPage.status"), width: "150px", cell: (a) => <Badge tone={STATUS(t)[a.status]?.tone ?? "neutral"}>{STATUS(t)[a.status]?.label ?? a.status}</Badge> },
+    { id: "hosts", header: t("agentsPage.hosts"), width: "80px", align: "right", cell: (a) => a.hosts },
+    { id: "version", header: t("agentsPage.version"), width: "90px", mono: true, cell: (a) => a.version ?? "–" },
+    { id: "ca", header: t("agentsPage.caFingerprint"), cell: (a) => <span className="infra-wrap font-mono text-xs">{a.caFingerprint ?? "–"}</span> },
+    { id: "seen", header: t("agentsPage.lastSeen"), width: "110px", cell: (a) => <span title={a.lastError ?? undefined}>{ago(a.lastSeenAt)}</span> },
     {
       id: "actions",
       header: "",
@@ -85,12 +89,12 @@ export function AgentsPage({ call }: { call: Call }) {
       cell: (a) =>
         can("admin") && (
           <span className="flex gap-1">
-            <Button size="xs" variant="ghost" icon={<RotateCw />} onClick={() => window.confirm(`Enrol ${a.name} again? Its secret stops working; if its CA changes, the hosts it reads must trust the new one.`) && void call<NewAgent>(`/api/v1/agents/${a.id}/enroll-token`, { method: "POST" }).then((r) => (setCreated(r), reload()))}>
-              Enrol again
+            <Button size="xs" variant="ghost" icon={<RotateCw />} onClick={() => window.confirm(t("agentsPage.enrolAgainItsSecretStops", { name: a.name })) && void call<NewAgent>(`/api/v1/agents/${a.id}/enroll-token`, { method: "POST" }).then((r) => (setCreated(r), reload()))}>
+              {t("agentsPage.enrolAgain")}
             </Button>
             {a.hosts === 0 && (
-              <Button size="xs" variant="ghost" icon={<Trash2 />} onClick={() => window.confirm(`Remove ${a.name}?`) && void call(`/api/v1/agents/${a.id}`, { method: "DELETE" }).then(reload)}>
-                Remove
+              <Button size="xs" variant="ghost" icon={<Trash2 />} onClick={() => window.confirm(t("agentsPage.remove", { name: a.name })) && void call(`/api/v1/agents/${a.id}`, { method: "DELETE" }).then(reload)}>
+                {t("agentsPage.remove2")}
               </Button>
             )}
           </span>
@@ -100,12 +104,12 @@ export function AgentsPage({ call }: { call: Call }) {
   return (
     <>
       <PageHeader
-        title="Agents"
-        description="infra-agent is installed once, next to Infrastructure or in another network, and reads the hosts there over SSH. It keeps the SSH certificate authority; Infrastructure only says which host to read. Nothing is installed on the hosts."
+        title={t("agentsPage.agents")}
+        description={t("agentsPage.infraAgentIsInstalledOnce")}
         actions={
           can("admin") && (
             <Button variant="primary" icon={<Plus />} onClick={() => setAdding(true)}>
-              Add agent
+              {t("agentsPage.addAgent")}
             </Button>
           )
         }
@@ -114,28 +118,28 @@ export function AgentsPage({ call }: { call: Call }) {
         open={adding}
         onOpenChange={(open) => !open && close()}
         size="sm"
-        title="Add an agent"
-        description="Name it after where it runs. You get a one-time token to start it with."
+        title={t("agentsPage.addAnAgent")}
+        description={t("agentsPage.nameItAfterWhereIt")}
         onSubmit={add}
         footer={
           <>
             <Button type="button" onClick={close}>
-              Cancel
+              {t("agentsPage.cancel")}
             </Button>
             <Button type="submit" variant="primary" disabled={!name}>
-              Add agent
+              {t("agentsPage.addAgent")}
             </Button>
           </>
         }
       >
-        <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="dc-frankfurt" error={error} />
+        <TextField label={t("agentsPage.name")} value={name} onChange={(e) => setName(e.target.value)} placeholder="dc-frankfurt" error={error} />
       </Dialog>
       {created && <EnrollCommand token={created.enrollToken} expiresAt={created.enrollExpiresAt} version={version} onDone={() => setCreated(undefined)} />}
       {data?.agents.length === 0 ? (
-        <EmptyState title="No agents yet">Add one; it reads the hosts you add under Hosts.</EmptyState>
+        <EmptyState title={t("agentsPage.noAgentsYet")}>{t("agentsPage.addOneItReadsThe")}</EmptyState>
       ) : (
         <Panel flush>
-          <List label="Agents" rows={data?.agents} columns={cols} empty="No agents" getRowId={(a) => a.id} />
+          <List label={t("agentsPage.agents")} rows={data?.agents} columns={cols} empty={t("agentsPage.noAgents")} getRowId={(a) => a.id} />
         </Panel>
       )}
     </>

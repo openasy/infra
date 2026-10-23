@@ -1,51 +1,56 @@
-import { Badge, Button, Callout, EmptyState, KpiCard, KpiGrid, navigate, PageHeader, Panel, SearchInput, Tabs, type Column } from "@openasy/ui";
+import { Badge, Button, Callout, EmptyState, KpiCard, KpiGrid, navigate, PageHeader, Panel, SearchInput, Tabs, type Column, useAgo } from "@openasy/ui";
 import { useAuth } from "@openasy/auth/react";
 import { Play, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Change, Container, Facts, Host } from "./api.ts";
 import { HostKeyCheck } from "./hosts.tsx";
-import { ago, bytes, ChangeList, duration, List, Pairs, Status, Usage, useData, type Call } from "./shared.tsx";
+import { bytes, ChangeList, duration, List, Pairs, Status, Usage, useData, type Call } from "./shared.tsx";
+import { useT, type T } from "./i18n.ts";
 
 type Tab = "overview" | "ports" | "processes" | "services" | "access" | "packages" | "containers" | "network" | "storage" | "changes";
 
 type F = Facts;
-const notReadable = (what: string) => <EmptyState title="Not readable">{`Reading ${what} needs the sudo rules from Setup on this host.`}</EmptyState>;
+type Unreadable = "ports" | "authorizedKeys" | "sudoRules" | "sshServerSettings" | "firewallRules" | "containers";
+const notReadable = (t: T, what: Unreadable) => <EmptyState title={t("notReadable.title")}>{t("notReadable.body", { what: t(`notReadable.${what}`) })}</EmptyState>;
 
 function Ports({ f }: { f: F }) {
-  if (!f.ports) return notReadable("ports");
+  const t = useT();
+  if (!f.ports) return notReadable(t, "ports");
   const cols: Column<NonNullable<F["ports"]>[number]>[] = [
-    { id: "proto", header: "Protocol", width: "90px", cell: (p) => p.proto },
-    { id: "addr", header: "Address", mono: true, cell: (p) => p.address, sortValue: (p) => p.address },
-    { id: "port", header: "Port", width: "80px", align: "right", mono: true, cell: (p) => p.port, sortValue: (p) => p.port },
-    { id: "process", header: "Process", cell: (p) => p.process ?? <span className="text-fg-muted">needs the sudo rules</span> },
+    { id: "proto", header: t("ports.protocol"), width: "90px", cell: (p) => p.proto },
+    { id: "addr", header: t("ports.address"), mono: true, cell: (p) => p.address, sortValue: (p) => p.address },
+    { id: "port", header: t("ports.port"), width: "80px", align: "right", mono: true, cell: (p) => p.port, sortValue: (p) => p.port },
+    { id: "process", header: t("ports.process"), cell: (p) => p.process ?? <span className="text-fg-muted">{t("ports.needsTheSudoRules")}</span> },
     { id: "pid", header: "PID", width: "80px", align: "right", mono: true, cell: (p) => p.pid ?? "–" },
   ];
-  return <List label="Listening ports" rows={f.ports} columns={cols} empty="Nothing listens" getRowId={(p) => `${p.proto}${p.address}${p.port}`} />;
+  return <List label={t("ports.listeningPorts")} rows={f.ports} columns={cols} empty={t("ports.nothingListens")} getRowId={(p) => `${p.proto}${p.address}${p.port}`} />;
 }
 
 function Processes({ f }: { f: F }) {
+  const t = useT();
   const cols: Column<F["processes"][number]>[] = [
     { id: "pid", header: "PID", width: "80px", align: "right", mono: true, cell: (p) => p.pid, sortValue: (p) => p.pid },
-    { id: "user", header: "User", width: "120px", cell: (p) => p.user, sortValue: (p) => p.user },
-    { id: "cpu", header: "CPU %", width: "80px", align: "right", mono: true, cell: (p) => p.cpu.toFixed(1), sortValue: (p) => p.cpu },
-    { id: "rss", header: "Memory", width: "90px", align: "right", mono: true, cell: (p) => bytes(p.rssKb * 1024), sortValue: (p) => p.rssKb },
-    { id: "age", header: "Running", width: "90px", cell: (p) => duration(p.ageSec), sortValue: (p) => p.ageSec },
-    { id: "cmd", header: "Command", cell: (p) => <span className="infra-wrap font-mono text-xs">{p.command}</span> },
+    { id: "user", header: t("processes.user"), width: "120px", cell: (p) => p.user, sortValue: (p) => p.user },
+    { id: "cpu", header: t("processes.cpu"), width: "80px", align: "right", mono: true, cell: (p) => p.cpu.toFixed(1), sortValue: (p) => p.cpu },
+    { id: "rss", header: t("processes.memory"), width: "90px", align: "right", mono: true, cell: (p) => bytes(p.rssKb * 1024), sortValue: (p) => p.rssKb },
+    { id: "age", header: t("processes.running"), width: "90px", cell: (p) => duration(p.ageSec), sortValue: (p) => p.ageSec },
+    { id: "cmd", header: t("processes.command"), cell: (p) => <span className="infra-wrap font-mono text-xs">{p.command}</span> },
   ];
-  return <List label="Processes" rows={f.processes} columns={cols} empty="No processes read" getRowId={(p) => String(p.pid)} pageSize={100} />;
+  return <List label={t("processes.processes")} rows={f.processes} columns={cols} empty={t("processes.noProcessesRead")} getRowId={(p) => String(p.pid)} pageSize={100} />;
 }
 
 function Services({ f }: { f: F }) {
-  if (!f.services) return <EmptyState title="No systemd">This host does not run systemd, or its services could not be listed.</EmptyState>;
+  const msg = useT();
+  if (!f.services) return <EmptyState title={msg("services.noSystemd")}>{msg("services.thisHostDoesNotRun")}</EmptyState>;
   const cols: Column<NonNullable<F["services"]>[number]>[] = [
-    { id: "name", header: "Service", cell: (s) => s.name, sortValue: (s) => s.name },
-    { id: "active", header: "State", width: "140px", cell: (s) => <Badge tone={s.active === "active" ? "success" : s.active === "failed" ? "danger" : "neutral"}>{`${s.active}/${s.sub}`}</Badge>, sortValue: (s) => s.active },
-    { id: "enabled", header: "At boot", width: "110px", cell: (s) => s.enabled ?? "–" },
+    { id: "name", header: msg("services.service"), cell: (s) => s.name, sortValue: (s) => s.name },
+    { id: "active", header: msg("services.state"), width: "140px", cell: (s) => <Badge tone={s.active === "active" ? "success" : s.active === "failed" ? "danger" : "neutral"}>{`${s.active}/${s.sub}`}</Badge>, sortValue: (s) => s.active },
+    { id: "enabled", header: msg("services.atBoot"), width: "110px", cell: (s) => s.enabled ?? "–" },
   ];
   return (
     <div className="flex flex-col gap-4">
-      <List label="Services" rows={f.services} columns={cols} empty="No services" getRowId={(s) => s.name} />
-      <Panel title="Scheduled">
+      <List label={msg("services.services")} rows={f.services} columns={cols} empty={msg("services.noServices")} getRowId={(s) => s.name} />
+      <Panel title={msg("services.scheduled")}>
         <ul className="infra-list flex flex-col gap-1 font-mono text-xs">
           {(f.timers ?? []).map((t) => (
             <li key={t.unit}>
@@ -57,8 +62,8 @@ function Services({ f }: { f: F }) {
               {c.source}: {c.entry}
             </li>
           ))}
-          {f.crontabUsers?.map((u) => <li key={u}>crontab of {u}</li>)}
-          {!f.timers?.length && !f.cron.length && !f.crontabUsers?.length && <li className="text-fg-muted">Nothing scheduled</li>}
+          {f.crontabUsers?.map((u) => <li key={u}>{msg("services.crontabOf", { u })}</li>)}
+          {!f.timers?.length && !f.cron.length && !f.crontabUsers?.length && <li className="text-fg-muted">{msg("services.nothingScheduled")}</li>}
         </ul>
       </Panel>
     </div>
@@ -66,25 +71,26 @@ function Services({ f }: { f: F }) {
 }
 
 function Access({ f }: { f: F }) {
+  const t = useT();
   const people = f.users.filter((u) => u.login || u.uid === 0);
   const cols: Column<F["users"][number]>[] = [
-    { id: "name", header: "Account", cell: (u) => u.name, sortValue: (u) => u.name },
+    { id: "name", header: t("access.account"), cell: (u) => u.name, sortValue: (u) => u.name },
     { id: "uid", header: "UID", width: "80px", align: "right", mono: true, cell: (u) => u.uid, sortValue: (u) => u.uid },
-    { id: "shell", header: "Shell", mono: true, cell: (u) => u.shell },
-    { id: "home", header: "Home", mono: true, cell: (u) => u.home },
-    { id: "pw", header: "Password", width: "110px", cell: (u) => (u.password ? <Badge tone={u.password === "set" ? "warning" : "neutral"}>{u.password}</Badge> : <span className="text-fg-muted">not readable</span>) },
-    { id: "groups", header: "Groups", cell: (u) => f.groups.filter((g) => g.members.includes(u.name)).map((g) => g.name).join(", ") || "–" },
+    { id: "shell", header: t("access.shell"), mono: true, cell: (u) => u.shell },
+    { id: "home", header: t("access.home"), mono: true, cell: (u) => u.home },
+    { id: "pw", header: t("access.password"), width: "110px", cell: (u) => (u.password ? <Badge tone={u.password === "set" ? "warning" : "neutral"}>{u.password}</Badge> : <span className="text-fg-muted">{t("access.notReadable")}</span>) },
+    { id: "groups", header: t("access.groups"), cell: (u) => f.groups.filter((g) => g.members.includes(u.name)).map((g) => g.name).join(", ") || "–" },
   ];
   return (
     <div className="flex flex-col gap-4">
-      <Panel title="Accounts that can log in" description={`${people.length} of ${f.users.length} accounts have a login shell.`} flush>
-        <List label="Accounts" rows={people} columns={cols} empty="No accounts with a login shell" getRowId={(u) => u.name} />
+      <Panel title={t("access.accountsThatCanLogIn")} description={t("access.ofAccountsHaveALogin", { length: people.length, length2: f.users.length })} flush>
+        <List label={t("access.accounts")} rows={people} columns={cols} empty={t("access.noAccountsWithALogin")} getRowId={(u) => u.name} />
       </Panel>
-      <Panel title="SSH keys that may log in">
+      <Panel title={t("access.sshKeysThatMayLog")}>
         {f.authorizedKeys === null ? (
-          notReadable("authorized keys")
+          notReadable(t, "authorizedKeys")
         ) : f.authorizedKeys.length === 0 ? (
-          <p className="m-0 text-sm text-fg-muted">None</p>
+          <p className="m-0 text-sm text-fg-muted">{t("access.none")}</p>
         ) : (
           <ul className="infra-list flex flex-col gap-1 font-mono text-xs">
             {f.authorizedKeys.map((k) => (
@@ -97,7 +103,7 @@ function Access({ f }: { f: F }) {
       </Panel>
       <Panel title="sudo">
         {f.sudo === null ? (
-          notReadable("sudo rules")
+          notReadable(t, "sudoRules")
         ) : (
           <ul className="infra-list flex flex-col gap-1 font-mono text-xs">
             {f.sudo.map((s) => (
@@ -108,9 +114,9 @@ function Access({ f }: { f: F }) {
           </ul>
         )}
       </Panel>
-      <Panel title="SSH server">
+      <Panel title={t("access.sshServer")}>
         {f.sshd === null ? (
-          notReadable("the SSH server settings")
+          notReadable(t, "sshServerSettings")
         ) : (
           <Pairs items={(["permitrootlogin", "passwordauthentication", "pubkeyauthentication", "kbdinteractiveauthentication", "x11forwarding", "allowtcpforwarding", "maxauthtries", "trustedusercakeys"] as const).filter((k) => f.sshd![k] !== undefined).map((k) => [k, <span className="font-mono">{f.sshd![k]}</span>])} />
         )}
@@ -120,32 +126,34 @@ function Access({ f }: { f: F }) {
 }
 
 function Packages({ f }: { f: F }) {
+  const t = useT();
   const [q, setQ] = useState("");
   const rows = useMemo(() => f.packages.filter((p) => !q || p.name.includes(q.toLowerCase())), [f, q]);
   const cols: Column<F["packages"][number]>[] = [
-    { id: "name", header: "Package", cell: (p) => p.name, sortValue: (p) => p.name },
-    { id: "version", header: "Version", mono: true, cell: (p) => p.version },
-    { id: "arch", header: "Arch", width: "90px", cell: (p) => p.arch ?? "–" },
-    { id: "mgr", header: "From", width: "80px", cell: (p) => p.manager },
+    { id: "name", header: t("packages.package"), cell: (p) => p.name, sortValue: (p) => p.name },
+    { id: "version", header: t("packages.version"), mono: true, cell: (p) => p.version },
+    { id: "arch", header: t("packages.arch"), width: "90px", cell: (p) => p.arch ?? "–" },
+    { id: "mgr", header: t("packages.from"), width: "80px", cell: (p) => p.manager },
   ];
   return (
     <div className="flex flex-col gap-3">
       <div style={{ maxWidth: 320 }}>
-        <SearchInput label="Search packages" value={q} onChange={(e) => setQ(e.target.value)} placeholder="openssl" />
+        <SearchInput label={t("packages.searchPackages")} value={q} onChange={(e) => setQ(e.target.value)} placeholder="openssl" />
       </div>
-      <List label="Packages" rows={rows} columns={cols} empty="No packages" getRowId={(p) => `${p.manager}${p.name}${p.arch}`} pageSize={100} />
+      <List label={t("packages.packages")} rows={rows} columns={cols} empty={t("packages.noPackages")} getRowId={(p) => `${p.manager}${p.name}${p.arch}`} pageSize={100} />
     </div>
   );
 }
 
 export function ContainerTable({ rows, showHost = false }: { rows: Array<Container & { host?: { id: string; name: string } }> | undefined; showHost?: boolean }) {
+  const t = useT();
   const cols: Column<Container & { host?: { id: string; name: string } }>[] = [
-    { id: "name", header: "Container", cell: (c) => c.name, sortValue: (c) => c.name },
-    ...(showHost ? [{ id: "host", header: "Host", cell: (c: Container & { host?: { id: string; name: string } }) => c.host && <a href={`/hosts/${c.host.id}`}>{c.host.name}</a> }] : []),
-    { id: "image", header: "Image", cell: (c) => <span className="infra-wrap font-mono text-xs">{c.image}</span> },
+    { id: "name", header: t("containerTable.container"), cell: (c) => c.name, sortValue: (c) => c.name },
+    ...(showHost ? [{ id: "host", header: t("containerTable.host"), cell: (c: Container & { host?: { id: string; name: string } }) => c.host && <a href={`/hosts/${c.host.id}`}>{c.host.name}</a> }] : []),
+    { id: "image", header: t("containerTable.image"), cell: (c) => <span className="infra-wrap font-mono text-xs">{c.image}</span> },
     {
       id: "state",
-      header: "State",
+      header: t("containerTable.state"),
       width: "150px",
       cell: (c) => (
         <span className="flex flex-wrap gap-1">
@@ -155,72 +163,74 @@ export function ContainerTable({ rows, showHost = false }: { rows: Array<Contain
       ),
       sortValue: (c) => c.state,
     },
-    { id: "restarts", header: "Restarts", width: "90px", align: "right", mono: true, cell: (c) => c.restarts, sortValue: (c) => c.restarts },
-    { id: "ports", header: "Ports", cell: (c) => <span className="font-mono text-xs">{c.ports.join(", ") || "–"}</span> },
-    { id: "limits", header: "Limits", width: "120px", cell: (c) => `${c.cpuLimit ?? "–"} CPU · ${c.memoryLimitBytes ? bytes(c.memoryLimitBytes) : "–"}` },
+    { id: "restarts", header: t("containerTable.restarts"), width: "90px", align: "right", mono: true, cell: (c) => c.restarts, sortValue: (c) => c.restarts },
+    { id: "ports", header: t("containerTable.ports"), cell: (c) => <span className="font-mono text-xs">{c.ports.join(", ") || "–"}</span> },
+    { id: "limits", header: t("containerTable.limits"), width: "120px", cell: (c) => `${c.cpuLimit ?? "–"} CPU · ${c.memoryLimitBytes ? bytes(c.memoryLimitBytes) : "–"}` },
     { id: "flags", header: "", width: "110px", cell: (c) => (c.privileged ? <Badge tone="danger">privileged</Badge> : c.user === "root" ? <Badge tone="warning">root</Badge> : null) },
   ];
-  return <List label="Containers" rows={rows} columns={cols} empty="No containers" getRowId={(c) => `${c.host?.id ?? ""}${c.id}`} />;
+  return <List label={t("containerTable.containers")} rows={rows} columns={cols} empty={t("containerTable.noContainers")} getRowId={(c) => `${c.host?.id ?? ""}${c.id}`} />;
 }
 
 function Network({ f }: { f: F }) {
+  const t = useT();
   return (
     <div className="flex flex-col gap-4">
-      <Panel title="Interfaces" flush>
+      <Panel title={t("network.interfaces")} flush>
         <List
-          label="Interfaces"
+          label={t("network.interfaces")}
           rows={f.interfaces}
           getRowId={(i) => i.name}
-          empty="ip is not installed on this host"
+          empty={t("network.ipIsNotInstalledOn")}
           columns={[
-            { id: "name", header: "Interface", width: "140px", cell: (i) => i.name },
-            { id: "state", header: "State", width: "90px", cell: (i) => i.state },
-            { id: "addr", header: "Addresses", cell: (i) => <span className="font-mono text-xs">{i.addresses.join(", ") || "–"}</span> },
+            { id: "name", header: t("network.interface"), width: "140px", cell: (i) => i.name },
+            { id: "state", header: t("network.state"), width: "90px", cell: (i) => i.state },
+            { id: "addr", header: t("network.addresses"), cell: (i) => <span className="font-mono text-xs">{i.addresses.join(", ") || "–"}</span> },
             { id: "mac", header: "MAC", width: "160px", mono: true, cell: (i) => i.mac ?? "–" },
             { id: "mtu", header: "MTU", width: "70px", align: "right", mono: true, cell: (i) => i.mtu ?? "–" },
           ]}
         />
       </Panel>
-      <Panel title="Routes and DNS">
+      <Panel title={t("network.routesAndDns")}>
         <ul className="infra-list flex flex-col gap-1 font-mono text-xs">
           {f.routes.map((r) => (
             <li key={`${r.destination}${r.gateway}${r.device}`}>
-              {r.destination} {r.gateway && `via ${r.gateway}`} {r.device && `dev ${r.device}`}
+              {r.destination} {r.gateway && t("network.via", { gateway: r.gateway })} {r.device && t("network.dev", { device: r.device })}
             </li>
           ))}
           <li>nameservers {f.dns.nameservers.join(", ") || "–"}</li>
         </ul>
       </Panel>
-      <Panel title="Firewall">{f.firewall ? <pre className="infra-code">{f.firewall.rules || "(no rules)"}</pre> : notReadable("the firewall rules")}</Panel>
+      <Panel title={t("network.firewall")}>{f.firewall ? <pre className="infra-code">{f.firewall.rules || t("notReadable.noRules")}</pre> : notReadable(t, "firewallRules")}</Panel>
     </div>
   );
 }
 
 function Storage({ f }: { f: F }) {
+  const t = useT();
   return (
     <div className="flex flex-col gap-4">
-      <Panel title="File systems" flush>
+      <Panel title={t("storage.fileSystems")} flush>
         <List
-          label="File systems"
+          label={t("storage.fileSystems")}
           rows={f.filesystems}
           getRowId={(x) => x.mount}
-          empty="No file systems"
+          empty={t("storage.noFileSystems")}
           columns={[
-            { id: "mount", header: "Mounted at", mono: true, cell: (x) => x.mount, sortValue: (x) => x.mount },
-            { id: "dev", header: "Device", mono: true, cell: (x) => x.device },
-            { id: "type", header: "Type", width: "90px", cell: (x) => x.type },
-            { id: "size", header: "Size", width: "90px", align: "right", cell: (x) => bytes(x.sizeKb * 1024), sortValue: (x) => x.sizeKb },
-            { id: "used", header: "Used", width: "120px", cell: (x) => (x.sizeKb ? <Usage pct={Math.round((x.usedKb / x.sizeKb) * 100)} /> : "–"), sortValue: (x) => (x.sizeKb ? x.usedKb / x.sizeKb : 0) },
+            { id: "mount", header: t("storage.mountedAt"), mono: true, cell: (x) => x.mount, sortValue: (x) => x.mount },
+            { id: "dev", header: t("storage.device"), mono: true, cell: (x) => x.device },
+            { id: "type", header: t("storage.type"), width: "90px", cell: (x) => x.type },
+            { id: "size", header: t("storage.size"), width: "90px", align: "right", cell: (x) => bytes(x.sizeKb * 1024), sortValue: (x) => x.sizeKb },
+            { id: "used", header: t("storage.used"), width: "120px", cell: (x) => (x.sizeKb ? <Usage pct={Math.round((x.usedKb / x.sizeKb) * 100)} /> : "–"), sortValue: (x) => (x.sizeKb ? x.usedKb / x.sizeKb : 0) },
             { id: "ro", header: "", width: "60px", cell: (x) => (x.options.split(",").includes("ro") ? <Badge>ro</Badge> : null) },
           ]}
         />
       </Panel>
       {f.disks.length > 0 && (
-        <Panel title="Disks">
+        <Panel title={t("storage.disks")}>
           <ul className="infra-list flex flex-col gap-1 text-sm">
             {f.disks.map((d) => (
               <li key={d.name}>
-                {d.name} · {bytes(d.sizeBytes)} {d.model && `· ${d.model}`} {d.rotational === false ? "· SSD" : d.rotational ? "· rotational" : ""}
+                {d.name} · {bytes(d.sizeBytes)} {d.model && `· ${d.model}`} {d.rotational === false ? t("storage.ssd") : d.rotational ? t("storage.rotational") : ""}
               </li>
             ))}
           </ul>
@@ -231,16 +241,18 @@ function Storage({ f }: { f: F }) {
 }
 
 function Overview({ f, host }: { f: F; host: Host }) {
+  const ago = useAgo();
+  const t = useT();
   const memPct = Math.round((1 - f.memory.availableKb / f.memory.totalKb) * 100);
   return (
     <div className="flex flex-col gap-4">
       <KpiGrid>
-        <KpiCard label="Load (1 min)" value={f.system.load[0].toFixed(2)} footer={`${f.cpu.threads} threads`} />
-        <KpiCard label="Memory used" value={memPct} unit="%" tone={memPct >= 90 ? "danger" : memPct >= 75 ? "warning" : undefined} footer={`of ${bytes(f.memory.totalKb * 1024)}`} />
-        <KpiCard label="Up" value={duration(f.system.uptimeSec)} footer={`since ${new Date(f.system.bootedAt).toLocaleString()}`} />
-        <KpiCard label="Listening ports" value={f.ports?.length ?? "–"} footer={`${f.processes.length} processes`} />
+        <KpiCard label={t("overview.load1Min")} value={f.system.load[0].toFixed(2)} footer={t("overview.threads", { threads: f.cpu.threads })} />
+        <KpiCard label={t("overview.memoryUsed")} value={memPct} unit="%" tone={memPct >= 90 ? "danger" : memPct >= 75 ? "warning" : undefined} footer={t("overview.of", { bytes: bytes(f.memory.totalKb * 1024) })} />
+        <KpiCard label={t("overview.up")} value={duration(f.system.uptimeSec)} footer={t("overview.since", { value: new Date(f.system.bootedAt).toLocaleString() })} />
+        <KpiCard label={t("overview.listeningPorts")} value={f.ports?.length ?? "–"} footer={t("overview.processes", { length: f.processes.length })} />
       </KpiGrid>
-      <Panel title="System">
+      <Panel title={t("overview.system")}>
         <Pairs
           items={[
             ["Host name", f.system.hostname],
@@ -259,8 +271,8 @@ function Overview({ f, host }: { f: F; host: Host }) {
         />
       </Panel>
       {f.account.sudo === "all" && (
-        <Callout tone="warning" title="The openasy account has unrestricted sudo">
-          It needs only the read-only rules from Setup. With full sudo, anyone who controls the agent controls this host.
+        <Callout tone="warning" title={t("overview.theOpenasyAccountHasUnrestricted")}>
+          {t("overview.itNeedsOnlyTheRead")}
         </Callout>
       )}
     </div>
@@ -268,40 +280,42 @@ function Overview({ f, host }: { f: F; host: Host }) {
 }
 
 export function HostPage({ call, id }: { call: Call; id: string }) {
+  const ago = useAgo();
+  const t = useT();
   const { can } = useAuth();
   const [tab, setTab] = useState<Tab>("overview");
   const host = useData<Host>(call, `/api/v1/hosts/${id}`, 10_000);
   const facts = useData<{ facts: F }>(call, host.data?.lastSuccessAt ? `/api/v1/hosts/${id}/facts` : null, 30_000);
   const changes = useData<{ changes: Change[] }>(call, tab === "changes" ? `/api/v1/hosts/${id}/changes?limit=500` : null, 30_000);
   const h = host.data;
-  if (host.error && !h) return <EmptyState title="Not found">This host no longer exists.</EmptyState>;
+  if (host.error && !h) return <EmptyState title={t("hostPage.notFound")}>{t("hostPage.thisHostNoLongerExists")}</EmptyState>;
   if (!h) return null;
   const f = facts.data?.facts;
   const collect = () => void call(`/api/v1/hosts/${id}/collect`, { method: "POST" }).then(() => setTimeout(host.reload, 3000));
-  const remove = () => window.confirm(`Remove ${h.name} and its history?`) && void call(`/api/v1/hosts/${id}`, { method: "DELETE" }).then(() => navigate("/hosts"));
+  const remove = () => window.confirm(t("hostPage.removeAndItsHistory", { name: h.name })) && void call(`/api/v1/hosts/${id}`, { method: "DELETE" }).then(() => navigate("/hosts"));
   const waitingForKey = h.status === "new" || h.status === "host-key-pending" || h.status === "host-key-changed";
   return (
     <>
       <PageHeader
         title={h.name}
-        breadcrumbs={[{ label: "Hosts", href: "/hosts" }, { label: h.name }]}
-        description={f ? `${f.system.os.name} · ${f.system.kernel} · collected ${ago(h.lastSuccessAt)}` : `${h.address}:${h.port}`}
+        breadcrumbs={[{ label: t("hostPage.hosts"), href: "/hosts" }, { label: h.name }]}
+        description={f ? t("hostPage.collected", { name: f.system.os.name, kernel: f.system.kernel, ago: ago(h.lastSuccessAt) }) : `${h.address}:${h.port}`}
         meta={
           <span className="flex items-center gap-1.5">
             <Status status={h.status} />
-            {h.source === "file" && <Badge tone="neutral">From file</Badge>}
+            {h.source === "file" && <Badge tone="neutral">{t("hostPage.fromFile")}</Badge>}
           </span>
         }
         actions={
           <>
             {can("editor") && !waitingForKey && (
               <Button icon={<Play />} onClick={collect}>
-                Collect now
+                {t("hostPage.collectNow")}
               </Button>
             )}
             {can("admin") && h.source === "ui" && (
               <Button variant="danger" icon={<Trash2 />} onClick={remove}>
-                Remove
+                {t("hostPage.remove")}
               </Button>
             )}
           </>
@@ -309,32 +323,32 @@ export function HostPage({ call, id }: { call: Call; id: string }) {
       />
       {waitingForKey && <HostKeyCheck host={h} call={call} onDone={host.reload} />}
       {!waitingForKey && h.status !== "ok" && h.statusDetail && (
-        <Callout tone="danger" title="The last collection failed">
-          {h.statusDetail} {h.lastSuccessAt && `What is shown is from ${ago(h.lastSuccessAt)}.`}
+        <Callout tone="danger" title={t("hostPage.theLastCollectionFailed")}>
+          {h.statusDetail} {h.lastSuccessAt && t("hostPage.whatIsShownIsFrom", { ago: ago(h.lastSuccessAt) })}
         </Callout>
       )}
       {f && f.unreadable.length > 0 && (
-        <Callout tone="info" title="Some details need the sudo rules">
-          Not readable as the openasy account: {f.unreadable.join(", ")}. Add the sudoers file from <a href="/setup">Setup</a> to this host to read them.
+        <Callout tone="info" title={t("hostPage.someDetailsNeedTheSudo")}>
+          {t("hostPage.notReadableAsTheOpenasy")}{" "}{f.unreadable.join(", ")}. Add the sudoers file from <a href="/setup">{t("hostPage.setup")}</a> to this host to read them.
         </Callout>
       )}
       {f && (
         <>
           <Tabs<Tab>
-            label="Host details"
+            label={t("hostPage.hostDetails")}
             value={tab}
             onChange={setTab}
             items={[
-              { value: "overview", label: "Overview" },
-              { value: "ports", label: "Ports", count: f.ports?.length },
-              { value: "processes", label: "Processes", count: f.processes.length },
-              { value: "services", label: "Services", count: f.services?.length },
-              { value: "access", label: "Access" },
-              { value: "packages", label: "Packages", count: f.packages.length },
-              ...(h.containers ? [{ value: "containers" as const, label: "Containers", count: f.containers?.length }] : []),
-              { value: "network", label: "Network" },
-              { value: "storage", label: "Storage" },
-              { value: "changes", label: "Changes" },
+              { value: "overview", label: t("hostPage.overview") },
+              { value: "ports", label: t("hostPage.ports"), count: f.ports?.length },
+              { value: "processes", label: t("hostPage.processes"), count: f.processes.length },
+              { value: "services", label: t("hostPage.services"), count: f.services?.length },
+              { value: "access", label: t("hostPage.access") },
+              { value: "packages", label: t("hostPage.packages"), count: f.packages.length },
+              ...(h.containers ? [{ value: "containers" as const, label: t("hostPage.containers"), count: f.containers?.length }] : []),
+              { value: "network", label: t("hostPage.network") },
+              { value: "storage", label: t("hostPage.storage") },
+              { value: "changes", label: t("hostPage.changes") },
             ]}
           />
           {tab === "overview" && <Overview f={f} host={h} />}
@@ -343,7 +357,7 @@ export function HostPage({ call, id }: { call: Call; id: string }) {
           {tab === "services" && <Services f={f} />}
           {tab === "access" && <Access f={f} />}
           {tab === "packages" && <Packages f={f} />}
-          {tab === "containers" && (f.containers ? <ContainerTable rows={f.containers} /> : notReadable("containers"))}
+          {tab === "containers" && (f.containers ? <ContainerTable rows={f.containers} /> : notReadable(t, "containers"))}
           {tab === "network" && <Network f={f} />}
           {tab === "storage" && <Storage f={f} />}
           {tab === "changes" && <ChangeList changes={changes.data?.changes} />}
