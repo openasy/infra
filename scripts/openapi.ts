@@ -351,7 +351,7 @@ const spec = {
   openapi: "3.1.1",
   info: {
     title: "OpenAsy Infrastructure API",
-    version: "0.2.0",
+    version: "0.2.1",
     summary: "Hosts, containers and Kubernetes, read without installing anything, with every change kept.",
     description:
       "Every screen of Infrastructure uses this API, and so can your scripts (ADR 0014). Within `/api/v1` changes are additive only (ADR 0024). Errors use Problem Details (RFC 9457).\n\nHosts are read over SSH as an unprivileged `openasy` account with 5-minute certificates, and clusters through their API with a read-only token (ADR 0031). Each operation names the role it needs (`x-openasy-role`). Sign-in, members and API tokens are under `/api/v1/auth`, provided by [@openasy/auth](https://github.com/openasy/auth#routes).",
