@@ -168,6 +168,15 @@ The token is stored encrypted and never returned by the API.
 Viewers see everything; editors also start collections; admins also add and remove agents, hosts and clusters, accept
 host keys, and manage members and API tokens (ADR 0003).
 
+## Upgrade
+
+### To 0.2.0
+
+- The sign-in variables lose the `INFRA_` prefix and have the same names in every product (ADR 0002):
+  `INFRA_OIDC_ISSUER` is now `OPENASY_OIDC_ISSUER`, and so on for every `INFRA_OIDC_*`. Rename them before upgrading:
+  with the old names, sign-in through the provider is off and only passwords work.
+- Upgrade infra-agent to the same version.
+
 ## Develop
 
 ```bash
