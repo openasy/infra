@@ -71,7 +71,7 @@ to reach infra and the hosts of its network; infra never connects to it.
 | `INFRA_CONCURRENCY` | `4` | Cluster collections at the same time |
 | `INFRA_METRICS_PORT` | | Serve `/metrics` on this port only (ADR 0026) |
 | `INFRA_HEADLESS` | `false` | `true` serves only the API |
-| `INFRA_PASSWORD_SIGN_IN`, `INFRA_OIDC_*` | | Sign-in, as in every OpenAsy product ([@openasy/auth](https://github.com/openasy/auth)). Owners can also add identity providers under Settings, Sign-in |
+| `INFRA_PASSWORD_SIGN_IN`, `OPENASY_OIDC_*` | | Sign-in, as in every OpenAsy product ([@openasy/auth](https://github.com/openasy/auth)). Owners can also add identity providers under Settings, Sign-in |
 
 Both containers run as non-root with a read-only root filesystem, no capabilities and `no-new-privileges`. The
 agent's key and certificate for one SSH connection live in `/tmp` (tmpfs) and are deleted when it ends.

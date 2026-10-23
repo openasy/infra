@@ -25,9 +25,9 @@ services:
       # The address people open Infrastructure at; with a TLS proxy in front, its https:// URL.
       INFRA_PUBLIC_URL: ${INFRA_PUBLIC_URL:-http://localhost:8080}
       # Sign in with your identity provider (OIDC), see the README:
-      # INFRA_OIDC_ISSUER: https://login.example.com
-      # INFRA_OIDC_CLIENT_ID: infra
-      # INFRA_OIDC_CLIENT_SECRET: ${INFRA_OIDC_CLIENT_SECRET}
+      # OPENASY_OIDC_ISSUER: https://login.example.com
+      # OPENASY_OIDC_CLIENT_ID: infra
+      # OPENASY_OIDC_CLIENT_SECRET: ${OPENASY_OIDC_CLIENT_SECRET}
 
   infra-agent:
     image: ghcr.io/openasy/infra-agent:0.1.0   # always the same version as infra
