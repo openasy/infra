@@ -135,6 +135,25 @@ describe("hosts from the file", () => {
     expect((await json(refused)).detail).toMatch(/hosts file/);
   });
 
+  it("trust the first key when the file says first, and wait for an admin when it changes", async () => {
+    app.infra.syncFile(parseHosts(FIXTURE.replace("port: 2222", "port: 2222\n    hostKey: first")));
+    await agent.round();
+    // db-1 presents OTHER_KEY: the first key it shows is trusted without an admin.
+    expect(await host("db-1")).toMatchObject({ status: "pending", hostKeys: [{ fingerprint: fingerprint(OTHER_KEY) }], fileHostKey: null });
+    agent.hosts.set("10.0.0.6", { key: HOST_KEY, facts: facts("debian-sudo") });
+    const db1 = await host("db-1");
+    await app.admin(`/api/v1/hosts/${db1.id}/host-key`, { method: "POST" });
+    await agent.round();
+    // Another key later is not trusted by itself; an admin may accept it, since the file names none.
+    expect(await host("db-1")).toMatchObject({ status: "host-key-changed", pendingHostKeys: [{ fingerprint: fingerprint(HOST_KEY) }] });
+    const accepted = await app.admin(`/api/v1/hosts/${db1.id}/host-key/accept`, {
+      method: "POST",
+      body: JSON.stringify({ fingerprint: fingerprint(HOST_KEY) }),
+    });
+    expect(accepted.status).toBe(200);
+    expect(parseHosts("hosts:\n  - { name: a, address: 10.0.0.1, hostKey: first }")[0]).toMatchObject({ hostKey: "first" });
+  });
+
   it("are changed in the file only", async () => {
     const web = await host("web-1");
     expect((await app.admin(`/api/v1/hosts/${web.id}`, { method: "PATCH", body: JSON.stringify({ port: 2200 }) })).status).toBe(409);

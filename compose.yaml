@@ -9,7 +9,7 @@
 #   INFRA_ENROLL_TOKEN=oie_... docker compose up -d infra-agent
 services:
   infra:
-    image: ghcr.io/openasy/infra:0.3.0
+    image: ghcr.io/openasy/infra:0.4.0
     restart: unless-stopped
     read_only: true
     cap_drop: [ALL]
@@ -19,21 +19,21 @@ services:
       - "127.0.0.1:8080:8080" # UI and API; put a TLS proxy in front to reach it from elsewhere
     volumes:
       - infra-data:/data # SQLite database: agents, hosts, clusters, collections and changes
-      # - ./hosts.yaml:/config/hosts.yaml:ro   # the install's servers, shared with Logs
+      # - ./inventory:/config/inventory:ro   # the install's servers, shared with Logs
     secrets:
       - openasy-kek # mounted at /run/secrets/openasy-kek
     environment:
       # The address people open Infrastructure at; with a TLS proxy in front, its https:// URL.
       INFRA_PUBLIC_URL: ${INFRA_PUBLIC_URL:-http://localhost:8080}
       # Hosts from the hosts file, the same file Logs reads (ADR 0052):
-      # OPENASY_HOSTS: /config/hosts.yaml
+      # OPENASY_HOSTS: /config/inventory/hosts.yaml
       # Sign in with your identity provider (OIDC), see the README:
       # OPENASY_OIDC_ISSUER: https://login.example.com
       # OPENASY_OIDC_CLIENT_ID: infra
       # OPENASY_OIDC_CLIENT_SECRET: ${OPENASY_OIDC_CLIENT_SECRET}
 
   infra-agent:
-    image: ghcr.io/openasy/infra-agent:0.3.0 # always the same version as infra
+    image: ghcr.io/openasy/infra-agent:0.4.0 # always the same version as infra
     restart: unless-stopped
     read_only: true
     cap_drop: [ALL]

@@ -140,7 +140,7 @@ hosts:
     containers: true
     jump: bastion                     # another host in the file, reached directly by the same agent
     agent: dc1
-    hostKey: SHA256:...               # optional: ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub on the host
+    hostKey: SHA256:...               # optional: ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub on the host, or first
     tags: { env: prod }
   - name: shop
     address: shop.example.com
@@ -152,8 +152,11 @@ hosts:
   (`OPENASY_KEYS_DIR`); Infrastructure keeps and sends only the file name. It is a name, not a path, and the key has
   no passphrase. Put its public key, prefixed with `restrict`, in `~openasy/.ssh/authorized_keys` on the host.
 - **hostKey is a trust decision made in the file.** A host that presents that key is trusted without an admin; one
-  that presents another waits, and no other key can be accepted in the UI until hostKey changes. Without hostKey, the
-  key is checked and accepted here as for any host. Whoever can change the file can already change the install.
+  that presents another waits, and no other key can be accepted in the UI until hostKey changes. `hostKey: first`
+  trusts the key the host presents the first time, as `ssh -o StrictHostKeyChecking=accept-new` does; a different key
+  later waits for an admin, as for any host. It is quicker, but whoever answers at the address first is trusted.
+  Without hostKey, the key is checked and accepted here as for any host. Whoever can change the file can already change
+  the install.
 - A host from the file shows **From file** and is changed there: the API answers 409 to a change or delete, while
   fetching its key again and collecting still work. Hosts added in the UI stay as they are.
 - A host that cannot be added yet, because its agent is not enrolled or there are several agents and it names none,
