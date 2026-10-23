@@ -107,9 +107,11 @@ export function checkFacts(v: unknown): Facts {
   const arrays = ["filesystems", "interfaces", "routes", "processes", "cron", "users", "groups", "modules", "packages", "unreadable", "disks"] as const;
   if (!f || typeof f !== "object") throw new Error("facts must be an object");
   if (typeof f.collectedAt !== "string" || Number.isNaN(Date.parse(f.collectedAt))) throw new Error("facts.collectedAt must be a date");
-  if (!f.system || typeof f.system !== "object" || typeof f.system.hostname !== "string" || !f.system.os || typeof f.system.uptimeSec !== "number") throw new Error("facts.system is incomplete");
+  if (!f.system || typeof f.system !== "object" || typeof f.system.hostname !== "string" || !f.system.os || typeof f.system.uptimeSec !== "number")
+    throw new Error("facts.system is incomplete");
   if (!f.cpu || !f.memory || !f.account || !f.dns || typeof f.sysctl !== "object") throw new Error("facts is incomplete");
   for (const a of arrays) if (!Array.isArray(f[a])) throw new Error(`facts.${a} must be a list`);
-  for (const a of ["ports", "services", "timers", "crontabUsers", "sudo", "authorizedKeys", "containers"] as const) if (f[a] !== null && !Array.isArray(f[a])) throw new Error(`facts.${a} must be a list or null`);
+  for (const a of ["ports", "services", "timers", "crontabUsers", "sudo", "authorizedKeys", "containers"] as const)
+    if (f[a] !== null && !Array.isArray(f[a])) throw new Error(`facts.${a} must be a list or null`);
   return f as Facts;
 }

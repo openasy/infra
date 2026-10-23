@@ -10,10 +10,19 @@ const bool = { type: "boolean" };
 const dt = { type: "string", format: "date-time" };
 const nul = (s: S) => ({ anyOf: [s, { type: "null" }] });
 const arr = (s: S) => ({ type: "array", items: s });
-const obj = (properties: Record<string, S>, required = Object.keys(properties), extra = false) => ({ type: "object", required, properties, ...(extra ? {} : {}) });
+const obj = (properties: Record<string, S>, required = Object.keys(properties), extra = false) => ({
+  type: "object",
+  required,
+  properties,
+  ...(extra ? {} : {}),
+});
 const map = { type: "object", additionalProperties: str };
 
-const STATUS = { type: "string", enum: ["new", "host-key-pending", "host-key-changed", "pending", "ok", "unreachable", "auth-failed", "timeout", "error"], description: "Of the last collection. new and host-key-pending wait for an admin to accept the host key." };
+const STATUS = {
+  type: "string",
+  enum: ["new", "host-key-pending", "host-key-changed", "pending", "ok", "unreachable", "auth-failed", "timeout", "error"],
+  description: "Of the last collection. new and host-key-pending wait for an admin to accept the host key.",
+};
 
 const schemas: Record<string, S> = {
   Problem: {
@@ -23,7 +32,24 @@ const schemas: Record<string, S> = {
       type: { type: "string", format: "uri" },
       title: str,
       status: int,
-      code: { type: "string", enum: ["invalid-json", "invalid-body", "not-found", "conflict", "not-configured", "internal-error", "unauthenticated", "invalid-token", "mfa-setup-required", "forbidden", "cross-site", "rate-limited"], description: "Stable; match on this." },
+      code: {
+        type: "string",
+        enum: [
+          "invalid-json",
+          "invalid-body",
+          "not-found",
+          "conflict",
+          "not-configured",
+          "internal-error",
+          "unauthenticated",
+          "invalid-token",
+          "mfa-setup-required",
+          "forbidden",
+          "cross-site",
+          "rate-limited",
+        ],
+        description: "Stable; match on this.",
+      },
       detail: str,
     },
   },
@@ -57,8 +83,16 @@ const schemas: Record<string, S> = {
     auth: { type: "string", enum: ["certificate", "key"] },
     agent: obj({ id: str, name: str }),
     jumpHost: nul(obj({ id: str, name: str })),
-    source: { type: "string", enum: ["ui", "file"], description: "file: from the hosts file (OPENASY_HOSTS, ADR 0052); changed there, so PATCH and DELETE answer 409. Fetching its key still works." },
-    fileHostKey: { ...nul(str), description: "The fingerprint hostKey gives in the hosts file: a host that presents that key is trusted without an admin, and no other key can be accepted here." },
+    source: {
+      type: "string",
+      enum: ["ui", "file"],
+      description: "file: from the hosts file (OPENASY_HOSTS, ADR 0052); changed there, so PATCH and DELETE answer 409. Fetching its key still works.",
+    },
+    fileHostKey: {
+      ...nul(str),
+      description:
+        "The fingerprint hostKey gives in the hosts file: a host that presents that key is trusted without an admin, and no other key can be accepted here.",
+    },
     containers: { ...bool, description: "Read containers through the host's Docker or Podman. Access to the socket is equivalent to root (ADR 0031)." },
     intervalMinutes: int,
     tags: map,
@@ -80,7 +114,12 @@ const schemas: Record<string, S> = {
       address: { type: "string", description: "Host name or IP address." },
       port: { type: "integer", default: 22 },
       user: { type: "string", default: "openasy" },
-      auth: { type: "string", enum: ["certificate", "key"], default: "certificate", description: "certificate: a 5-minute certificate from Infrastructure's CA for each collection. key: one fixed key in authorized_keys." },
+      auth: {
+        type: "string",
+        enum: ["certificate", "key"],
+        default: "certificate",
+        description: "certificate: a 5-minute certificate from Infrastructure's CA for each collection. key: one fixed key in authorized_keys.",
+      },
       jumpHostId: { ...nul(str), description: "Reach the host through this one (ProxyJump)." },
       containers: { type: "boolean", default: false },
       intervalMinutes: { type: "integer", minimum: 1, maximum: 1440, default: 5 },
@@ -160,7 +199,9 @@ const schemas: Record<string, S> = {
     lastAttemptAt: nul(dt),
     lastSuccessAt: nul(dt),
     createdAt: dt,
-    summary: nul(obj({ version: str, nodes: int, nodesReady: int, namespaces: int, workloads: int, pods: int, podsNotRunning: int, restarts: int, warnings: int })),
+    summary: nul(
+      obj({ version: str, nodes: int, nodesReady: int, namespaces: int, workloads: int, pods: int, podsNotRunning: int, restarts: int, warnings: int }),
+    ),
   }),
   ClusterInput: {
     type: "object",
@@ -169,12 +210,20 @@ const schemas: Record<string, S> = {
       name: { type: "string", pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$" },
       server: { type: "string", description: "The API server's https:// URL." },
       caCert: { ...nul(str), description: "The cluster CA in PEM; null to use the system's." },
-      token: { type: "string", writeOnly: true, description: "Token of the read-only service account from GET /api/v1/setup. Stored encrypted, never returned." },
+      token: {
+        type: "string",
+        writeOnly: true,
+        description: "Token of the read-only service account from GET /api/v1/setup. Stored encrypted, never returned.",
+      },
       intervalMinutes: { type: "integer", minimum: 1, maximum: 1440, default: 5 },
       tags: map,
     },
   },
-  ClusterFacts: { type: "object", required: ["collectedAt", "version", "nodes", "workloads", "pods"], description: "Nodes, namespaces, workloads, pods, services, ingresses, volumes, cluster-admin bindings and recent warnings." },
+  ClusterFacts: {
+    type: "object",
+    required: ["collectedAt", "version", "nodes", "workloads", "pods"],
+    description: "Nodes, namespaces, workloads, pods, services, ingresses, volumes, cluster-admin bindings and recent warnings.",
+  },
   Change: obj({
     id: int,
     target: obj({ kind: { type: "string", enum: ["host", "cluster"] }, id: str, name: str }),
@@ -197,13 +246,33 @@ const schemas: Record<string, S> = {
     hosts: int,
     createdAt: dt,
   }),
-  NewAgent: obj({ agent: ref("Agent"), enrollToken: { type: "string", description: "One-time; start infra-agent with INFRA_ENROLL_TOKEN set to it. Shown once." }, enrollExpiresAt: dt }),
-  AgentSetup: obj({ agent: ref("Agent"), caPublicKey: str, caFingerprint: str, keyPublicKey: nul(str), sshdConfig: str, sudoers: str, hostSetup: str, authorizedKey: str }),
+  NewAgent: obj({
+    agent: ref("Agent"),
+    enrollToken: { type: "string", description: "One-time; start infra-agent with INFRA_ENROLL_TOKEN set to it. Shown once." },
+    enrollExpiresAt: dt,
+  }),
+  AgentSetup: obj({
+    agent: ref("Agent"),
+    caPublicKey: str,
+    caFingerprint: str,
+    keyPublicKey: nul(str),
+    sshdConfig: str,
+    sudoers: str,
+    hostSetup: str,
+    authorizedKey: str,
+  }),
   AgentReport: {
     type: "object",
     required: ["version", "caPublicKey", "keyPublicKey", "setup"],
-    description: "What infra-agent says about itself on every call: its version (it must equal infra's, ADR 0019), its public keys, and the host setup that matches its script.",
-    properties: { version: str, caPublicKey: str, keyPublicKey: str, setup: obj({ sshdConfig: str, sudoers: str, hostSetup: str, authorizedKey: str }), running: int },
+    description:
+      "What infra-agent says about itself on every call: its version (it must equal infra's, ADR 0019), its public keys, and the host setup that matches its script.",
+    properties: {
+      version: str,
+      caPublicKey: str,
+      keyPublicKey: str,
+      setup: obj({ sshdConfig: str, sudoers: str, hostSetup: str, authorizedKey: str }),
+      running: int,
+    },
   },
   Job: obj({
     id: str,
@@ -238,7 +307,8 @@ const schemas: Record<string, S> = {
       error: { ...nul(str), description: "Why the file on disk is not applied." },
       warnings: { ...arr(str), description: "What to fix that did not stop the file from being applied, such as a host whose agent is not enrolled yet." },
     }),
-    description: "The hosts file (ADR 0052), shared with Logs. It is read again within a minute of a change; a file that cannot be applied leaves the hosts from its last good version.",
+    description:
+      "The hosts file (ADR 0052), shared with Logs. It is read again within a minute of a change; a file that cannot be applied leaves the hosts from its last good version.",
   },
 };
 
@@ -254,7 +324,17 @@ const pageParams = [
 ];
 const SEC = [{ session: [] }, { apiToken: [] }];
 const AGENT_SEC = [{ agentSecret: [] }];
-const op = (o: { id: string; tag: string; summary: string; description?: string; role?: string; security?: unknown[]; params?: unknown[]; body?: S; responses: Record<string, unknown> }) => ({
+const op = (o: {
+  id: string;
+  tag: string;
+  summary: string;
+  description?: string;
+  role?: string;
+  security?: unknown[];
+  params?: unknown[];
+  body?: S;
+  responses: Record<string, unknown>;
+}) => ({
   operationId: o.id,
   tags: [o.tag],
   summary: o.summary,
@@ -289,77 +369,336 @@ const spec = {
   paths: {
     "/api/v1/version": { get: op({ id: "version", tag: "Product", summary: "Version", responses: { "200": ok(obj({ product: str, version: str })) } }) },
     "/api/v1/products": {
-      get: op({ id: "listProducts", tag: "Product", summary: "Other OpenAsy products", description: "The OpenAsy products of this install and their addresses, from `OPENASY_PRODUCTS`, for the product switcher. Empty when it is not set.", role: "viewer", responses: { "200": ok(obj({ products: arr(ref("ProductLink")) }), "The products, in the order they are configured."), ...R("v") } }),
+      get: op({
+        id: "listProducts",
+        tag: "Product",
+        summary: "Other OpenAsy products",
+        description: "The OpenAsy products of this install and their addresses, from `OPENASY_PRODUCTS`, for the product switcher. Empty when it is not set.",
+        role: "viewer",
+        responses: { "200": ok(obj({ products: arr(ref("ProductLink")) }), "The products, in the order they are configured."), ...R("v") },
+      }),
     },
     "/api/v1/summary": { get: op({ id: "summary", tag: "Product", summary: "Overview", role: "viewer", responses: { "200": ok(ref("Summary")), ...R("v") } }) },
     "/api/v1/setup": {
-      get: op({ id: "setup", tag: "Setup", summary: "The read-only Kubernetes role", description: "What to put on hosts comes from each agent: GET /api/v1/agents/{id}/setup.", role: "viewer", responses: { "200": ok(obj({ kubernetesRbac: str })), ...R("v") } }),
+      get: op({
+        id: "setup",
+        tag: "Setup",
+        summary: "The read-only Kubernetes role",
+        description: "What to put on hosts comes from each agent: GET /api/v1/agents/{id}/setup.",
+        role: "viewer",
+        responses: { "200": ok(obj({ kubernetesRbac: str })), ...R("v") },
+      }),
     },
     "/api/v1/agents": {
-      get: op({ id: "listAgents", tag: "Agents", summary: "List agents", role: "viewer", responses: { "200": ok(obj({ agents: arr(ref("Agent")) })), ...R("v") } }),
-      post: op({ id: "createAgent", tag: "Agents", summary: "Add an agent", description: "Returns a one-time enrolment token, valid for 7 days. Start infra-agent with it; the agent then has its own secret (ADR 0023).", role: "admin", body: obj({ name: str }), responses: { "201": ok(ref("NewAgent"), "Added"), ...R("a"), ...P(400, 409, 422) } }),
+      get: op({
+        id: "listAgents",
+        tag: "Agents",
+        summary: "List agents",
+        role: "viewer",
+        responses: { "200": ok(obj({ agents: arr(ref("Agent")) })), ...R("v") },
+      }),
+      post: op({
+        id: "createAgent",
+        tag: "Agents",
+        summary: "Add an agent",
+        description: "Returns a one-time enrolment token, valid for 7 days. Start infra-agent with it; the agent then has its own secret (ADR 0023).",
+        role: "admin",
+        body: obj({ name: str }),
+        responses: { "201": ok(ref("NewAgent"), "Added"), ...R("a"), ...P(400, 409, 422) },
+      }),
     },
     "/api/v1/agents/{id}": {
-      get: op({ id: "getAgent", tag: "Agents", summary: "Get an agent", role: "viewer", params: [id], responses: { "200": ok(ref("Agent")), ...R("v"), ...P(404) } }),
-      delete: op({ id: "deleteAgent", tag: "Agents", summary: "Remove an agent", description: "Only an agent that reads no hosts. Its secret stops working.", role: "admin", params: [id], responses: { "204": { description: "Removed" }, ...R("a"), ...P(404, 409) } }),
+      get: op({
+        id: "getAgent",
+        tag: "Agents",
+        summary: "Get an agent",
+        role: "viewer",
+        params: [id],
+        responses: { "200": ok(ref("Agent")), ...R("v"), ...P(404) },
+      }),
+      delete: op({
+        id: "deleteAgent",
+        tag: "Agents",
+        summary: "Remove an agent",
+        description: "Only an agent that reads no hosts. Its secret stops working.",
+        role: "admin",
+        params: [id],
+        responses: { "204": { description: "Removed" }, ...R("a"), ...P(404, 409) },
+      }),
     },
     "/api/v1/agents/{id}/enroll-token": {
-      post: op({ id: "reEnrollAgent", tag: "Agents", summary: "Enrol an agent again", description: "A new one-time token, for an agent that lost its volume or whose CA changed. Its old secret stops working; its hosts must trust the new CA.", role: "admin", params: [id], responses: { "200": ok(ref("NewAgent")), ...R("a"), ...P(404) } }),
+      post: op({
+        id: "reEnrollAgent",
+        tag: "Agents",
+        summary: "Enrol an agent again",
+        description:
+          "A new one-time token, for an agent that lost its volume or whose CA changed. Its old secret stops working; its hosts must trust the new CA.",
+        role: "admin",
+        params: [id],
+        responses: { "200": ok(ref("NewAgent")), ...R("a"), ...P(404) },
+      }),
     },
     "/api/v1/agents/{id}/setup": {
-      get: op({ id: "agentSetup", tag: "Setup", summary: "What to put on the hosts this agent reads", description: "Its CA public key, the sshd drop-in, the sudoers file that matches its script, the commands to prepare a host and the fixed key.", role: "viewer", params: [id], responses: { "200": ok(ref("AgentSetup")), ...R("v"), ...P(404, 409) } }),
+      get: op({
+        id: "agentSetup",
+        tag: "Setup",
+        summary: "What to put on the hosts this agent reads",
+        description: "Its CA public key, the sshd drop-in, the sudoers file that matches its script, the commands to prepare a host and the fixed key.",
+        role: "viewer",
+        params: [id],
+        responses: { "200": ok(ref("AgentSetup")), ...R("v"), ...P(404, 409) },
+      }),
     },
     "/api/v1/agent/enroll": {
-      post: op({ id: "agentEnroll", tag: "Agents", summary: "infra-agent: enrol with a one-time token", description: "Called by infra-agent, not by people. Returns the agent's own secret for every later call.", body: { allOf: [ref("AgentReport"), obj({ token: str })] }, responses: { "200": ok(obj({ agentId: str, secret: str })), ...P(400, 401, 422) } }),
+      post: op({
+        id: "agentEnroll",
+        tag: "Agents",
+        summary: "infra-agent: enrol with a one-time token",
+        description: "Called by infra-agent, not by people. Returns the agent's own secret for every later call.",
+        body: { allOf: [ref("AgentReport"), obj({ token: str })] },
+        responses: { "200": ok(obj({ agentId: str, secret: str })), ...P(400, 401, 422) },
+      }),
     },
     "/api/v1/agent/work": {
-      post: op({ id: "agentWork", tag: "Agents", summary: "infra-agent: ask for jobs", description: "Called by infra-agent with its secret every few seconds. Each job is leased for 10 minutes. Answers 409 when the agent's version differs from infra's (ADR 0019).", body: ref("AgentReport"), security: AGENT_SEC, responses: { "200": ok(obj({ jobs: arr(ref("Job")) })), ...P(400, 401, 409, 422) } }),
+      post: op({
+        id: "agentWork",
+        tag: "Agents",
+        summary: "infra-agent: ask for jobs",
+        description:
+          "Called by infra-agent with its secret every few seconds. Each job is leased for 10 minutes. Answers 409 when the agent's version differs from infra's (ADR 0019).",
+        body: ref("AgentReport"),
+        security: AGENT_SEC,
+        responses: { "200": ok(obj({ jobs: arr(ref("Job")) })), ...P(400, 401, 409, 422) },
+      }),
     },
     "/api/v1/agent/results": {
-      post: op({ id: "agentResult", tag: "Agents", summary: "infra-agent: send what a job found", description: "Facts are parsed and masked by the agent; Infrastructure checks their shape and stores what changed. Gzip the body.", body: ref("Result"), security: AGENT_SEC, responses: { "202": ok(obj({ status: str }), "Accepted"), ...P(400, 401, 404, 409, 422) } }),
+      post: op({
+        id: "agentResult",
+        tag: "Agents",
+        summary: "infra-agent: send what a job found",
+        description: "Facts are parsed and masked by the agent; Infrastructure checks their shape and stores what changed. Gzip the body.",
+        body: ref("Result"),
+        security: AGENT_SEC,
+        responses: { "202": ok(obj({ status: str }), "Accepted"), ...P(400, 401, 404, 409, 422) },
+      }),
     },
     "/api/v1/hosts": {
       get: op({ id: "listHosts", tag: "Hosts", summary: "List hosts", role: "viewer", responses: { "200": ok(obj({ hosts: arr(ref("Host")) })), ...R("v") } }),
-      post: op({ id: "createHost", tag: "Hosts", summary: "Add a host", description: "Infrastructure asks the host for its key right away. Check the fingerprint on the host and accept it before the first collection.", role: "admin", body: ref("HostInput"), responses: { "201": ok(ref("Host"), "Added"), ...R("a"), ...P(400, 409, 422) } }),
+      post: op({
+        id: "createHost",
+        tag: "Hosts",
+        summary: "Add a host",
+        description: "Infrastructure asks the host for its key right away. Check the fingerprint on the host and accept it before the first collection.",
+        role: "admin",
+        body: ref("HostInput"),
+        responses: { "201": ok(ref("Host"), "Added"), ...R("a"), ...P(400, 409, 422) },
+      }),
     },
     "/api/v1/hosts/{id}": {
-      get: op({ id: "getHost", tag: "Hosts", summary: "Get a host", role: "viewer", params: [id], responses: { "200": ok(ref("Host")), ...R("v"), ...P(404) } }),
-      patch: op({ id: "updateHost", tag: "Hosts", summary: "Change a host", description: "A new address or port unpins the host key.", role: "admin", params: [id], body: { type: "object", properties: (schemas.HostInput as { properties: S }).properties }, responses: { "200": ok(ref("Host")), ...R("a"), ...P(400, 404, 409, 422) } }),
-      delete: op({ id: "deleteHost", tag: "Hosts", summary: "Remove a host and its history", role: "admin", params: [id], responses: { "204": { description: "Removed" }, ...R("a"), ...P(404, 409) } }),
+      get: op({
+        id: "getHost",
+        tag: "Hosts",
+        summary: "Get a host",
+        role: "viewer",
+        params: [id],
+        responses: { "200": ok(ref("Host")), ...R("v"), ...P(404) },
+      }),
+      patch: op({
+        id: "updateHost",
+        tag: "Hosts",
+        summary: "Change a host",
+        description: "A new address or port unpins the host key.",
+        role: "admin",
+        params: [id],
+        body: { type: "object", properties: (schemas.HostInput as { properties: S }).properties },
+        responses: { "200": ok(ref("Host")), ...R("a"), ...P(400, 404, 409, 422) },
+      }),
+      delete: op({
+        id: "deleteHost",
+        tag: "Hosts",
+        summary: "Remove a host and its history",
+        role: "admin",
+        params: [id],
+        responses: { "204": { description: "Removed" }, ...R("a"), ...P(404, 409) },
+      }),
     },
     "/api/v1/hosts/{id}/facts": {
-      get: op({ id: "hostFacts", tag: "Hosts", summary: "What the host has", description: "The last collection, or with `at` the one in effect at that time.", role: "viewer", params: [id, { name: "at", in: "query", schema: dt }], responses: { "200": ok(obj({ facts: ref("Facts"), collectedAt: dt })), ...R("v"), ...P(404, 422) } }),
+      get: op({
+        id: "hostFacts",
+        tag: "Hosts",
+        summary: "What the host has",
+        description: "The last collection, or with `at` the one in effect at that time.",
+        role: "viewer",
+        params: [id, { name: "at", in: "query", schema: dt }],
+        responses: { "200": ok(obj({ facts: ref("Facts"), collectedAt: dt })), ...R("v"), ...P(404, 422) },
+      }),
     },
-    "/api/v1/hosts/{id}/changes": { get: op({ id: "hostChanges", tag: "Changes", summary: "What changed on a host", role: "viewer", params: [id, ...pageParams], responses: { "200": ok(ref("Changes")), ...R("v"), ...P(404, 422) } }) },
-    "/api/v1/hosts/{id}/collect": { post: op({ id: "collectHost", tag: "Hosts", summary: "Collect now", role: "editor", params: [id], responses: { "202": ok(obj({ status: str }), "Requested"), ...R("e"), ...P(404, 409) } }) },
-    "/api/v1/hosts/{id}/host-key": { post: op({ id: "fetchHostKey", tag: "Hosts", summary: "Ask the host for its key again", role: "admin", params: [id], responses: { "200": ok(ref("Host")), ...R("a"), ...P(404) } }) },
+    "/api/v1/hosts/{id}/changes": {
+      get: op({
+        id: "hostChanges",
+        tag: "Changes",
+        summary: "What changed on a host",
+        role: "viewer",
+        params: [id, ...pageParams],
+        responses: { "200": ok(ref("Changes")), ...R("v"), ...P(404, 422) },
+      }),
+    },
+    "/api/v1/hosts/{id}/collect": {
+      post: op({
+        id: "collectHost",
+        tag: "Hosts",
+        summary: "Collect now",
+        role: "editor",
+        params: [id],
+        responses: { "202": ok(obj({ status: str }), "Requested"), ...R("e"), ...P(404, 409) },
+      }),
+    },
+    "/api/v1/hosts/{id}/host-key": {
+      post: op({
+        id: "fetchHostKey",
+        tag: "Hosts",
+        summary: "Ask the host for its key again",
+        role: "admin",
+        params: [id],
+        responses: { "200": ok(ref("Host")), ...R("a"), ...P(404) },
+      }),
+    },
     "/api/v1/hosts/{id}/host-key/accept": {
-      post: op({ id: "acceptHostKey", tag: "Hosts", summary: "Accept a host key", description: "After checking on the host that `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` prints this fingerprint.", role: "admin", params: [id], body: obj({ fingerprint: str }), responses: { "200": ok(ref("Host")), ...R("a"), ...P(400, 404, 409, 422) } }),
+      post: op({
+        id: "acceptHostKey",
+        tag: "Hosts",
+        summary: "Accept a host key",
+        description: "After checking on the host that `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` prints this fingerprint.",
+        role: "admin",
+        params: [id],
+        body: obj({ fingerprint: str }),
+        responses: { "200": ok(ref("Host")), ...R("a"), ...P(400, 404, 409, 422) },
+      }),
     },
     "/api/v1/clusters": {
-      get: op({ id: "listClusters", tag: "Clusters", summary: "List clusters", role: "viewer", responses: { "200": ok(obj({ clusters: arr(ref("Cluster")) })), ...R("v") } }),
-      post: op({ id: "createCluster", tag: "Clusters", summary: "Add a cluster", role: "admin", body: ref("ClusterInput"), responses: { "201": ok(ref("Cluster"), "Added"), ...R("a"), ...P(400, 409, 422) } }),
+      get: op({
+        id: "listClusters",
+        tag: "Clusters",
+        summary: "List clusters",
+        role: "viewer",
+        responses: { "200": ok(obj({ clusters: arr(ref("Cluster")) })), ...R("v") },
+      }),
+      post: op({
+        id: "createCluster",
+        tag: "Clusters",
+        summary: "Add a cluster",
+        role: "admin",
+        body: ref("ClusterInput"),
+        responses: { "201": ok(ref("Cluster"), "Added"), ...R("a"), ...P(400, 409, 422) },
+      }),
     },
     "/api/v1/clusters/{id}": {
-      get: op({ id: "getCluster", tag: "Clusters", summary: "Get a cluster", role: "viewer", params: [id], responses: { "200": ok(ref("Cluster")), ...R("v"), ...P(404) } }),
-      patch: op({ id: "updateCluster", tag: "Clusters", summary: "Change a cluster", role: "admin", params: [id], body: { type: "object", properties: (schemas.ClusterInput as { properties: S }).properties }, responses: { "200": ok(ref("Cluster")), ...R("a"), ...P(400, 404, 409, 422) } }),
-      delete: op({ id: "deleteCluster", tag: "Clusters", summary: "Remove a cluster and its history", role: "admin", params: [id], responses: { "204": { description: "Removed" }, ...R("a"), ...P(404) } }),
+      get: op({
+        id: "getCluster",
+        tag: "Clusters",
+        summary: "Get a cluster",
+        role: "viewer",
+        params: [id],
+        responses: { "200": ok(ref("Cluster")), ...R("v"), ...P(404) },
+      }),
+      patch: op({
+        id: "updateCluster",
+        tag: "Clusters",
+        summary: "Change a cluster",
+        role: "admin",
+        params: [id],
+        body: { type: "object", properties: (schemas.ClusterInput as { properties: S }).properties },
+        responses: { "200": ok(ref("Cluster")), ...R("a"), ...P(400, 404, 409, 422) },
+      }),
+      delete: op({
+        id: "deleteCluster",
+        tag: "Clusters",
+        summary: "Remove a cluster and its history",
+        role: "admin",
+        params: [id],
+        responses: { "204": { description: "Removed" }, ...R("a"), ...P(404) },
+      }),
     },
-    "/api/v1/clusters/{id}/facts": { get: op({ id: "clusterFacts", tag: "Clusters", summary: "What the cluster runs", role: "viewer", params: [id], responses: { "200": ok(ref("ClusterFacts")), ...R("v"), ...P(404) } }) },
-    "/api/v1/clusters/{id}/changes": { get: op({ id: "clusterChanges", tag: "Changes", summary: "What changed in a cluster", role: "viewer", params: [id, ...pageParams], responses: { "200": ok(ref("Changes")), ...R("v"), ...P(404, 422) } }) },
-    "/api/v1/clusters/{id}/collect": { post: op({ id: "collectCluster", tag: "Clusters", summary: "Collect now", role: "editor", params: [id], responses: { "202": ok(obj({ status: str }), "Requested"), ...R("e"), ...P(404) } }) },
-    "/api/v1/containers": { get: op({ id: "listContainers", tag: "Hosts", summary: "Containers on every host", role: "viewer", responses: { "200": ok(obj({ containers: arr(ref("Container")) })), ...R("v") } }) },
+    "/api/v1/clusters/{id}/facts": {
+      get: op({
+        id: "clusterFacts",
+        tag: "Clusters",
+        summary: "What the cluster runs",
+        role: "viewer",
+        params: [id],
+        responses: { "200": ok(ref("ClusterFacts")), ...R("v"), ...P(404) },
+      }),
+    },
+    "/api/v1/clusters/{id}/changes": {
+      get: op({
+        id: "clusterChanges",
+        tag: "Changes",
+        summary: "What changed in a cluster",
+        role: "viewer",
+        params: [id, ...pageParams],
+        responses: { "200": ok(ref("Changes")), ...R("v"), ...P(404, 422) },
+      }),
+    },
+    "/api/v1/clusters/{id}/collect": {
+      post: op({
+        id: "collectCluster",
+        tag: "Clusters",
+        summary: "Collect now",
+        role: "editor",
+        params: [id],
+        responses: { "202": ok(obj({ status: str }), "Requested"), ...R("e"), ...P(404) },
+      }),
+    },
+    "/api/v1/containers": {
+      get: op({
+        id: "listContainers",
+        tag: "Hosts",
+        summary: "Containers on every host",
+        role: "viewer",
+        responses: { "200": ok(obj({ containers: arr(ref("Container")) })), ...R("v") },
+      }),
+    },
     "/api/v1/changes": {
-      get: op({ id: "listChanges", tag: "Changes", summary: "What changed everywhere", role: "viewer", params: [{ name: "kind", in: "query", schema: { type: "string", enum: ["host", "cluster"] } }, ...pageParams], responses: { "200": ok(ref("Changes")), ...R("v"), ...P(422) } }),
+      get: op({
+        id: "listChanges",
+        tag: "Changes",
+        summary: "What changed everywhere",
+        role: "viewer",
+        params: [{ name: "kind", in: "query", schema: { type: "string", enum: ["host", "cluster"] } }, ...pageParams],
+        responses: { "200": ok(ref("Changes")), ...R("v"), ...P(422) },
+      }),
     },
     "/healthz": { get: { operationId: "healthz", tags: ["Product"], summary: "Liveness", responses: { "200": ok(obj({ status: str })) } } },
-    "/readyz": { get: { operationId: "readyz", tags: ["Product"], summary: "Readiness", responses: { "200": ok(obj({ status: str })), "503": ok(obj({ status: str }), "Not ready") } } },
-    "/metrics": { get: { operationId: "metrics", tags: ["Product"], summary: "Prometheus metrics", responses: { "200": { description: "Prometheus text format", content: { "text/plain": { schema: str } } } } } },
+    "/readyz": {
+      get: {
+        operationId: "readyz",
+        tags: ["Product"],
+        summary: "Readiness",
+        responses: { "200": ok(obj({ status: str })), "503": ok(obj({ status: str }), "Not ready") },
+      },
+    },
+    "/metrics": {
+      get: {
+        operationId: "metrics",
+        tags: ["Product"],
+        summary: "Prometheus metrics",
+        responses: { "200": { description: "Prometheus text format", content: { "text/plain": { schema: str } } } },
+      },
+    },
   },
   components: {
     securitySchemes: {
-      session: { type: "apiKey", in: "cookie", name: "__Host-openasy-session", description: "The browser session after signing in (`openasy-session` on plain http://localhost)." },
-      apiToken: { type: "http", scheme: "bearer", description: "An API token from Settings → API tokens (`oa_infra_...`): one role, always an expiry (ADR 0003)." },
+      session: {
+        type: "apiKey",
+        in: "cookie",
+        name: "__Host-openasy-session",
+        description: "The browser session after signing in (`openasy-session` on plain http://localhost).",
+      },
+      apiToken: {
+        type: "http",
+        scheme: "bearer",
+        description: "An API token from Settings → API tokens (`oa_infra_...`): one role, always an expiry (ADR 0003).",
+      },
       agentSecret: { type: "http", scheme: "bearer", description: "infra-agent's own secret (`oia_...`), from enrolment (ADR 0023)." },
     },
     responses: { Problem: { description: "An error, as RFC 9457 Problem Details.", content: { "application/problem+json": { schema: ref("Problem") } } } },

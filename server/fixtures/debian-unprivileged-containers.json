@@ -1,1760 +1,1727 @@
 {
- "collectedAt": "2026-10-20T11:06:06.000Z",
- "account": {
-  "user": "openasy",
-  "uid": 1000,
-  "sudo": "rules"
- },
- "system": {
-  "hostname": "web-1",
-  "machineId": "b8ccbab8548d4e5da604b05a79981e8e",
-  "os": {
-   "id": "debian",
-   "name": "Debian GNU/Linux 13 (trixie)",
-   "version": "13"
-  },
-  "kernel": "7.0.12-linuxkit",
-  "arch": "aarch64",
-  "bootedAt": "2026-10-20T10:35:34.000Z",
-  "uptimeSec": 1832,
-  "load": [
-   0.34,
-   0.37,
-   0.31
-  ],
-  "virtualization": "docker",
-  "hardware": {},
-  "serial": null
- },
- "cpu": {
-  "model": null,
-  "threads": 14,
-  "cores": null
- },
- "memory": {
-  "totalKb": 8124000,
-  "availableKb": 6165100,
-  "swapTotalKb": 1048572,
-  "swapFreeKb": 1048572
- },
- "disks": [
-  {
-   "name": "nbd0",
-   "type": "disk",
-   "sizeBytes": 0,
-   "model": null,
-   "rotational": false
-  },
-  {
-   "name": "nbd1",
-   "type": "disk",
-   "sizeBytes": 0,
-   "model": null,
-   "rotational": false
-  },
-  {
-   "name": "nbd2",
-   "type": "disk",
-   "sizeBytes": 0,
-   "model": null,
-   "rotational": false
-  },
-  {
-   "name": "nbd3",
-   "type": "disk",
-   "sizeBytes": 0,
-   "model": null,
-   "rotational": false
-  },
-  {
-   "name": "nbd4",
-   "type": "disk",
-   "sizeBytes": 0,
-   "model": null,
-   "rotational": false
-  },
-  {
-   "name": "nbd5",
-   "type": "disk",
-   "sizeBytes": 0,
-   "model": null,
-   "rotational": false
-  },
-  {
-   "name": "nbd6",
-   "type": "disk",
-   "sizeBytes": 0,
-   "model": null,
-   "rotational": false
-  },
-  {
-   "name": "nbd7",
-   "type": "disk",
-   "sizeBytes": 0,
-   "model": null,
-   "rotational": false
-  },
-  {
-   "name": "vda",
-   "type": "disk",
-   "sizeBytes": 494384709632,
-   "model": null,
-   "rotational": true
-  },
-  {
-   "name": "vdb",
-   "type": "disk",
-   "sizeBytes": 677666816,
-   "model": null,
-   "rotational": true
-  },
-  {
-   "name": "nbd8",
-   "type": "disk",
-   "sizeBytes": 0,
-   "model": null,
-   "rotational": false
-  },
-  {
-   "name": "nbd9",
-   "type": "disk",
-   "sizeBytes": 0,
-   "model": null,
-   "rotational": false
-  },
-  {
-   "name": "nbd10",
-   "type": "disk",
-   "sizeBytes": 0,
-   "model": null,
-   "rotational": false
-  },
-  {
-   "name": "nbd11",
-   "type": "disk",
-   "sizeBytes": 0,
-   "model": null,
-   "rotational": false
-  },
-  {
-   "name": "nbd12",
-   "type": "disk",
-   "sizeBytes": 0,
-   "model": null,
-   "rotational": false
-  },
-  {
-   "name": "nbd13",
-   "type": "disk",
-   "sizeBytes": 0,
-   "model": null,
-   "rotational": false
-  },
-  {
-   "name": "nbd14",
-   "type": "disk",
-   "sizeBytes": 0,
-   "model": null,
-   "rotational": false
-  },
-  {
-   "name": "nbd15",
-   "type": "disk",
-   "sizeBytes": 0,
-   "model": null,
-   "rotational": false
-  }
- ],
- "filesystems": [
-  {
-   "device": "overlay",
-   "mount": "/",
-   "type": "overlay",
-   "sizeKb": 474095688,
-   "usedKb": 26795760,
-   "options": "rw,relatime,lowerdir=/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/4361/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/4304/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/4240/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/4239/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/4238/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/3521/fs,upperdir=/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/4362/fs,workdir=/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/4362/work,nouserxattr"
-  },
-  {
-   "device": "tmpfs",
-   "mount": "/dev",
-   "type": "tmpfs",
-   "sizeKb": 65536,
-   "usedKb": 0,
-   "options": "rw,nosuid,size=65536k,mode=755"
-  },
-  {
-   "device": "shm",
-   "mount": "/dev/shm",
-   "type": "tmpfs",
-   "sizeKb": 65536,
-   "usedKb": 0,
-   "options": "rw,nosuid,nodev,noexec,relatime,size=65536k"
-  },
-  {
-   "device": "/dev/vda1",
-   "mount": "/etc/hosts",
-   "type": "ext4",
-   "sizeKb": 474095688,
-   "usedKb": 26795760,
-   "options": "rw,relatime,discard"
-  },
-  {
-   "device": "tmpfs",
-   "mount": "/run/docker.sock",
-   "type": "tmpfs",
-   "sizeKb": 812400,
-   "usedKb": 260,
-   "options": "rw,nosuid,nodev,noexec,relatime,size=812400k,mode=755"
-  },
-  {
-   "device": "tmpfs",
-   "mount": "/proc/scsi",
-   "type": "tmpfs",
-   "sizeKb": 4,
-   "usedKb": 0,
-   "options": "ro,relatime,size=4k,nr_inodes=1"
-  }
- ],
- "interfaces": [
-  {
-   "name": "lo",
-   "state": "UNKNOWN",
-   "mac": null,
-   "mtu": 65536,
-   "addresses": [
-    "127.0.0.1/8",
-    "::1/128"
-   ]
-  },
-  {
-   "name": "tunl0",
-   "state": "DOWN",
-   "mac": "0.0.0.0",
-   "mtu": 1480,
-   "addresses": []
-  },
-  {
-   "name": "gre0",
-   "state": "DOWN",
-   "mac": "0.0.0.0",
-   "mtu": 1476,
-   "addresses": []
-  },
-  {
-   "name": "gretap0",
-   "state": "DOWN",
-   "mac": "00:00:00:00:00:00",
-   "mtu": 1462,
-   "addresses": []
-  },
-  {
-   "name": "erspan0",
-   "state": "DOWN",
-   "mac": "00:00:00:00:00:00",
-   "mtu": 1450,
-   "addresses": []
-  },
-  {
-   "name": "ip_vti0",
-   "state": "DOWN",
-   "mac": "0.0.0.0",
-   "mtu": 1480,
-   "addresses": []
-  },
-  {
-   "name": "ip6_vti0",
-   "state": "DOWN",
-   "mac": "::",
-   "mtu": 1428,
-   "addresses": []
-  },
-  {
-   "name": "sit0",
-   "state": "DOWN",
-   "mac": "0.0.0.0",
-   "mtu": 1480,
-   "addresses": []
-  },
-  {
-   "name": "ip6tnl0",
-   "state": "DOWN",
-   "mac": "::",
-   "mtu": 1452,
-   "addresses": []
-  },
-  {
-   "name": "ip6gre0",
-   "state": "DOWN",
-   "mac": "::",
-   "mtu": 1448,
-   "addresses": []
-  },
-  {
-   "name": "eth0",
-   "state": "UP",
-   "mac": "7a:4a:c4:e3:84:cb",
-   "mtu": 65535,
-   "addresses": [
-    "172.17.0.2/16"
-   ]
-  }
- ],
- "routes": [
-  {
-   "destination": "default",
-   "gateway": "172.17.0.1",
-   "device": "eth0"
-  },
-  {
-   "destination": "172.17.0.0/16",
-   "gateway": null,
-   "device": "eth0"
-  }
- ],
- "dns": {
-  "nameservers": [
-   "192.168.65.7"
-  ],
-  "search": []
- },
- "ports": [
-  {
-   "proto": "tcp",
-   "address": "0.0.0.0",
-   "port": 22,
-   "process": null,
-   "pid": null
-  },
-  {
-   "proto": "tcp",
-   "address": "0.0.0.0",
-   "port": 8088,
-   "process": null,
-   "pid": null
-  },
-  {
-   "proto": "tcp",
-   "address": "::",
-   "port": 22,
-   "process": null,
-   "pid": null
-  }
- ],
- "processes": [
-  {
-   "pid": 1,
-   "ppid": 0,
-   "user": "root",
-   "cpu": 1,
-   "rssKb": 7528,
-   "ageSec": 2,
-   "name": "sshd",
-   "command": "sshd: /usr/sbin/sshd -D -e [listener] 0 of 10-100 startups"
-  },
-  {
-   "pid": 20,
-   "ppid": 1,
-   "user": "root",
-   "cpu": 2.2,
-   "rssKb": 18060,
-   "ageSec": 2,
-   "name": "python3",
-   "command": "python3 -m http.server 8088 --bind 0.0.0.0"
-  },
-  {
-   "pid": 156,
-   "ppid": 0,
-   "user": "openasy",
-   "cpu": 0,
-   "rssKb": 1564,
-   "ageSec": 0,
-   "name": "sh",
-   "command": "sh -s"
-  },
-  {
-   "pid": 185,
-   "ppid": 156,
-   "user": "openasy",
-   "cpu": 0,
-   "rssKb": 3236,
-   "ageSec": 0,
-   "name": "ps",
-   "command": "ps -eo pid=,ppid=,user:32=,pcpu=,rss=,etimes=,comm=,args="
-  }
- ],
- "services": null,
- "timers": null,
- "cron": [
-  {
-   "source": "/etc/crontab",
-   "entry": "SHELL=/bin/sh"
-  },
-  {
-   "source": "/etc/crontab",
-   "entry": "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-  },
-  {
-   "source": "/etc/crontab",
-   "entry": "17 *\t* * *\troot\tcd / && run-parts --report /etc/cron.hourly"
-  },
-  {
-   "source": "/etc/crontab",
-   "entry": "25 6\t* * *\troot\ttest -x /usr/sbin/anacron || { cd / && run-parts --report /etc/cron.daily; }"
-  },
-  {
-   "source": "/etc/crontab",
-   "entry": "47 6\t* * 7\troot\ttest -x /usr/sbin/anacron || { cd / && run-parts --report /etc/cron.weekly; }"
-  },
-  {
-   "source": "/etc/crontab",
-   "entry": "52 6\t1 * *\troot\ttest -x /usr/sbin/anacron || { cd / && run-parts --report /etc/cron.monthly; }"
-  },
-  {
-   "source": "/etc/cron.d/report",
-   "entry": "17 3 * * * root /usr/bin/true nightly-report"
-  }
- ],
- "crontabUsers": null,
- "users": [
-  {
-   "name": "root",
-   "uid": 0,
-   "gid": 0,
-   "home": "/root",
-   "shell": "/bin/bash",
-   "login": true,
-   "password": null
-  },
-  {
-   "name": "daemon",
-   "uid": 1,
-   "gid": 1,
-   "home": "/usr/sbin",
-   "shell": "/usr/sbin/nologin",
-   "login": false,
-   "password": null
-  },
-  {
-   "name": "bin",
-   "uid": 2,
-   "gid": 2,
-   "home": "/bin",
-   "shell": "/usr/sbin/nologin",
-   "login": false,
-   "password": null
-  },
-  {
-   "name": "sys",
-   "uid": 3,
-   "gid": 3,
-   "home": "/dev",
-   "shell": "/usr/sbin/nologin",
-   "login": false,
-   "password": null
-  },
-  {
-   "name": "sync",
-   "uid": 4,
-   "gid": 65534,
-   "home": "/bin",
-   "shell": "/bin/sync",
-   "login": false,
-   "password": null
-  },
-  {
-   "name": "games",
-   "uid": 5,
-   "gid": 60,
-   "home": "/usr/games",
-   "shell": "/usr/sbin/nologin",
-   "login": false,
-   "password": null
-  },
-  {
-   "name": "man",
-   "uid": 6,
-   "gid": 12,
-   "home": "/var/cache/man",
-   "shell": "/usr/sbin/nologin",
-   "login": false,
-   "password": null
-  },
-  {
-   "name": "lp",
-   "uid": 7,
-   "gid": 7,
-   "home": "/var/spool/lpd",
-   "shell": "/usr/sbin/nologin",
-   "login": false,
-   "password": null
-  },
-  {
-   "name": "mail",
-   "uid": 8,
-   "gid": 8,
-   "home": "/var/mail",
-   "shell": "/usr/sbin/nologin",
-   "login": false,
-   "password": null
-  },
-  {
-   "name": "news",
-   "uid": 9,
-   "gid": 9,
-   "home": "/var/spool/news",
-   "shell": "/usr/sbin/nologin",
-   "login": false,
-   "password": null
-  },
-  {
-   "name": "uucp",
-   "uid": 10,
-   "gid": 10,
-   "home": "/var/spool/uucp",
-   "shell": "/usr/sbin/nologin",
-   "login": false,
-   "password": null
-  },
-  {
-   "name": "proxy",
-   "uid": 13,
-   "gid": 13,
-   "home": "/bin",
-   "shell": "/usr/sbin/nologin",
-   "login": false,
-   "password": null
-  },
-  {
-   "name": "www-data",
-   "uid": 33,
-   "gid": 33,
-   "home": "/var/www",
-   "shell": "/usr/sbin/nologin",
-   "login": false,
-   "password": null
-  },
-  {
-   "name": "backup",
-   "uid": 34,
-   "gid": 34,
-   "home": "/var/backups",
-   "shell": "/usr/sbin/nologin",
-   "login": false,
-   "password": null
-  },
-  {
-   "name": "list",
-   "uid": 38,
-   "gid": 38,
-   "home": "/var/list",
-   "shell": "/usr/sbin/nologin",
-   "login": false,
-   "password": null
-  },
-  {
-   "name": "irc",
-   "uid": 39,
-   "gid": 39,
-   "home": "/run/ircd",
-   "shell": "/usr/sbin/nologin",
-   "login": false,
-   "password": null
-  },
-  {
-   "name": "_apt",
-   "uid": 42,
-   "gid": 65534,
-   "home": "/nonexistent",
-   "shell": "/usr/sbin/nologin",
-   "login": false,
-   "password": null
-  },
-  {
-   "name": "nobody",
-   "uid": 65534,
-   "gid": 65534,
-   "home": "/nonexistent",
-   "shell": "/usr/sbin/nologin",
-   "login": false,
-   "password": null
-  },
-  {
-   "name": "systemd-network",
-   "uid": 998,
-   "gid": 998,
-   "home": "/",
-   "shell": "/usr/sbin/nologin",
-   "login": false,
-   "password": null
-  },
-  {
-   "name": "sshd",
-   "uid": 996,
-   "gid": 65534,
-   "home": "/run/sshd",
-   "shell": "/usr/sbin/nologin",
-   "login": false,
-   "password": null
-  },
-  {
-   "name": "openasy",
-   "uid": 1000,
-   "gid": 1000,
-   "home": "/home/openasy",
-   "shell": "/bin/sh",
-   "login": true,
-   "password": null
-  },
-  {
-   "name": "dana",
-   "uid": 1001,
-   "gid": 1001,
-   "home": "/home/dana",
-   "shell": "/bin/bash",
-   "login": true,
-   "password": null
-  }
- ],
- "groups": [
-  {
-   "name": "root",
-   "gid": 0,
-   "members": []
-  },
-  {
-   "name": "daemon",
-   "gid": 1,
-   "members": []
-  },
-  {
-   "name": "bin",
-   "gid": 2,
-   "members": []
-  },
-  {
-   "name": "sys",
-   "gid": 3,
-   "members": []
-  },
-  {
-   "name": "adm",
-   "gid": 4,
-   "members": []
-  },
-  {
-   "name": "tty",
-   "gid": 5,
-   "members": []
-  },
-  {
-   "name": "disk",
-   "gid": 6,
-   "members": []
-  },
-  {
-   "name": "lp",
-   "gid": 7,
-   "members": []
-  },
-  {
-   "name": "mail",
-   "gid": 8,
-   "members": []
-  },
-  {
-   "name": "news",
-   "gid": 9,
-   "members": []
-  },
-  {
-   "name": "uucp",
-   "gid": 10,
-   "members": []
-  },
-  {
-   "name": "man",
-   "gid": 12,
-   "members": []
-  },
-  {
-   "name": "proxy",
-   "gid": 13,
-   "members": []
-  },
-  {
-   "name": "kmem",
-   "gid": 15,
-   "members": []
-  },
-  {
-   "name": "dialout",
-   "gid": 20,
-   "members": []
-  },
-  {
-   "name": "fax",
-   "gid": 21,
-   "members": []
-  },
-  {
-   "name": "voice",
-   "gid": 22,
-   "members": []
-  },
-  {
-   "name": "cdrom",
-   "gid": 24,
-   "members": []
-  },
-  {
-   "name": "floppy",
-   "gid": 25,
-   "members": []
-  },
-  {
-   "name": "tape",
-   "gid": 26,
-   "members": []
-  },
-  {
-   "name": "sudo",
-   "gid": 27,
-   "members": []
-  },
-  {
-   "name": "audio",
-   "gid": 29,
-   "members": []
-  },
-  {
-   "name": "dip",
-   "gid": 30,
-   "members": []
-  },
-  {
-   "name": "www-data",
-   "gid": 33,
-   "members": []
-  },
-  {
-   "name": "backup",
-   "gid": 34,
-   "members": []
-  },
-  {
-   "name": "operator",
-   "gid": 37,
-   "members": []
-  },
-  {
-   "name": "list",
-   "gid": 38,
-   "members": []
-  },
-  {
-   "name": "irc",
-   "gid": 39,
-   "members": []
-  },
-  {
-   "name": "src",
-   "gid": 40,
-   "members": []
-  },
-  {
-   "name": "shadow",
-   "gid": 42,
-   "members": []
-  },
-  {
-   "name": "utmp",
-   "gid": 43,
-   "members": []
-  },
-  {
-   "name": "video",
-   "gid": 44,
-   "members": []
-  },
-  {
-   "name": "sasl",
-   "gid": 45,
-   "members": []
-  },
-  {
-   "name": "plugdev",
-   "gid": 46,
-   "members": []
-  },
-  {
-   "name": "staff",
-   "gid": 50,
-   "members": []
-  },
-  {
-   "name": "games",
-   "gid": 60,
-   "members": []
-  },
-  {
-   "name": "users",
-   "gid": 100,
-   "members": []
-  },
-  {
-   "name": "nogroup",
-   "gid": 65534,
-   "members": []
-  },
-  {
-   "name": "systemd-journal",
-   "gid": 999,
-   "members": []
-  },
-  {
-   "name": "systemd-network",
-   "gid": 998,
-   "members": []
-  },
-  {
-   "name": "crontab",
-   "gid": 997,
-   "members": []
-  },
-  {
-   "name": "_ssh",
-   "gid": 101,
-   "members": []
-  },
-  {
-   "name": "openasy",
-   "gid": 1000,
-   "members": []
-  },
-  {
-   "name": "dana",
-   "gid": 1001,
-   "members": []
-  },
-  {
-   "name": "dockerhost",
-   "gid": 0,
-   "members": [
-    "openasy"
-   ]
-  }
- ],
- "sudo": [
-  "/etc/sudoers: Defaults\tenv_reset",
-  "/etc/sudoers: Defaults\tmail_badpass",
-  "/etc/sudoers: Defaults\tsecure_path=\"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"",
-  "/etc/sudoers: Defaults\tuse_pty",
-  "/etc/sudoers: root\tALL=(ALL:ALL) ALL",
-  "/etc/sudoers: %sudo\tALL=(ALL:ALL) ALL",
-  "/etc/sudoers: @includedir /etc/sudoers.d",
-  "/etc/sudoers.d/dana: dana ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart nginx"
- ],
- "authorizedKeys": null,
- "sshd": null,
- "modules": [
-  "fakeowner",
-  "grpcfuse",
-  "rosetta",
-  "selfowner",
-  "shiftfs"
- ],
- "sysctl": {
-  "net.ipv4.ip_forward": "1",
-  "net.ipv6.conf.all.forwarding": "0",
-  "net.ipv4.conf.all.rp_filter": "0",
-  "net.ipv4.tcp_syncookies": "1",
-  "kernel.randomize_va_space": "2",
-  "kernel.kptr_restrict": "0",
-  "kernel.dmesg_restrict": "1",
-  "kernel.unprivileged_bpf_disabled": "0",
-  "fs.protected_symlinks": "1",
-  "fs.protected_hardlinks": "1",
-  "fs.suid_dumpable": "0"
- },
- "firewall": null,
- "packages": [
-  {
-   "manager": "dpkg",
-   "name": "adduser",
-   "version": "3.152",
-   "arch": "all"
-  },
-  {
-   "manager": "dpkg",
-   "name": "apt",
-   "version": "3.0.3",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "base-files",
-   "version": "13.8+deb13u7",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "base-passwd",
-   "version": "3.6.7",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "bash",
-   "version": "5.2.37-2+b10",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "bsdutils",
-   "version": "1:2.41.5-0+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "coreutils",
-   "version": "9.7-3",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "cron",
-   "version": "3.0pl1-197",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "cron-daemon-common",
-   "version": "3.0pl1-197",
-   "arch": "all"
-  },
-  {
-   "manager": "dpkg",
-   "name": "dash",
-   "version": "0.5.12-12",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "debconf",
-   "version": "1.5.91",
-   "arch": "all"
-  },
-  {
-   "manager": "dpkg",
-   "name": "debian-archive-keyring",
-   "version": "2025.1",
-   "arch": "all"
-  },
-  {
-   "manager": "dpkg",
-   "name": "debianutils",
-   "version": "5.23.2",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "diffutils",
-   "version": "1:3.10-4",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "docker-cli",
-   "version": "26.1.5+dfsg1-9+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "dpkg",
-   "version": "1.22.22",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "findutils",
-   "version": "4.10.0-3",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "gcc-14-base",
-   "version": "14.2.0-19",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "grep",
-   "version": "3.11-4+b1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "gzip",
-   "version": "1.13-1+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "hostname",
-   "version": "3.25",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "init-system-helpers",
-   "version": "1.69~deb13u1",
-   "arch": "all"
-  },
-  {
-   "manager": "dpkg",
-   "name": "iproute2",
-   "version": "6.15.0-1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libacl1",
-   "version": "2.3.2-2+b1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libapparmor1",
-   "version": "4.1.0-1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libapt-pkg7.0",
-   "version": "3.0.3",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libattr1",
-   "version": "1:2.5.2-3",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libaudit-common",
-   "version": "1:4.0.2-2+deb13u1",
-   "arch": "all"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libaudit1",
-   "version": "1:4.0.2-2+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libblkid1",
-   "version": "2.41.5-0+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libbpf1",
-   "version": "1:1.5.0-3",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libbsd0",
-   "version": "0.12.2-2",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libbz2-1.0",
-   "version": "1.0.8-6",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libc-bin",
-   "version": "2.41-12+deb13u4",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libc6",
-   "version": "2.41-12+deb13u4",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libcap-ng0",
-   "version": "0.8.5-4+b1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libcap2",
-   "version": "1:2.75-10+deb13u1+b3",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libcap2-bin",
-   "version": "1:2.75-10+deb13u1+b3",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libcbor0.10",
-   "version": "0.10.2-2",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libcom-err2",
-   "version": "1.47.2-3+b12",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libcrypt1",
-   "version": "1:4.4.38-1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libdb5.3t64",
-   "version": "5.3.28+dfsg2-9",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libdebconfclient0",
-   "version": "0.280",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libedit2",
-   "version": "3.1-20250104-1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libelf1t64",
-   "version": "0.192-4",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libexpat1",
-   "version": "2.9.0-1~deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libffi8",
-   "version": "3.4.8-2",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libfido2-1",
-   "version": "1.15.0-1+b1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libgcc-s1",
-   "version": "14.2.0-19",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libgmp10",
-   "version": "2:6.3.0+dfsg-3",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libgssapi-krb5-2",
-   "version": "1.21.3-5+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libhogweed6t64",
-   "version": "3.10.1-1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libjansson4",
-   "version": "2.14-2+b3",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libk5crypto3",
-   "version": "1.21.3-5+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libkeyutils1",
-   "version": "1.6.3-6",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libkrb5-3",
-   "version": "1.21.3-5+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libkrb5support0",
-   "version": "1.21.3-5+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "liblastlog2-2",
-   "version": "2.41.5-0+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "liblz4-1",
-   "version": "1.10.0-4",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "liblzma5",
-   "version": "5.8.1-1+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libmd0",
-   "version": "1.1.0-2+b1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libmnl0",
-   "version": "1.0.5-3",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libmount1",
-   "version": "2.41.5-0+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libncursesw6",
-   "version": "6.5+20250216-2",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libnettle8t64",
-   "version": "3.10.1-1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libnftables1",
-   "version": "1.1.3-1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libnftnl11",
-   "version": "1.2.9-1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libpam-modules",
-   "version": "1.7.0-5",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libpam-modules-bin",
-   "version": "1.7.0-5",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libpam-runtime",
-   "version": "1.7.0-5",
-   "arch": "all"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libpam0g",
-   "version": "1.7.0-5",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libpcre2-8-0",
-   "version": "10.46-1~deb13u3",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libproc2-0",
-   "version": "2:4.0.4-9",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libpython3-stdlib",
-   "version": "3.13.5-1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libpython3.13-minimal",
-   "version": "3.13.5-2+deb13u5",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libpython3.13-stdlib",
-   "version": "3.13.5-2+deb13u5",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libreadline8t64",
-   "version": "8.2-6",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libseccomp2",
-   "version": "2.6.0-2",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libselinux1",
-   "version": "3.8.1-1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libsemanage-common",
-   "version": "3.8.1-1",
-   "arch": "all"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libsemanage2",
-   "version": "3.8.1-1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libsepol2",
-   "version": "3.8.1-1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libsmartcols1",
-   "version": "2.41.5-0+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libsqlite3-0",
-   "version": "3.46.1-7+deb13u2",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libssl3t64",
-   "version": "3.5.7-1~deb13u3",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libstdc++6",
-   "version": "14.2.0-19",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libsystemd-shared",
-   "version": "257.13-1~deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libsystemd0",
-   "version": "257.13-1~deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libtext-charwidth-perl",
-   "version": "0.04-11+b4",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libtext-wrapi18n-perl",
-   "version": "0.06-10",
-   "arch": "all"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libtinfo6",
-   "version": "6.5+20250216-2",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libtirpc-common",
-   "version": "1.3.6+ds-1",
-   "arch": "all"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libtirpc3t64",
-   "version": "1.3.6+ds-1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libudev1",
-   "version": "257.13-1~deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libuuid1",
-   "version": "2.41.5-0+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libwrap0",
-   "version": "7.6.q-36",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libwtmpdb0",
-   "version": "0.73.0-3+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libxtables12",
-   "version": "1.8.11-2",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libxxhash0",
-   "version": "0.8.3-2",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "libzstd1",
-   "version": "1.5.7+dfsg-1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "login",
-   "version": "1:4.16.0-2+really2.41.5-0+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "login.defs",
-   "version": "1:4.17.4-2",
-   "arch": "all"
-  },
-  {
-   "manager": "dpkg",
-   "name": "mawk",
-   "version": "1.3.4.20250131-1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "media-types",
-   "version": "13.0.0",
-   "arch": "all"
-  },
-  {
-   "manager": "dpkg",
-   "name": "mount",
-   "version": "2.41.5-0+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "ncurses-base",
-   "version": "6.5+20250216-2",
-   "arch": "all"
-  },
-  {
-   "manager": "dpkg",
-   "name": "ncurses-bin",
-   "version": "6.5+20250216-2",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "netbase",
-   "version": "6.5",
-   "arch": "all"
-  },
-  {
-   "manager": "dpkg",
-   "name": "nftables",
-   "version": "1.1.3-1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "openssh-client",
-   "version": "1:10.0p1-7+deb13u4",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "openssh-server",
-   "version": "1:10.0p1-7+deb13u4",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "openssh-sftp-server",
-   "version": "1:10.0p1-7+deb13u4",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "openssl-provider-legacy",
-   "version": "3.5.7-1~deb13u3",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "passwd",
-   "version": "1:4.17.4-2",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "perl-base",
-   "version": "5.40.1-6+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "procps",
-   "version": "2:4.0.4-9",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "python3",
-   "version": "3.13.5-1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "python3-minimal",
-   "version": "3.13.5-1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "python3.13",
-   "version": "3.13.5-2+deb13u5",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "python3.13-minimal",
-   "version": "3.13.5-2+deb13u5",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "readline-common",
-   "version": "8.2-6",
-   "arch": "all"
-  },
-  {
-   "manager": "dpkg",
-   "name": "runit-helper",
-   "version": "2.16.4",
-   "arch": "all"
-  },
-  {
-   "manager": "dpkg",
-   "name": "sed",
-   "version": "4.9-2+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "sensible-utils",
-   "version": "0.0.25",
-   "arch": "all"
-  },
-  {
-   "manager": "dpkg",
-   "name": "sqv",
-   "version": "1.3.0-3+b2",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "sudo",
-   "version": "1.9.16p2-3+deb13u2",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "systemd",
-   "version": "257.13-1~deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "sysvinit-utils",
-   "version": "3.14-4",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "tar",
-   "version": "1.35+dfsg-3.1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "tzdata",
-   "version": "2026c-0+deb13u1",
-   "arch": "all"
-  },
-  {
-   "manager": "dpkg",
-   "name": "ucf",
-   "version": "3.0052",
-   "arch": "all"
-  },
-  {
-   "manager": "dpkg",
-   "name": "util-linux",
-   "version": "2.41.5-0+deb13u1",
-   "arch": "arm64"
-  },
-  {
-   "manager": "dpkg",
-   "name": "zlib1g",
-   "version": "1:1.3.dfsg+really1.3.1-1+b1",
-   "arch": "arm64"
-  }
- ],
- "containers": [
-  {
-   "engine": "docker",
-   "id": "ad78a80921f9",
-   "name": "fx",
-   "image": "openasy-infra-target:dev",
-   "imageId": "sha256:b3955fd806ca4cf73e4b3974ce3b065b78decefcf7d6579edb5f006854e83b5e",
-   "state": "running",
-   "health": null,
-   "createdAt": "2026-10-20T11:06:03.649235222Z",
-   "startedAt": "2026-10-20T11:06:03.693355722Z",
-   "restarts": 0,
-   "restartPolicy": "no",
-   "command": "/bin/sh /entrypoint.sh",
-   "ports": [
-    "22/tcp"
-   ],
-   "mounts": [
+  "collectedAt": "2026-10-20T11:06:06.000Z",
+  "account": {
+    "user": "openasy",
+    "uid": 1000,
+    "sudo": "rules"
+  },
+  "system": {
+    "hostname": "web-1",
+    "machineId": "b8ccbab8548d4e5da604b05a79981e8e",
+    "os": {
+      "id": "debian",
+      "name": "Debian GNU/Linux 13 (trixie)",
+      "version": "13"
+    },
+    "kernel": "7.0.12-linuxkit",
+    "arch": "aarch64",
+    "bootedAt": "2026-10-20T10:35:34.000Z",
+    "uptimeSec": 1832,
+    "load": [0.34, 0.37, 0.31],
+    "virtualization": "docker",
+    "hardware": {},
+    "serial": null
+  },
+  "cpu": {
+    "model": null,
+    "threads": 14,
+    "cores": null
+  },
+  "memory": {
+    "totalKb": 8124000,
+    "availableKb": 6165100,
+    "swapTotalKb": 1048572,
+    "swapFreeKb": 1048572
+  },
+  "disks": [
     {
-     "source": "/var/run/docker.sock",
-     "destination": "/var/run/docker.sock",
-     "mode": "",
-     "readOnly": false
+      "name": "nbd0",
+      "type": "disk",
+      "sizeBytes": 0,
+      "model": null,
+      "rotational": false
+    },
+    {
+      "name": "nbd1",
+      "type": "disk",
+      "sizeBytes": 0,
+      "model": null,
+      "rotational": false
+    },
+    {
+      "name": "nbd2",
+      "type": "disk",
+      "sizeBytes": 0,
+      "model": null,
+      "rotational": false
+    },
+    {
+      "name": "nbd3",
+      "type": "disk",
+      "sizeBytes": 0,
+      "model": null,
+      "rotational": false
+    },
+    {
+      "name": "nbd4",
+      "type": "disk",
+      "sizeBytes": 0,
+      "model": null,
+      "rotational": false
+    },
+    {
+      "name": "nbd5",
+      "type": "disk",
+      "sizeBytes": 0,
+      "model": null,
+      "rotational": false
+    },
+    {
+      "name": "nbd6",
+      "type": "disk",
+      "sizeBytes": 0,
+      "model": null,
+      "rotational": false
+    },
+    {
+      "name": "nbd7",
+      "type": "disk",
+      "sizeBytes": 0,
+      "model": null,
+      "rotational": false
+    },
+    {
+      "name": "vda",
+      "type": "disk",
+      "sizeBytes": 494384709632,
+      "model": null,
+      "rotational": true
+    },
+    {
+      "name": "vdb",
+      "type": "disk",
+      "sizeBytes": 677666816,
+      "model": null,
+      "rotational": true
+    },
+    {
+      "name": "nbd8",
+      "type": "disk",
+      "sizeBytes": 0,
+      "model": null,
+      "rotational": false
+    },
+    {
+      "name": "nbd9",
+      "type": "disk",
+      "sizeBytes": 0,
+      "model": null,
+      "rotational": false
+    },
+    {
+      "name": "nbd10",
+      "type": "disk",
+      "sizeBytes": 0,
+      "model": null,
+      "rotational": false
+    },
+    {
+      "name": "nbd11",
+      "type": "disk",
+      "sizeBytes": 0,
+      "model": null,
+      "rotational": false
+    },
+    {
+      "name": "nbd12",
+      "type": "disk",
+      "sizeBytes": 0,
+      "model": null,
+      "rotational": false
+    },
+    {
+      "name": "nbd13",
+      "type": "disk",
+      "sizeBytes": 0,
+      "model": null,
+      "rotational": false
+    },
+    {
+      "name": "nbd14",
+      "type": "disk",
+      "sizeBytes": 0,
+      "model": null,
+      "rotational": false
+    },
+    {
+      "name": "nbd15",
+      "type": "disk",
+      "sizeBytes": 0,
+      "model": null,
+      "rotational": false
     }
-   ],
-   "networks": [
-    "bridge"
-   ],
-   "labels": {},
-   "envNames": [
-    "OPENASY_DOCKER",
-    "OPENASY_SUDOERS",
-    "PATH"
-   ],
-   "memoryLimitBytes": null,
-   "cpuLimit": null,
-   "privileged": false,
-   "user": "root"
+  ],
+  "filesystems": [
+    {
+      "device": "overlay",
+      "mount": "/",
+      "type": "overlay",
+      "sizeKb": 474095688,
+      "usedKb": 26795760,
+      "options": "rw,relatime,lowerdir=/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/4361/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/4304/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/4240/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/4239/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/4238/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/3521/fs,upperdir=/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/4362/fs,workdir=/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/4362/work,nouserxattr"
+    },
+    {
+      "device": "tmpfs",
+      "mount": "/dev",
+      "type": "tmpfs",
+      "sizeKb": 65536,
+      "usedKb": 0,
+      "options": "rw,nosuid,size=65536k,mode=755"
+    },
+    {
+      "device": "shm",
+      "mount": "/dev/shm",
+      "type": "tmpfs",
+      "sizeKb": 65536,
+      "usedKb": 0,
+      "options": "rw,nosuid,nodev,noexec,relatime,size=65536k"
+    },
+    {
+      "device": "/dev/vda1",
+      "mount": "/etc/hosts",
+      "type": "ext4",
+      "sizeKb": 474095688,
+      "usedKb": 26795760,
+      "options": "rw,relatime,discard"
+    },
+    {
+      "device": "tmpfs",
+      "mount": "/run/docker.sock",
+      "type": "tmpfs",
+      "sizeKb": 812400,
+      "usedKb": 260,
+      "options": "rw,nosuid,nodev,noexec,relatime,size=812400k,mode=755"
+    },
+    {
+      "device": "tmpfs",
+      "mount": "/proc/scsi",
+      "type": "tmpfs",
+      "sizeKb": 4,
+      "usedKb": 0,
+      "options": "ro,relatime,size=4k,nr_inodes=1"
+    }
+  ],
+  "interfaces": [
+    {
+      "name": "lo",
+      "state": "UNKNOWN",
+      "mac": null,
+      "mtu": 65536,
+      "addresses": ["127.0.0.1/8", "::1/128"]
+    },
+    {
+      "name": "tunl0",
+      "state": "DOWN",
+      "mac": "0.0.0.0",
+      "mtu": 1480,
+      "addresses": []
+    },
+    {
+      "name": "gre0",
+      "state": "DOWN",
+      "mac": "0.0.0.0",
+      "mtu": 1476,
+      "addresses": []
+    },
+    {
+      "name": "gretap0",
+      "state": "DOWN",
+      "mac": "00:00:00:00:00:00",
+      "mtu": 1462,
+      "addresses": []
+    },
+    {
+      "name": "erspan0",
+      "state": "DOWN",
+      "mac": "00:00:00:00:00:00",
+      "mtu": 1450,
+      "addresses": []
+    },
+    {
+      "name": "ip_vti0",
+      "state": "DOWN",
+      "mac": "0.0.0.0",
+      "mtu": 1480,
+      "addresses": []
+    },
+    {
+      "name": "ip6_vti0",
+      "state": "DOWN",
+      "mac": "::",
+      "mtu": 1428,
+      "addresses": []
+    },
+    {
+      "name": "sit0",
+      "state": "DOWN",
+      "mac": "0.0.0.0",
+      "mtu": 1480,
+      "addresses": []
+    },
+    {
+      "name": "ip6tnl0",
+      "state": "DOWN",
+      "mac": "::",
+      "mtu": 1452,
+      "addresses": []
+    },
+    {
+      "name": "ip6gre0",
+      "state": "DOWN",
+      "mac": "::",
+      "mtu": 1448,
+      "addresses": []
+    },
+    {
+      "name": "eth0",
+      "state": "UP",
+      "mac": "7a:4a:c4:e3:84:cb",
+      "mtu": 65535,
+      "addresses": ["172.17.0.2/16"]
+    }
+  ],
+  "routes": [
+    {
+      "destination": "default",
+      "gateway": "172.17.0.1",
+      "device": "eth0"
+    },
+    {
+      "destination": "172.17.0.0/16",
+      "gateway": null,
+      "device": "eth0"
+    }
+  ],
+  "dns": {
+    "nameservers": ["192.168.65.7"],
+    "search": []
   },
-  {
-   "engine": "docker",
-   "id": "16da44f5f3f2",
-   "name": "fx-api",
-   "image": "debian:13-slim",
-   "imageId": "sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f",
-   "state": "restarting",
-   "health": "unhealthy",
-   "createdAt": "2026-10-20T10:38:19.436419257Z",
-   "startedAt": "2026-10-20T11:06:06.314375792Z",
-   "restarts": 37,
-   "restartPolicy": "unless-stopped",
-   "command": "sh -c exec sleep infinity --api-token=***",
-   "ports": [],
-   "mounts": [],
-   "networks": [
-    "bridge"
-   ],
-   "labels": {
-    "team": "payments"
-   },
-   "envNames": [
-    "DATABASE_PASSWORD",
-    "LOG_LEVEL",
-    "PATH"
-   ],
-   "memoryLimitBytes": 268435456,
-   "cpuLimit": 0.5,
-   "privileged": false,
-   "user": "root"
-  }
- ],
- "unreadable": [
-  "firewall rules",
-  "hardware serial number",
-  "user crontabs",
-  "SSH keys that may log in",
-  "SSH server settings",
-  "whether accounts have a password",
-  "which process listens on a port"
- ]
+  "ports": [
+    {
+      "proto": "tcp",
+      "address": "0.0.0.0",
+      "port": 22,
+      "process": null,
+      "pid": null
+    },
+    {
+      "proto": "tcp",
+      "address": "0.0.0.0",
+      "port": 8088,
+      "process": null,
+      "pid": null
+    },
+    {
+      "proto": "tcp",
+      "address": "::",
+      "port": 22,
+      "process": null,
+      "pid": null
+    }
+  ],
+  "processes": [
+    {
+      "pid": 1,
+      "ppid": 0,
+      "user": "root",
+      "cpu": 1,
+      "rssKb": 7528,
+      "ageSec": 2,
+      "name": "sshd",
+      "command": "sshd: /usr/sbin/sshd -D -e [listener] 0 of 10-100 startups"
+    },
+    {
+      "pid": 20,
+      "ppid": 1,
+      "user": "root",
+      "cpu": 2.2,
+      "rssKb": 18060,
+      "ageSec": 2,
+      "name": "python3",
+      "command": "python3 -m http.server 8088 --bind 0.0.0.0"
+    },
+    {
+      "pid": 156,
+      "ppid": 0,
+      "user": "openasy",
+      "cpu": 0,
+      "rssKb": 1564,
+      "ageSec": 0,
+      "name": "sh",
+      "command": "sh -s"
+    },
+    {
+      "pid": 185,
+      "ppid": 156,
+      "user": "openasy",
+      "cpu": 0,
+      "rssKb": 3236,
+      "ageSec": 0,
+      "name": "ps",
+      "command": "ps -eo pid=,ppid=,user:32=,pcpu=,rss=,etimes=,comm=,args="
+    }
+  ],
+  "services": null,
+  "timers": null,
+  "cron": [
+    {
+      "source": "/etc/crontab",
+      "entry": "SHELL=/bin/sh"
+    },
+    {
+      "source": "/etc/crontab",
+      "entry": "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    },
+    {
+      "source": "/etc/crontab",
+      "entry": "17 *\t* * *\troot\tcd / && run-parts --report /etc/cron.hourly"
+    },
+    {
+      "source": "/etc/crontab",
+      "entry": "25 6\t* * *\troot\ttest -x /usr/sbin/anacron || { cd / && run-parts --report /etc/cron.daily; }"
+    },
+    {
+      "source": "/etc/crontab",
+      "entry": "47 6\t* * 7\troot\ttest -x /usr/sbin/anacron || { cd / && run-parts --report /etc/cron.weekly; }"
+    },
+    {
+      "source": "/etc/crontab",
+      "entry": "52 6\t1 * *\troot\ttest -x /usr/sbin/anacron || { cd / && run-parts --report /etc/cron.monthly; }"
+    },
+    {
+      "source": "/etc/cron.d/report",
+      "entry": "17 3 * * * root /usr/bin/true nightly-report"
+    }
+  ],
+  "crontabUsers": null,
+  "users": [
+    {
+      "name": "root",
+      "uid": 0,
+      "gid": 0,
+      "home": "/root",
+      "shell": "/bin/bash",
+      "login": true,
+      "password": null
+    },
+    {
+      "name": "daemon",
+      "uid": 1,
+      "gid": 1,
+      "home": "/usr/sbin",
+      "shell": "/usr/sbin/nologin",
+      "login": false,
+      "password": null
+    },
+    {
+      "name": "bin",
+      "uid": 2,
+      "gid": 2,
+      "home": "/bin",
+      "shell": "/usr/sbin/nologin",
+      "login": false,
+      "password": null
+    },
+    {
+      "name": "sys",
+      "uid": 3,
+      "gid": 3,
+      "home": "/dev",
+      "shell": "/usr/sbin/nologin",
+      "login": false,
+      "password": null
+    },
+    {
+      "name": "sync",
+      "uid": 4,
+      "gid": 65534,
+      "home": "/bin",
+      "shell": "/bin/sync",
+      "login": false,
+      "password": null
+    },
+    {
+      "name": "games",
+      "uid": 5,
+      "gid": 60,
+      "home": "/usr/games",
+      "shell": "/usr/sbin/nologin",
+      "login": false,
+      "password": null
+    },
+    {
+      "name": "man",
+      "uid": 6,
+      "gid": 12,
+      "home": "/var/cache/man",
+      "shell": "/usr/sbin/nologin",
+      "login": false,
+      "password": null
+    },
+    {
+      "name": "lp",
+      "uid": 7,
+      "gid": 7,
+      "home": "/var/spool/lpd",
+      "shell": "/usr/sbin/nologin",
+      "login": false,
+      "password": null
+    },
+    {
+      "name": "mail",
+      "uid": 8,
+      "gid": 8,
+      "home": "/var/mail",
+      "shell": "/usr/sbin/nologin",
+      "login": false,
+      "password": null
+    },
+    {
+      "name": "news",
+      "uid": 9,
+      "gid": 9,
+      "home": "/var/spool/news",
+      "shell": "/usr/sbin/nologin",
+      "login": false,
+      "password": null
+    },
+    {
+      "name": "uucp",
+      "uid": 10,
+      "gid": 10,
+      "home": "/var/spool/uucp",
+      "shell": "/usr/sbin/nologin",
+      "login": false,
+      "password": null
+    },
+    {
+      "name": "proxy",
+      "uid": 13,
+      "gid": 13,
+      "home": "/bin",
+      "shell": "/usr/sbin/nologin",
+      "login": false,
+      "password": null
+    },
+    {
+      "name": "www-data",
+      "uid": 33,
+      "gid": 33,
+      "home": "/var/www",
+      "shell": "/usr/sbin/nologin",
+      "login": false,
+      "password": null
+    },
+    {
+      "name": "backup",
+      "uid": 34,
+      "gid": 34,
+      "home": "/var/backups",
+      "shell": "/usr/sbin/nologin",
+      "login": false,
+      "password": null
+    },
+    {
+      "name": "list",
+      "uid": 38,
+      "gid": 38,
+      "home": "/var/list",
+      "shell": "/usr/sbin/nologin",
+      "login": false,
+      "password": null
+    },
+    {
+      "name": "irc",
+      "uid": 39,
+      "gid": 39,
+      "home": "/run/ircd",
+      "shell": "/usr/sbin/nologin",
+      "login": false,
+      "password": null
+    },
+    {
+      "name": "_apt",
+      "uid": 42,
+      "gid": 65534,
+      "home": "/nonexistent",
+      "shell": "/usr/sbin/nologin",
+      "login": false,
+      "password": null
+    },
+    {
+      "name": "nobody",
+      "uid": 65534,
+      "gid": 65534,
+      "home": "/nonexistent",
+      "shell": "/usr/sbin/nologin",
+      "login": false,
+      "password": null
+    },
+    {
+      "name": "systemd-network",
+      "uid": 998,
+      "gid": 998,
+      "home": "/",
+      "shell": "/usr/sbin/nologin",
+      "login": false,
+      "password": null
+    },
+    {
+      "name": "sshd",
+      "uid": 996,
+      "gid": 65534,
+      "home": "/run/sshd",
+      "shell": "/usr/sbin/nologin",
+      "login": false,
+      "password": null
+    },
+    {
+      "name": "openasy",
+      "uid": 1000,
+      "gid": 1000,
+      "home": "/home/openasy",
+      "shell": "/bin/sh",
+      "login": true,
+      "password": null
+    },
+    {
+      "name": "dana",
+      "uid": 1001,
+      "gid": 1001,
+      "home": "/home/dana",
+      "shell": "/bin/bash",
+      "login": true,
+      "password": null
+    }
+  ],
+  "groups": [
+    {
+      "name": "root",
+      "gid": 0,
+      "members": []
+    },
+    {
+      "name": "daemon",
+      "gid": 1,
+      "members": []
+    },
+    {
+      "name": "bin",
+      "gid": 2,
+      "members": []
+    },
+    {
+      "name": "sys",
+      "gid": 3,
+      "members": []
+    },
+    {
+      "name": "adm",
+      "gid": 4,
+      "members": []
+    },
+    {
+      "name": "tty",
+      "gid": 5,
+      "members": []
+    },
+    {
+      "name": "disk",
+      "gid": 6,
+      "members": []
+    },
+    {
+      "name": "lp",
+      "gid": 7,
+      "members": []
+    },
+    {
+      "name": "mail",
+      "gid": 8,
+      "members": []
+    },
+    {
+      "name": "news",
+      "gid": 9,
+      "members": []
+    },
+    {
+      "name": "uucp",
+      "gid": 10,
+      "members": []
+    },
+    {
+      "name": "man",
+      "gid": 12,
+      "members": []
+    },
+    {
+      "name": "proxy",
+      "gid": 13,
+      "members": []
+    },
+    {
+      "name": "kmem",
+      "gid": 15,
+      "members": []
+    },
+    {
+      "name": "dialout",
+      "gid": 20,
+      "members": []
+    },
+    {
+      "name": "fax",
+      "gid": 21,
+      "members": []
+    },
+    {
+      "name": "voice",
+      "gid": 22,
+      "members": []
+    },
+    {
+      "name": "cdrom",
+      "gid": 24,
+      "members": []
+    },
+    {
+      "name": "floppy",
+      "gid": 25,
+      "members": []
+    },
+    {
+      "name": "tape",
+      "gid": 26,
+      "members": []
+    },
+    {
+      "name": "sudo",
+      "gid": 27,
+      "members": []
+    },
+    {
+      "name": "audio",
+      "gid": 29,
+      "members": []
+    },
+    {
+      "name": "dip",
+      "gid": 30,
+      "members": []
+    },
+    {
+      "name": "www-data",
+      "gid": 33,
+      "members": []
+    },
+    {
+      "name": "backup",
+      "gid": 34,
+      "members": []
+    },
+    {
+      "name": "operator",
+      "gid": 37,
+      "members": []
+    },
+    {
+      "name": "list",
+      "gid": 38,
+      "members": []
+    },
+    {
+      "name": "irc",
+      "gid": 39,
+      "members": []
+    },
+    {
+      "name": "src",
+      "gid": 40,
+      "members": []
+    },
+    {
+      "name": "shadow",
+      "gid": 42,
+      "members": []
+    },
+    {
+      "name": "utmp",
+      "gid": 43,
+      "members": []
+    },
+    {
+      "name": "video",
+      "gid": 44,
+      "members": []
+    },
+    {
+      "name": "sasl",
+      "gid": 45,
+      "members": []
+    },
+    {
+      "name": "plugdev",
+      "gid": 46,
+      "members": []
+    },
+    {
+      "name": "staff",
+      "gid": 50,
+      "members": []
+    },
+    {
+      "name": "games",
+      "gid": 60,
+      "members": []
+    },
+    {
+      "name": "users",
+      "gid": 100,
+      "members": []
+    },
+    {
+      "name": "nogroup",
+      "gid": 65534,
+      "members": []
+    },
+    {
+      "name": "systemd-journal",
+      "gid": 999,
+      "members": []
+    },
+    {
+      "name": "systemd-network",
+      "gid": 998,
+      "members": []
+    },
+    {
+      "name": "crontab",
+      "gid": 997,
+      "members": []
+    },
+    {
+      "name": "_ssh",
+      "gid": 101,
+      "members": []
+    },
+    {
+      "name": "openasy",
+      "gid": 1000,
+      "members": []
+    },
+    {
+      "name": "dana",
+      "gid": 1001,
+      "members": []
+    },
+    {
+      "name": "dockerhost",
+      "gid": 0,
+      "members": ["openasy"]
+    }
+  ],
+  "sudo": [
+    "/etc/sudoers: Defaults\tenv_reset",
+    "/etc/sudoers: Defaults\tmail_badpass",
+    "/etc/sudoers: Defaults\tsecure_path=\"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"",
+    "/etc/sudoers: Defaults\tuse_pty",
+    "/etc/sudoers: root\tALL=(ALL:ALL) ALL",
+    "/etc/sudoers: %sudo\tALL=(ALL:ALL) ALL",
+    "/etc/sudoers: @includedir /etc/sudoers.d",
+    "/etc/sudoers.d/dana: dana ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart nginx"
+  ],
+  "authorizedKeys": null,
+  "sshd": null,
+  "modules": ["fakeowner", "grpcfuse", "rosetta", "selfowner", "shiftfs"],
+  "sysctl": {
+    "net.ipv4.ip_forward": "1",
+    "net.ipv6.conf.all.forwarding": "0",
+    "net.ipv4.conf.all.rp_filter": "0",
+    "net.ipv4.tcp_syncookies": "1",
+    "kernel.randomize_va_space": "2",
+    "kernel.kptr_restrict": "0",
+    "kernel.dmesg_restrict": "1",
+    "kernel.unprivileged_bpf_disabled": "0",
+    "fs.protected_symlinks": "1",
+    "fs.protected_hardlinks": "1",
+    "fs.suid_dumpable": "0"
+  },
+  "firewall": null,
+  "packages": [
+    {
+      "manager": "dpkg",
+      "name": "adduser",
+      "version": "3.152",
+      "arch": "all"
+    },
+    {
+      "manager": "dpkg",
+      "name": "apt",
+      "version": "3.0.3",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "base-files",
+      "version": "13.8+deb13u7",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "base-passwd",
+      "version": "3.6.7",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "bash",
+      "version": "5.2.37-2+b10",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "bsdutils",
+      "version": "1:2.41.5-0+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "coreutils",
+      "version": "9.7-3",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "cron",
+      "version": "3.0pl1-197",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "cron-daemon-common",
+      "version": "3.0pl1-197",
+      "arch": "all"
+    },
+    {
+      "manager": "dpkg",
+      "name": "dash",
+      "version": "0.5.12-12",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "debconf",
+      "version": "1.5.91",
+      "arch": "all"
+    },
+    {
+      "manager": "dpkg",
+      "name": "debian-archive-keyring",
+      "version": "2025.1",
+      "arch": "all"
+    },
+    {
+      "manager": "dpkg",
+      "name": "debianutils",
+      "version": "5.23.2",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "diffutils",
+      "version": "1:3.10-4",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "docker-cli",
+      "version": "26.1.5+dfsg1-9+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "dpkg",
+      "version": "1.22.22",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "findutils",
+      "version": "4.10.0-3",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "gcc-14-base",
+      "version": "14.2.0-19",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "grep",
+      "version": "3.11-4+b1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "gzip",
+      "version": "1.13-1+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "hostname",
+      "version": "3.25",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "init-system-helpers",
+      "version": "1.69~deb13u1",
+      "arch": "all"
+    },
+    {
+      "manager": "dpkg",
+      "name": "iproute2",
+      "version": "6.15.0-1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libacl1",
+      "version": "2.3.2-2+b1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libapparmor1",
+      "version": "4.1.0-1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libapt-pkg7.0",
+      "version": "3.0.3",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libattr1",
+      "version": "1:2.5.2-3",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libaudit-common",
+      "version": "1:4.0.2-2+deb13u1",
+      "arch": "all"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libaudit1",
+      "version": "1:4.0.2-2+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libblkid1",
+      "version": "2.41.5-0+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libbpf1",
+      "version": "1:1.5.0-3",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libbsd0",
+      "version": "0.12.2-2",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libbz2-1.0",
+      "version": "1.0.8-6",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libc-bin",
+      "version": "2.41-12+deb13u4",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libc6",
+      "version": "2.41-12+deb13u4",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libcap-ng0",
+      "version": "0.8.5-4+b1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libcap2",
+      "version": "1:2.75-10+deb13u1+b3",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libcap2-bin",
+      "version": "1:2.75-10+deb13u1+b3",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libcbor0.10",
+      "version": "0.10.2-2",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libcom-err2",
+      "version": "1.47.2-3+b12",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libcrypt1",
+      "version": "1:4.4.38-1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libdb5.3t64",
+      "version": "5.3.28+dfsg2-9",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libdebconfclient0",
+      "version": "0.280",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libedit2",
+      "version": "3.1-20250104-1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libelf1t64",
+      "version": "0.192-4",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libexpat1",
+      "version": "2.9.0-1~deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libffi8",
+      "version": "3.4.8-2",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libfido2-1",
+      "version": "1.15.0-1+b1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libgcc-s1",
+      "version": "14.2.0-19",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libgmp10",
+      "version": "2:6.3.0+dfsg-3",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libgssapi-krb5-2",
+      "version": "1.21.3-5+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libhogweed6t64",
+      "version": "3.10.1-1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libjansson4",
+      "version": "2.14-2+b3",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libk5crypto3",
+      "version": "1.21.3-5+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libkeyutils1",
+      "version": "1.6.3-6",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libkrb5-3",
+      "version": "1.21.3-5+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libkrb5support0",
+      "version": "1.21.3-5+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "liblastlog2-2",
+      "version": "2.41.5-0+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "liblz4-1",
+      "version": "1.10.0-4",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "liblzma5",
+      "version": "5.8.1-1+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libmd0",
+      "version": "1.1.0-2+b1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libmnl0",
+      "version": "1.0.5-3",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libmount1",
+      "version": "2.41.5-0+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libncursesw6",
+      "version": "6.5+20250216-2",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libnettle8t64",
+      "version": "3.10.1-1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libnftables1",
+      "version": "1.1.3-1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libnftnl11",
+      "version": "1.2.9-1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libpam-modules",
+      "version": "1.7.0-5",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libpam-modules-bin",
+      "version": "1.7.0-5",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libpam-runtime",
+      "version": "1.7.0-5",
+      "arch": "all"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libpam0g",
+      "version": "1.7.0-5",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libpcre2-8-0",
+      "version": "10.46-1~deb13u3",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libproc2-0",
+      "version": "2:4.0.4-9",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libpython3-stdlib",
+      "version": "3.13.5-1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libpython3.13-minimal",
+      "version": "3.13.5-2+deb13u5",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libpython3.13-stdlib",
+      "version": "3.13.5-2+deb13u5",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libreadline8t64",
+      "version": "8.2-6",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libseccomp2",
+      "version": "2.6.0-2",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libselinux1",
+      "version": "3.8.1-1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libsemanage-common",
+      "version": "3.8.1-1",
+      "arch": "all"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libsemanage2",
+      "version": "3.8.1-1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libsepol2",
+      "version": "3.8.1-1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libsmartcols1",
+      "version": "2.41.5-0+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libsqlite3-0",
+      "version": "3.46.1-7+deb13u2",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libssl3t64",
+      "version": "3.5.7-1~deb13u3",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libstdc++6",
+      "version": "14.2.0-19",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libsystemd-shared",
+      "version": "257.13-1~deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libsystemd0",
+      "version": "257.13-1~deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libtext-charwidth-perl",
+      "version": "0.04-11+b4",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libtext-wrapi18n-perl",
+      "version": "0.06-10",
+      "arch": "all"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libtinfo6",
+      "version": "6.5+20250216-2",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libtirpc-common",
+      "version": "1.3.6+ds-1",
+      "arch": "all"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libtirpc3t64",
+      "version": "1.3.6+ds-1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libudev1",
+      "version": "257.13-1~deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libuuid1",
+      "version": "2.41.5-0+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libwrap0",
+      "version": "7.6.q-36",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libwtmpdb0",
+      "version": "0.73.0-3+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libxtables12",
+      "version": "1.8.11-2",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libxxhash0",
+      "version": "0.8.3-2",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libzstd1",
+      "version": "1.5.7+dfsg-1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "login",
+      "version": "1:4.16.0-2+really2.41.5-0+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "login.defs",
+      "version": "1:4.17.4-2",
+      "arch": "all"
+    },
+    {
+      "manager": "dpkg",
+      "name": "mawk",
+      "version": "1.3.4.20250131-1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "media-types",
+      "version": "13.0.0",
+      "arch": "all"
+    },
+    {
+      "manager": "dpkg",
+      "name": "mount",
+      "version": "2.41.5-0+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "ncurses-base",
+      "version": "6.5+20250216-2",
+      "arch": "all"
+    },
+    {
+      "manager": "dpkg",
+      "name": "ncurses-bin",
+      "version": "6.5+20250216-2",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "netbase",
+      "version": "6.5",
+      "arch": "all"
+    },
+    {
+      "manager": "dpkg",
+      "name": "nftables",
+      "version": "1.1.3-1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "openssh-client",
+      "version": "1:10.0p1-7+deb13u4",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "openssh-server",
+      "version": "1:10.0p1-7+deb13u4",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "openssh-sftp-server",
+      "version": "1:10.0p1-7+deb13u4",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "openssl-provider-legacy",
+      "version": "3.5.7-1~deb13u3",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "passwd",
+      "version": "1:4.17.4-2",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "perl-base",
+      "version": "5.40.1-6+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "procps",
+      "version": "2:4.0.4-9",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "python3",
+      "version": "3.13.5-1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "python3-minimal",
+      "version": "3.13.5-1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "python3.13",
+      "version": "3.13.5-2+deb13u5",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "python3.13-minimal",
+      "version": "3.13.5-2+deb13u5",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "readline-common",
+      "version": "8.2-6",
+      "arch": "all"
+    },
+    {
+      "manager": "dpkg",
+      "name": "runit-helper",
+      "version": "2.16.4",
+      "arch": "all"
+    },
+    {
+      "manager": "dpkg",
+      "name": "sed",
+      "version": "4.9-2+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "sensible-utils",
+      "version": "0.0.25",
+      "arch": "all"
+    },
+    {
+      "manager": "dpkg",
+      "name": "sqv",
+      "version": "1.3.0-3+b2",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "sudo",
+      "version": "1.9.16p2-3+deb13u2",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "systemd",
+      "version": "257.13-1~deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "sysvinit-utils",
+      "version": "3.14-4",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "tar",
+      "version": "1.35+dfsg-3.1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "tzdata",
+      "version": "2026c-0+deb13u1",
+      "arch": "all"
+    },
+    {
+      "manager": "dpkg",
+      "name": "ucf",
+      "version": "3.0052",
+      "arch": "all"
+    },
+    {
+      "manager": "dpkg",
+      "name": "util-linux",
+      "version": "2.41.5-0+deb13u1",
+      "arch": "arm64"
+    },
+    {
+      "manager": "dpkg",
+      "name": "zlib1g",
+      "version": "1:1.3.dfsg+really1.3.1-1+b1",
+      "arch": "arm64"
+    }
+  ],
+  "containers": [
+    {
+      "engine": "docker",
+      "id": "ad78a80921f9",
+      "name": "fx",
+      "image": "openasy-infra-target:dev",
+      "imageId": "sha256:b3955fd806ca4cf73e4b3974ce3b065b78decefcf7d6579edb5f006854e83b5e",
+      "state": "running",
+      "health": null,
+      "createdAt": "2026-10-20T11:06:03.649235222Z",
+      "startedAt": "2026-10-20T11:06:03.693355722Z",
+      "restarts": 0,
+      "restartPolicy": "no",
+      "command": "/bin/sh /entrypoint.sh",
+      "ports": ["22/tcp"],
+      "mounts": [
+        {
+          "source": "/var/run/docker.sock",
+          "destination": "/var/run/docker.sock",
+          "mode": "",
+          "readOnly": false
+        }
+      ],
+      "networks": ["bridge"],
+      "labels": {},
+      "envNames": ["OPENASY_DOCKER", "OPENASY_SUDOERS", "PATH"],
+      "memoryLimitBytes": null,
+      "cpuLimit": null,
+      "privileged": false,
+      "user": "root"
+    },
+    {
+      "engine": "docker",
+      "id": "16da44f5f3f2",
+      "name": "fx-api",
+      "image": "debian:13-slim",
+      "imageId": "sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f",
+      "state": "restarting",
+      "health": "unhealthy",
+      "createdAt": "2026-10-20T10:38:19.436419257Z",
+      "startedAt": "2026-10-20T11:06:06.314375792Z",
+      "restarts": 37,
+      "restartPolicy": "unless-stopped",
+      "command": "sh -c exec sleep infinity --api-token=***",
+      "ports": [],
+      "mounts": [],
+      "networks": ["bridge"],
+      "labels": {
+        "team": "payments"
+      },
+      "envNames": ["DATABASE_PASSWORD", "LOG_LEVEL", "PATH"],
+      "memoryLimitBytes": 268435456,
+      "cpuLimit": 0.5,
+      "privileged": false,
+      "user": "root"
+    }
+  ],
+  "unreadable": [
+    "firewall rules",
+    "hardware serial number",
+    "user crontabs",
+    "SSH keys that may log in",
+    "SSH server settings",
+    "whether accounts have a password",
+    "which process listens on a port"
+  ]
 }

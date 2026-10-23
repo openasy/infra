@@ -11,7 +11,9 @@ type Tab = "overview" | "ports" | "processes" | "services" | "access" | "package
 
 type F = Facts;
 type Unreadable = "ports" | "authorizedKeys" | "sudoRules" | "sshServerSettings" | "firewallRules" | "containers";
-const notReadable = (t: T, what: Unreadable) => <EmptyState title={t("notReadable.title")}>{t("notReadable.body", { what: t(`notReadable.${what}`) })}</EmptyState>;
+const notReadable = (t: T, what: Unreadable) => (
+  <EmptyState title={t("notReadable.title")}>{t("notReadable.body", { what: t(`notReadable.${what}`) })}</EmptyState>
+);
 
 function Ports({ f }: { f: F }) {
   const t = useT();
@@ -23,7 +25,15 @@ function Ports({ f }: { f: F }) {
     { id: "process", header: t("ports.process"), cell: (p) => p.process ?? <span className="text-fg-muted">{t("ports.needsTheSudoRules")}</span> },
     { id: "pid", header: "PID", width: "80px", align: "right", mono: true, cell: (p) => p.pid ?? "–" },
   ];
-  return <List label={t("ports.listeningPorts")} rows={f.ports} columns={cols} empty={t("ports.nothingListens")} getRowId={(p) => `${p.proto}${p.address}${p.port}`} />;
+  return (
+    <List
+      label={t("ports.listeningPorts")}
+      rows={f.ports}
+      columns={cols}
+      empty={t("ports.nothingListens")}
+      getRowId={(p) => `${p.proto}${p.address}${p.port}`}
+    />
+  );
 }
 
 function Processes({ f }: { f: F }) {
@@ -36,7 +46,16 @@ function Processes({ f }: { f: F }) {
     { id: "age", header: t("processes.running"), width: "90px", cell: (p) => duration(p.ageSec), sortValue: (p) => p.ageSec },
     { id: "cmd", header: t("processes.command"), cell: (p) => <span className="infra-wrap font-mono text-xs">{p.command}</span> },
   ];
-  return <List label={t("processes.processes")} rows={f.processes} columns={cols} empty={t("processes.noProcessesRead")} getRowId={(p) => String(p.pid)} pageSize={100} />;
+  return (
+    <List
+      label={t("processes.processes")}
+      rows={f.processes}
+      columns={cols}
+      empty={t("processes.noProcessesRead")}
+      getRowId={(p) => String(p.pid)}
+      pageSize={100}
+    />
+  );
 }
 
 function Services({ f }: { f: F }) {
@@ -44,7 +63,13 @@ function Services({ f }: { f: F }) {
   if (!f.services) return <EmptyState title={msg("services.noSystemd")}>{msg("services.thisHostDoesNotRun")}</EmptyState>;
   const cols: Column<NonNullable<F["services"]>[number]>[] = [
     { id: "name", header: msg("services.service"), cell: (s) => s.name, sortValue: (s) => s.name },
-    { id: "active", header: msg("services.state"), width: "140px", cell: (s) => <Badge tone={s.active === "active" ? "success" : s.active === "failed" ? "danger" : "neutral"}>{`${s.active}/${s.sub}`}</Badge>, sortValue: (s) => s.active },
+    {
+      id: "active",
+      header: msg("services.state"),
+      width: "140px",
+      cell: (s) => <Badge tone={s.active === "active" ? "success" : s.active === "failed" ? "danger" : "neutral"}>{`${s.active}/${s.sub}`}</Badge>,
+      sortValue: (s) => s.active,
+    },
     { id: "enabled", header: msg("services.atBoot"), width: "110px", cell: (s) => s.enabled ?? "–" },
   ];
   return (
@@ -62,7 +87,9 @@ function Services({ f }: { f: F }) {
               {c.source}: {c.entry}
             </li>
           ))}
-          {f.crontabUsers?.map((u) => <li key={u}>{msg("services.crontabOf", { u })}</li>)}
+          {f.crontabUsers?.map((u) => (
+            <li key={u}>{msg("services.crontabOf", { u })}</li>
+          ))}
           {!f.timers?.length && !f.cron.length && !f.crontabUsers?.length && <li className="text-fg-muted">{msg("services.nothingScheduled")}</li>}
         </ul>
       </Panel>
@@ -78,8 +105,26 @@ function Access({ f }: { f: F }) {
     { id: "uid", header: "UID", width: "80px", align: "right", mono: true, cell: (u) => u.uid, sortValue: (u) => u.uid },
     { id: "shell", header: t("access.shell"), mono: true, cell: (u) => u.shell },
     { id: "home", header: t("access.home"), mono: true, cell: (u) => u.home },
-    { id: "pw", header: t("access.password"), width: "110px", cell: (u) => (u.password ? <Badge tone={u.password === "set" ? "warning" : "neutral"}>{u.password}</Badge> : <span className="text-fg-muted">{t("access.notReadable")}</span>) },
-    { id: "groups", header: t("access.groups"), cell: (u) => f.groups.filter((g) => g.members.includes(u.name)).map((g) => g.name).join(", ") || "–" },
+    {
+      id: "pw",
+      header: t("access.password"),
+      width: "110px",
+      cell: (u) =>
+        u.password ? (
+          <Badge tone={u.password === "set" ? "warning" : "neutral"}>{u.password}</Badge>
+        ) : (
+          <span className="text-fg-muted">{t("access.notReadable")}</span>
+        ),
+    },
+    {
+      id: "groups",
+      header: t("access.groups"),
+      cell: (u) =>
+        f.groups
+          .filter((g) => g.members.includes(u.name))
+          .map((g) => g.name)
+          .join(", ") || "–",
+    },
   ];
   return (
     <div className="flex flex-col gap-4">
@@ -118,7 +163,27 @@ function Access({ f }: { f: F }) {
         {f.sshd === null ? (
           notReadable(t, "sshServerSettings")
         ) : (
-          <Pairs items={(["permitrootlogin", "passwordauthentication", "pubkeyauthentication", "kbdinteractiveauthentication", "x11forwarding", "allowtcpforwarding", "maxauthtries", "trustedusercakeys"] as const).filter((k) => f.sshd![k] !== undefined).map((k) => [k, <span className="font-mono">{f.sshd![k]}</span>])} />
+          <Pairs
+            items={(
+              [
+                "permitrootlogin",
+                "passwordauthentication",
+                "pubkeyauthentication",
+                "kbdinteractiveauthentication",
+                "x11forwarding",
+                "allowtcpforwarding",
+                "maxauthtries",
+                "trustedusercakeys",
+              ] as const
+            )
+              .filter((k) => f.sshd![k] !== undefined)
+              .map((k) => [
+                k,
+                <span key={k} className="font-mono">
+                  {f.sshd![k]}
+                </span>,
+              ])}
+          />
         )}
       </Panel>
     </div>
@@ -140,16 +205,37 @@ function Packages({ f }: { f: F }) {
       <div style={{ maxWidth: 320 }}>
         <SearchInput label={t("packages.searchPackages")} value={q} onChange={(e) => setQ(e.target.value)} placeholder="openssl" />
       </div>
-      <List label={t("packages.packages")} rows={rows} columns={cols} empty={t("packages.noPackages")} getRowId={(p) => `${p.manager}${p.name}${p.arch}`} pageSize={100} />
+      <List
+        label={t("packages.packages")}
+        rows={rows}
+        columns={cols}
+        empty={t("packages.noPackages")}
+        getRowId={(p) => `${p.manager}${p.name}${p.arch}`}
+        pageSize={100}
+      />
     </div>
   );
 }
 
-export function ContainerTable({ rows, showHost = false }: { rows: Array<Container & { host?: { id: string; name: string } }> | undefined; showHost?: boolean }) {
+export function ContainerTable({
+  rows,
+  showHost = false,
+}: {
+  rows: Array<Container & { host?: { id: string; name: string } }> | undefined;
+  showHost?: boolean;
+}) {
   const t = useT();
   const cols: Column<Container & { host?: { id: string; name: string } }>[] = [
     { id: "name", header: t("containerTable.container"), cell: (c) => c.name, sortValue: (c) => c.name },
-    ...(showHost ? [{ id: "host", header: t("containerTable.host"), cell: (c: Container & { host?: { id: string; name: string } }) => c.host && <a href={`/hosts/${c.host.id}`}>{c.host.name}</a> }] : []),
+    ...(showHost
+      ? [
+          {
+            id: "host",
+            header: t("containerTable.host"),
+            cell: (c: Container & { host?: { id: string; name: string } }) => c.host && <a href={`/hosts/${c.host.id}`}>{c.host.name}</a>,
+          },
+        ]
+      : []),
     { id: "image", header: t("containerTable.image"), cell: (c) => <span className="infra-wrap font-mono text-xs">{c.image}</span> },
     {
       id: "state",
@@ -165,10 +251,28 @@ export function ContainerTable({ rows, showHost = false }: { rows: Array<Contain
     },
     { id: "restarts", header: t("containerTable.restarts"), width: "90px", align: "right", mono: true, cell: (c) => c.restarts, sortValue: (c) => c.restarts },
     { id: "ports", header: t("containerTable.ports"), cell: (c) => <span className="font-mono text-xs">{c.ports.join(", ") || "–"}</span> },
-    { id: "limits", header: t("containerTable.limits"), width: "120px", cell: (c) => `${c.cpuLimit ?? "–"} CPU · ${c.memoryLimitBytes ? bytes(c.memoryLimitBytes) : "–"}` },
-    { id: "flags", header: "", width: "110px", cell: (c) => (c.privileged ? <Badge tone="danger">privileged</Badge> : c.user === "root" ? <Badge tone="warning">root</Badge> : null) },
+    {
+      id: "limits",
+      header: t("containerTable.limits"),
+      width: "120px",
+      cell: (c) => `${c.cpuLimit ?? "–"} CPU · ${c.memoryLimitBytes ? bytes(c.memoryLimitBytes) : "–"}`,
+    },
+    {
+      id: "flags",
+      header: "",
+      width: "110px",
+      cell: (c) => (c.privileged ? <Badge tone="danger">privileged</Badge> : c.user === "root" ? <Badge tone="warning">root</Badge> : null),
+    },
   ];
-  return <List label={t("containerTable.containers")} rows={rows} columns={cols} empty={t("containerTable.noContainers")} getRowId={(c) => `${c.host?.id ?? ""}${c.id}`} />;
+  return (
+    <List
+      label={t("containerTable.containers")}
+      rows={rows}
+      columns={cols}
+      empty={t("containerTable.noContainers")}
+      getRowId={(c) => `${c.host?.id ?? ""}${c.id}`}
+    />
+  );
 }
 
 function Network({ f }: { f: F }) {
@@ -200,7 +304,9 @@ function Network({ f }: { f: F }) {
           <li>nameservers {f.dns.nameservers.join(", ") || "–"}</li>
         </ul>
       </Panel>
-      <Panel title={t("network.firewall")}>{f.firewall ? <pre className="infra-code">{f.firewall.rules || t("notReadable.noRules")}</pre> : notReadable(t, "firewallRules")}</Panel>
+      <Panel title={t("network.firewall")}>
+        {f.firewall ? <pre className="infra-code">{f.firewall.rules || t("notReadable.noRules")}</pre> : notReadable(t, "firewallRules")}
+      </Panel>
     </div>
   );
 }
@@ -220,7 +326,13 @@ function Storage({ f }: { f: F }) {
             { id: "dev", header: t("storage.device"), mono: true, cell: (x) => x.device },
             { id: "type", header: t("storage.type"), width: "90px", cell: (x) => x.type },
             { id: "size", header: t("storage.size"), width: "90px", align: "right", cell: (x) => bytes(x.sizeKb * 1024), sortValue: (x) => x.sizeKb },
-            { id: "used", header: t("storage.used"), width: "120px", cell: (x) => (x.sizeKb ? <Usage pct={Math.round((x.usedKb / x.sizeKb) * 100)} /> : "–"), sortValue: (x) => (x.sizeKb ? x.usedKb / x.sizeKb : 0) },
+            {
+              id: "used",
+              header: t("storage.used"),
+              width: "120px",
+              cell: (x) => (x.sizeKb ? <Usage pct={Math.round((x.usedKb / x.sizeKb) * 100)} /> : "–"),
+              sortValue: (x) => (x.sizeKb ? x.usedKb / x.sizeKb : 0),
+            },
             { id: "ro", header: "", width: "60px", cell: (x) => (x.options.split(",").includes("ro") ? <Badge>ro</Badge> : null) },
           ]}
         />
@@ -230,7 +342,8 @@ function Storage({ f }: { f: F }) {
           <ul className="infra-list flex flex-col gap-1 text-sm">
             {f.disks.map((d) => (
               <li key={d.name}>
-                {d.name} · {bytes(d.sizeBytes)} {d.model && `· ${d.model}`} {d.rotational === false ? t("storage.ssd") : d.rotational ? t("storage.rotational") : ""}
+                {d.name} · {bytes(d.sizeBytes)} {d.model && `· ${d.model}`}{" "}
+                {d.rotational === false ? t("storage.ssd") : d.rotational ? t("storage.rotational") : ""}
               </li>
             ))}
           </ul>
@@ -248,25 +361,52 @@ function Overview({ f, host }: { f: F; host: Host }) {
     <div className="flex flex-col gap-4">
       <KpiGrid>
         <KpiCard label={t("overview.load1Min")} value={f.system.load[0].toFixed(2)} footer={t("overview.threads", { threads: f.cpu.threads })} />
-        <KpiCard label={t("overview.memoryUsed")} value={memPct} unit="%" tone={memPct >= 90 ? "danger" : memPct >= 75 ? "warning" : undefined} footer={t("overview.of", { bytes: bytes(f.memory.totalKb * 1024) })} />
-        <KpiCard label={t("overview.up")} value={duration(f.system.uptimeSec)} footer={t("overview.since", { value: new Date(f.system.bootedAt).toLocaleString() })} />
+        <KpiCard
+          label={t("overview.memoryUsed")}
+          value={memPct}
+          unit="%"
+          tone={memPct >= 90 ? "danger" : memPct >= 75 ? "warning" : undefined}
+          footer={t("overview.of", { bytes: bytes(f.memory.totalKb * 1024) })}
+        />
+        <KpiCard
+          label={t("overview.up")}
+          value={duration(f.system.uptimeSec)}
+          footer={t("overview.since", { value: new Date(f.system.bootedAt).toLocaleString() })}
+        />
         <KpiCard label={t("overview.listeningPorts")} value={f.ports?.length ?? "–"} footer={t("overview.processes", { length: f.processes.length })} />
       </KpiGrid>
       <Panel title={t("overview.system")}>
         <Pairs
           items={[
-            ["Host name", f.system.hostname],
-            ["System", f.system.os.name],
-            ["Kernel", `${f.system.kernel} (${f.system.arch})`],
-            ["CPU", `${f.cpu.threads} threads${f.cpu.model ? ` · ${f.cpu.model}` : ""}`],
-            ["Memory", `${bytes(f.memory.totalKb * 1024)}, swap ${bytes(f.memory.swapTotalKb * 1024)}`],
-            ["Runs on", f.system.virtualization ?? ([f.system.hardware.sys_vendor, f.system.hardware.product_name].filter(Boolean).join(" ") || "–")],
-            ["Serial number", f.system.serial ?? "not readable"],
-            ["Machine id", f.system.machineId ?? "–"],
-            ["Packages", String(f.packages.length)],
-            ["Read as", `${f.account.user}${f.account.sudo === "all" ? " with unrestricted sudo" : ""}, ${ago(f.collectedAt)}`],
-            ["Address", `${host.user}@${host.address}:${host.port}${host.jumpHost ? ` through ${host.jumpHost.name}` : ""}, read by ${host.agent.name}`],
-            ["Tags", Object.entries(host.tags).map(([k, v]) => `${k}=${v}`).join(", ") || "–"],
+            [t("overview.hostName"), f.system.hostname],
+            [t("overview.system"), f.system.os.name],
+            [t("overview.kernel"), `${f.system.kernel} (${f.system.arch})`],
+            ["CPU", t("overview.threads2", { threads: f.cpu.threads, value: f.cpu.model ? ` · ${f.cpu.model}` : "" })],
+            [t("overview.memory"), t("overview.swap", { bytes: bytes(f.memory.totalKb * 1024), bytes2: bytes(f.memory.swapTotalKb * 1024) })],
+            [
+              t("overview.runsOn"),
+              f.system.virtualization ?? ([f.system.hardware.sys_vendor, f.system.hardware.product_name].filter(Boolean).join(" ") || "–"),
+            ],
+            [t("overview.serialNumber"), f.system.serial ?? t("overview.notReadable")],
+            [t("overview.machineId"), f.system.machineId ?? "–"],
+            [t("overview.packages"), String(f.packages.length)],
+            [t("overview.readAs"), `${f.account.user}${f.account.sudo === "all" ? " with unrestricted sudo" : ""}, ${ago(f.collectedAt)}`],
+            [
+              t("overview.address"),
+              t("overview.readBy", {
+                user: host.user,
+                address: host.address,
+                port: host.port,
+                value: host.jumpHost ? ` through ${host.jumpHost.name}` : "",
+                name: host.agent.name,
+              }),
+            ],
+            [
+              t("overview.tags"),
+              Object.entries(host.tags)
+                .map(([k, v]) => `${k}=${v}`)
+                .join(", ") || "–",
+            ],
           ]}
         />
       </Panel>
@@ -292,7 +432,9 @@ export function HostPage({ call, id }: { call: Call; id: string }) {
   if (!h) return null;
   const f = facts.data?.facts;
   const collect = () => void call(`/api/v1/hosts/${id}/collect`, { method: "POST" }).then(() => setTimeout(host.reload, 3000));
-  const remove = () => window.confirm(t("hostPage.removeAndItsHistory", { name: h.name })) && void call(`/api/v1/hosts/${id}`, { method: "DELETE" }).then(() => navigate("/hosts"));
+  const remove = () =>
+    window.confirm(t("hostPage.removeAndItsHistory", { name: h.name })) &&
+    void call(`/api/v1/hosts/${id}`, { method: "DELETE" }).then(() => navigate("/hosts"));
   const waitingForKey = h.status === "new" || h.status === "host-key-pending" || h.status === "host-key-changed";
   return (
     <>
@@ -329,7 +471,8 @@ export function HostPage({ call, id }: { call: Call; id: string }) {
       )}
       {f && f.unreadable.length > 0 && (
         <Callout tone="info" title={t("hostPage.someDetailsNeedTheSudo")}>
-          {t("hostPage.notReadableAsTheOpenasy")}{" "}{f.unreadable.join(", ")}. Add the sudoers file from <a href="/setup">{t("hostPage.setup")}</a> to this host to read them.
+          {t("hostPage.notReadableAsTheOpenasy")} {f.unreadable.join(", ")}. Add the sudoers file from <a href="/setup">{t("hostPage.setup")}</a> to this host
+          to read them.
         </Callout>
       )}
       {f && (

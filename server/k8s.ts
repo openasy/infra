@@ -107,7 +107,12 @@ function get(access: ClusterAccess, path: string): Promise<any> {
 }
 
 type Obj = Record<string, any>;
-const meta = (o: Obj) => ({ namespace: o.metadata?.namespace ?? null, name: String(o.metadata?.name), createdAt: o.metadata?.creationTimestamp ?? null, labels: (o.metadata?.labels ?? {}) as Record<string, string> });
+const meta = (o: Obj) => ({
+  namespace: o.metadata?.namespace ?? null,
+  name: String(o.metadata?.name),
+  createdAt: o.metadata?.creationTimestamp ?? null,
+  labels: (o.metadata?.labels ?? {}) as Record<string, string>,
+});
 const owner = (o: Obj) => {
   const r = (o.metadata?.ownerReferences ?? [])[0];
   return r ? `${r.kind}/${r.name}` : null;
@@ -116,13 +121,71 @@ const owner = (o: Obj) => {
 export interface ClusterFacts {
   collectedAt: string;
   version: { gitVersion: string; platform: string };
-  nodes: Array<{ name: string; roles: string[]; ready: boolean; conditions: string[]; kubelet: string; runtime: string; os: string; kernel: string; arch: string; internalIp: string | null; cpu: string; memory: string; pods: string; unschedulable: boolean; taints: string[]; createdAt: string | null; labels: Record<string, string> }>;
+  nodes: Array<{
+    name: string;
+    roles: string[];
+    ready: boolean;
+    conditions: string[];
+    kubelet: string;
+    runtime: string;
+    os: string;
+    kernel: string;
+    arch: string;
+    internalIp: string | null;
+    cpu: string;
+    memory: string;
+    pods: string;
+    unschedulable: boolean;
+    taints: string[];
+    createdAt: string | null;
+    labels: Record<string, string>;
+  }>;
   namespaces: Array<{ name: string; phase: string; createdAt: string | null }>;
-  workloads: Array<{ kind: string; namespace: string; name: string; replicas: number | null; ready: number | null; images: string[]; createdAt: string | null; schedule?: string; suspended?: boolean }>;
-  pods: Array<{ namespace: string; name: string; node: string | null; phase: string; ready: string; restarts: number; reason: string | null; owner: string | null; ip: string | null; startedAt: string | null; containers: Array<{ name: string; image: string; ready: boolean; restarts: number; state: string; reason: string | null; requests: Record<string, string>; limits: Record<string, string>; privileged: boolean }> }>;
+  workloads: Array<{
+    kind: string;
+    namespace: string;
+    name: string;
+    replicas: number | null;
+    ready: number | null;
+    images: string[];
+    createdAt: string | null;
+    schedule?: string;
+    suspended?: boolean;
+  }>;
+  pods: Array<{
+    namespace: string;
+    name: string;
+    node: string | null;
+    phase: string;
+    ready: string;
+    restarts: number;
+    reason: string | null;
+    owner: string | null;
+    ip: string | null;
+    startedAt: string | null;
+    containers: Array<{
+      name: string;
+      image: string;
+      ready: boolean;
+      restarts: number;
+      state: string;
+      reason: string | null;
+      requests: Record<string, string>;
+      limits: Record<string, string>;
+      privileged: boolean;
+    }>;
+  }>;
   services: Array<{ namespace: string; name: string; type: string; clusterIp: string | null; externalIps: string[]; ports: string[] }>;
   ingresses: Array<{ namespace: string; name: string; hosts: string[]; tls: boolean; className: string | null }>;
-  volumes: Array<{ namespace: string | null; name: string; kind: "pvc" | "pv"; status: string; capacity: string | null; storageClass: string | null; claim: string | null }>;
+  volumes: Array<{
+    namespace: string | null;
+    name: string;
+    kind: "pvc" | "pv";
+    status: string;
+    capacity: string | null;
+    storageClass: string | null;
+    claim: string | null;
+  }>;
   storageClasses: Array<{ name: string; provisioner: string; default: boolean }>;
   clusterAdmins: string[];
   events: Array<{ at: string | null; namespace: string; object: string; reason: string; message: string; count: number }>;
@@ -130,7 +193,24 @@ export interface ClusterFacts {
 
 export async function collectCluster(access: ClusterAccess): Promise<ClusterFacts> {
   const list = async (path: string) => ((await get(access, path)).items ?? []) as Obj[];
-  const [version, nodes, namespaces, pods, services, pvcs, pvs, events, deployments, statefulsets, daemonsets, jobs, cronjobs, ingresses, storageClasses, crbs] = await Promise.all([
+  const [
+    version,
+    nodes,
+    namespaces,
+    pods,
+    services,
+    pvcs,
+    pvs,
+    events,
+    deployments,
+    statefulsets,
+    daemonsets,
+    jobs,
+    cronjobs,
+    ingresses,
+    storageClasses,
+    crbs,
+  ] = await Promise.all([
     get(access, "/version"),
     list("/api/v1/nodes"),
     list("/api/v1/namespaces"),
@@ -148,7 +228,8 @@ export async function collectCluster(access: ClusterAccess): Promise<ClusterFact
     list("/apis/storage.k8s.io/v1/storageclasses"),
     list("/apis/rbac.authorization.k8s.io/v1/clusterrolebindings"),
   ]);
-  const images = (o: Obj) => ((o.spec?.template?.spec?.containers ?? o.spec?.jobTemplate?.spec?.template?.spec?.containers ?? []) as Obj[]).map((c) => String(c.image));
+  const images = (o: Obj) =>
+    ((o.spec?.template?.spec?.containers ?? o.spec?.jobTemplate?.spec?.template?.spec?.containers ?? []) as Obj[]).map((c) => String(c.image));
   return {
     collectedAt: new Date().toISOString(),
     version: { gitVersion: String(version.gitVersion), platform: String(version.platform) },
@@ -157,7 +238,9 @@ export async function collectCluster(access: ClusterAccess): Promise<ClusterFact
       const info = n.status?.nodeInfo ?? {};
       return {
         ...meta(n),
-        roles: Object.keys(n.metadata?.labels ?? {}).filter((l) => l.startsWith("node-role.kubernetes.io/")).map((l) => l.split("/")[1]!),
+        roles: Object.keys(n.metadata?.labels ?? {})
+          .filter((l) => l.startsWith("node-role.kubernetes.io/"))
+          .map((l) => l.split("/")[1]!),
         ready: conditions.some((c) => c.type === "Ready" && c.status === "True"),
         conditions: conditions.filter((c) => (c.type === "Ready" ? c.status !== "True" : c.status === "True")).map((c) => String(c.type)),
         kubelet: String(info.kubeletVersion ?? ""),
@@ -173,19 +256,46 @@ export async function collectCluster(access: ClusterAccess): Promise<ClusterFact
         taints: ((n.spec?.taints ?? []) as Obj[]).map((t) => `${t.key}${t.value ? `=${t.value}` : ""}:${t.effect}`),
       };
     }),
-    namespaces: namespaces.map((n) => ({ name: String(n.metadata.name), phase: String(n.status?.phase ?? ""), createdAt: n.metadata.creationTimestamp ?? null })),
+    namespaces: namespaces.map((n) => ({
+      name: String(n.metadata.name),
+      phase: String(n.status?.phase ?? ""),
+      createdAt: n.metadata.creationTimestamp ?? null,
+    })),
     workloads: [
       ...deployments.map((d) => ({ kind: "Deployment", ...meta(d), replicas: d.spec?.replicas ?? 0, ready: d.status?.readyReplicas ?? 0, images: images(d) })),
-      ...statefulsets.map((d) => ({ kind: "StatefulSet", ...meta(d), replicas: d.spec?.replicas ?? 0, ready: d.status?.readyReplicas ?? 0, images: images(d) })),
-      ...daemonsets.map((d) => ({ kind: "DaemonSet", ...meta(d), replicas: d.status?.desiredNumberScheduled ?? 0, ready: d.status?.numberReady ?? 0, images: images(d) })),
-      ...cronjobs.map((d) => ({ kind: "CronJob", ...meta(d), replicas: null, ready: null, images: images(d), schedule: String(d.spec?.schedule ?? ""), suspended: d.spec?.suspend === true })),
+      ...statefulsets.map((d) => ({
+        kind: "StatefulSet",
+        ...meta(d),
+        replicas: d.spec?.replicas ?? 0,
+        ready: d.status?.readyReplicas ?? 0,
+        images: images(d),
+      })),
+      ...daemonsets.map((d) => ({
+        kind: "DaemonSet",
+        ...meta(d),
+        replicas: d.status?.desiredNumberScheduled ?? 0,
+        ready: d.status?.numberReady ?? 0,
+        images: images(d),
+      })),
+      ...cronjobs.map((d) => ({
+        kind: "CronJob",
+        ...meta(d),
+        replicas: null,
+        ready: null,
+        images: images(d),
+        schedule: String(d.spec?.schedule ?? ""),
+        suspended: d.spec?.suspend === true,
+      })),
       // Jobs a CronJob started come and go; only stand-alone ones are workloads.
-      ...jobs.filter((j) => !owner(j)).map((d) => ({ kind: "Job", ...meta(d), replicas: d.spec?.completions ?? 1, ready: d.status?.succeeded ?? 0, images: images(d) })),
+      ...jobs
+        .filter((j) => !owner(j))
+        .map((d) => ({ kind: "Job", ...meta(d), replicas: d.spec?.completions ?? 1, ready: d.status?.succeeded ?? 0, images: images(d) })),
     ].map(({ labels: _labels, ...w }) => ({ ...w, namespace: String(w.namespace) })),
     pods: pods.map((p) => {
       const statuses = (p.status?.containerStatuses ?? []) as Obj[];
       const specs = (p.spec?.containers ?? []) as Obj[];
-      const waiting = statuses.find((s) => s.state?.waiting)?.state.waiting.reason ?? statuses.find((s) => s.state?.terminated)?.state.terminated.reason ?? null;
+      const waiting =
+        statuses.find((s) => s.state?.waiting)?.state.waiting.reason ?? statuses.find((s) => s.state?.terminated)?.state.terminated.reason ?? null;
       return {
         namespace: String(p.metadata.namespace),
         name: String(p.metadata.name),
@@ -230,16 +340,43 @@ export async function collectCluster(access: ClusterAccess): Promise<ClusterFact
       className: i.spec?.ingressClassName ?? null,
     })),
     volumes: [
-      ...pvcs.map((v) => ({ namespace: String(v.metadata.namespace), name: String(v.metadata.name), kind: "pvc" as const, status: String(v.status?.phase ?? ""), capacity: v.status?.capacity?.storage ?? null, storageClass: v.spec?.storageClassName ?? null, claim: null })),
-      ...pvs.map((v) => ({ namespace: null, name: String(v.metadata.name), kind: "pv" as const, status: String(v.status?.phase ?? ""), capacity: v.spec?.capacity?.storage ?? null, storageClass: v.spec?.storageClassName ?? null, claim: v.spec?.claimRef ? `${v.spec.claimRef.namespace}/${v.spec.claimRef.name}` : null })),
+      ...pvcs.map((v) => ({
+        namespace: String(v.metadata.namespace),
+        name: String(v.metadata.name),
+        kind: "pvc" as const,
+        status: String(v.status?.phase ?? ""),
+        capacity: v.status?.capacity?.storage ?? null,
+        storageClass: v.spec?.storageClassName ?? null,
+        claim: null,
+      })),
+      ...pvs.map((v) => ({
+        namespace: null,
+        name: String(v.metadata.name),
+        kind: "pv" as const,
+        status: String(v.status?.phase ?? ""),
+        capacity: v.spec?.capacity?.storage ?? null,
+        storageClass: v.spec?.storageClassName ?? null,
+        claim: v.spec?.claimRef ? `${v.spec.claimRef.namespace}/${v.spec.claimRef.name}` : null,
+      })),
     ],
-    storageClasses: storageClasses.map((c) => ({ name: String(c.metadata.name), provisioner: String(c.provisioner), default: c.metadata?.annotations?.["storageclass.kubernetes.io/is-default-class"] === "true" })),
+    storageClasses: storageClasses.map((c) => ({
+      name: String(c.metadata.name),
+      provisioner: String(c.provisioner),
+      default: c.metadata?.annotations?.["storageclass.kubernetes.io/is-default-class"] === "true",
+    })),
     clusterAdmins: crbs
       .filter((b) => b.roleRef?.name === "cluster-admin")
       .flatMap((b) => ((b.subjects ?? []) as Obj[]).map((s) => `${s.kind} ${s.namespace ? `${s.namespace}/` : ""}${s.name} (${b.metadata.name})`))
       .sort(),
     events: events
-      .map((e) => ({ at: e.lastTimestamp ?? e.eventTime ?? e.metadata?.creationTimestamp ?? null, namespace: String(e.metadata?.namespace ?? ""), object: `${e.involvedObject?.kind}/${e.involvedObject?.name}`, reason: String(e.reason ?? ""), message: String(e.message ?? "").slice(0, 500), count: Number(e.count ?? 1) }))
+      .map((e) => ({
+        at: e.lastTimestamp ?? e.eventTime ?? e.metadata?.creationTimestamp ?? null,
+        namespace: String(e.metadata?.namespace ?? ""),
+        object: `${e.involvedObject?.kind}/${e.involvedObject?.name}`,
+        reason: String(e.reason ?? ""),
+        message: String(e.message ?? "").slice(0, 500),
+        count: Number(e.count ?? 1),
+      }))
       .sort((a, b) => String(b.at).localeCompare(String(a.at)))
       .slice(0, 200),
   };
@@ -248,14 +385,31 @@ export async function collectCluster(access: ClusterAccess): Promise<ClusterFact
 /** Pods come and go; workloads, nodes, services and who is cluster-admin are what changes mean. */
 export function clusterItems(f: ClusterFacts): Item[] {
   const out: Item[] = [];
-  const add = (category: Item["category"], key: string, value: unknown) => out.push({ category, key, value: typeof value === "string" ? value : JSON.stringify(value) });
+  const add = (category: Item["category"], key: string, value: unknown) =>
+    out.push({ category, key, value: typeof value === "string" ? value : JSON.stringify(value) });
   add("system", "version", f.version.gitVersion);
-  for (const n of f.nodes) add("system", `node ${n.name}`, { kubelet: n.kubelet, runtime: n.runtime, os: n.os, kernel: n.kernel, ready: n.ready, unschedulable: n.unschedulable, taints: n.taints });
+  for (const n of f.nodes)
+    add("system", `node ${n.name}`, {
+      kubelet: n.kubelet,
+      runtime: n.runtime,
+      os: n.os,
+      kernel: n.kernel,
+      ready: n.ready,
+      unschedulable: n.unschedulable,
+      taints: n.taints,
+    });
   for (const n of f.namespaces) add("group", `namespace ${n.name}`, n.phase);
-  for (const w of f.workloads) add("container", `${w.kind} ${w.namespace}/${w.name}`, { images: w.images, replicas: w.replicas, ...(w.schedule !== undefined && { schedule: w.schedule, suspended: w.suspended }) });
-  for (const s of f.services) add("port", `service ${s.namespace}/${s.name}`, `${s.type} ${s.ports.join(",")}${s.externalIps.length ? ` ${s.externalIps.join(",")}` : ""}`);
+  for (const w of f.workloads)
+    add("container", `${w.kind} ${w.namespace}/${w.name}`, {
+      images: w.images,
+      replicas: w.replicas,
+      ...(w.schedule !== undefined && { schedule: w.schedule, suspended: w.suspended }),
+    });
+  for (const s of f.services)
+    add("port", `service ${s.namespace}/${s.name}`, `${s.type} ${s.ports.join(",")}${s.externalIps.length ? ` ${s.externalIps.join(",")}` : ""}`);
   for (const i of f.ingresses) add("port", `ingress ${i.namespace}/${i.name}`, `${i.hosts.join(",")}${i.tls ? " tls" : ""}`);
-  for (const v of f.volumes) add("filesystem", `${v.kind} ${v.namespace ? `${v.namespace}/` : ""}${v.name}`, `${v.status} ${v.capacity ?? ""} ${v.storageClass ?? ""}`.trim());
+  for (const v of f.volumes)
+    add("filesystem", `${v.kind} ${v.namespace ? `${v.namespace}/` : ""}${v.name}`, `${v.status} ${v.capacity ?? ""} ${v.storageClass ?? ""}`.trim());
   for (const a of f.clusterAdmins) add("sudo", `cluster-admin ${a}`, "present");
   return out;
 }

@@ -16,12 +16,12 @@ services:
     security_opt: ["no-new-privileges:true"]
     tmpfs: [/tmp]
     ports:
-      - "127.0.0.1:8080:8080"   # UI and API; put a TLS proxy in front to reach it from elsewhere
+      - "127.0.0.1:8080:8080" # UI and API; put a TLS proxy in front to reach it from elsewhere
     volumes:
-      - infra-data:/data   # SQLite database: agents, hosts, clusters, collections and changes
+      - infra-data:/data # SQLite database: agents, hosts, clusters, collections and changes
       # - ./hosts.yaml:/config/hosts.yaml:ro   # the install's servers, shared with Logs
     secrets:
-      - openasy-kek   # mounted at /run/secrets/openasy-kek
+      - openasy-kek # mounted at /run/secrets/openasy-kek
     environment:
       # The address people open Infrastructure at; with a TLS proxy in front, its https:// URL.
       INFRA_PUBLIC_URL: ${INFRA_PUBLIC_URL:-http://localhost:8080}
@@ -33,17 +33,17 @@ services:
       # OPENASY_OIDC_CLIENT_SECRET: ${OPENASY_OIDC_CLIENT_SECRET}
 
   infra-agent:
-    image: ghcr.io/openasy/infra-agent:0.1.0   # always the same version as infra
+    image: ghcr.io/openasy/infra-agent:0.1.0 # always the same version as infra
     restart: unless-stopped
     read_only: true
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
-    tmpfs: [/tmp]   # SSH keys and certificates for one connection; never on a volume
+    tmpfs: [/tmp] # SSH keys and certificates for one connection; never on a volume
     volumes:
-      - infra-agent-data:/data   # its CA, fixed key and secret, sealed with its own key
+      - infra-agent-data:/data # its CA, fixed key and secret, sealed with its own key
     secrets:
       - source: openasy-agent-kek
-        target: openasy-agent-kek   # mounted at /run/secrets/openasy-agent-kek
+        target: openasy-agent-kek # mounted at /run/secrets/openasy-agent-kek
     environment:
       INFRA_URL: http://infra:8080
       # One-time, from Settings, Agents; only needed for the first start.

@@ -13,7 +13,11 @@ const json = async (res: Response) => (await res.json()) as any;
 describe("the hosts file", () => {
   it("reads each server with the defaults filled in", () => {
     const list = parseHosts(FIXTURE);
-    expect(list.map((h) => `${h.name} ${h.address}:${h.port} ${h.user} ${h.jump ?? "-"} ${h.agent}`)).toEqual(["bastion 10.0.0.2:22 openasy - dc1", "web-1 10.0.0.5:22 openasy bastion dc1", "db-1 10.0.0.6:2222 reader - dc1"]);
+    expect(list.map((h) => `${h.name} ${h.address}:${h.port} ${h.user} ${h.jump ?? "-"} ${h.agent}`)).toEqual([
+      "bastion 10.0.0.2:22 openasy - dc1",
+      "web-1 10.0.0.5:22 openasy bastion dc1",
+      "db-1 10.0.0.6:2222 reader - dc1",
+    ]);
     expect(list[1]).toMatchObject({ auth: "certificate", containers: true, hostKey: fingerprint(HOST_KEY), tags: { env: "prod" } });
     expect(parseHosts("")).toEqual([]);
   });
@@ -30,7 +34,9 @@ describe("the hosts file", () => {
     expect(one("{ name: a, address: 10.0.0.1, interval: 5 }")).toThrow(/unknown interval/);
     expect(one("{ name: a, address: 10.0.0.1, jump: nowhere }")).toThrow(/nowhere is not a host in the file/);
     expect(one("{ name: a, address: 10.0.0.1, jump: a }")).toThrow(/its own jump host/);
-    expect(() => parseHosts("hosts:\n  - { name: a, address: x }\n  - { name: b, address: y, jump: a }\n  - { name: c, address: z, jump: b }")).toThrow(/must be reachable directly/);
+    expect(() => parseHosts("hosts:\n  - { name: a, address: x }\n  - { name: b, address: y, jump: a }\n  - { name: c, address: z, jump: b }")).toThrow(
+      /must be reachable directly/,
+    );
     expect(() => parseHosts("hosts:\n  - { name: a, address: x }\n  - { name: A, address: y }")).toThrow(/A is in the file twice/);
   });
 
@@ -99,7 +105,10 @@ describe("hosts from the file", () => {
     // No hostKey: an admin checks it, as for a host added here.
     expect(await host("bastion")).toMatchObject({ status: "host-key-pending", hostKeys: [] });
     const bastion = await host("bastion");
-    expect((await app.admin(`/api/v1/hosts/${bastion.id}/host-key/accept`, { method: "POST", body: JSON.stringify({ fingerprint: fingerprint(OTHER_KEY) }) })).status).toBe(200);
+    expect(
+      (await app.admin(`/api/v1/hosts/${bastion.id}/host-key/accept`, { method: "POST", body: JSON.stringify({ fingerprint: fingerprint(OTHER_KEY) }) }))
+        .status,
+    ).toBe(200);
     expect(await host("web-1")).toMatchObject({ status: "new" }); // reached through bastion, so asked once bastion is trusted
     await agent.round();
     // The file's key: trusted without an admin.
@@ -109,7 +118,10 @@ describe("hosts from the file", () => {
     await agent.round();
     const db1 = await host("db-1");
     expect(db1).toMatchObject({ status: "host-key-pending", statusDetail: expect.stringMatching(/not SHA256:.* from the hosts file/) });
-    const refused = await app.admin(`/api/v1/hosts/${db1.id}/host-key/accept`, { method: "POST", body: JSON.stringify({ fingerprint: fingerprint(OTHER_KEY) }) });
+    const refused = await app.admin(`/api/v1/hosts/${db1.id}/host-key/accept`, {
+      method: "POST",
+      body: JSON.stringify({ fingerprint: fingerprint(OTHER_KEY) }),
+    });
     expect(refused.status).toBe(409);
     expect((await json(refused)).detail).toMatch(/hosts file/);
   });
@@ -123,7 +135,11 @@ describe("hosts from the file", () => {
 
   it("follow the file: a new address is checked again, a removed host goes, and a name taken here is left alone", async () => {
     await app.admin("/api/v1/hosts", { method: "POST", body: JSON.stringify({ name: "mail-1", address: "10.0.0.9" }) });
-    const warnings = app.infra.syncFile(parseHosts("hosts:\n  - { name: web-1, address: 10.0.0.15, agent: dc1, hostKey: 'SHA256:PDOhaQiW49e9hQXf81r2bgjWlUS0+xzcwzCeUeVWhZo' }\n  - { name: mail-1, address: 10.0.0.9, agent: dc1 }\n"));
+    const warnings = app.infra.syncFile(
+      parseHosts(
+        "hosts:\n  - { name: web-1, address: 10.0.0.15, agent: dc1, hostKey: 'SHA256:PDOhaQiW49e9hQXf81r2bgjWlUS0+xzcwzCeUeVWhZo' }\n  - { name: mail-1, address: 10.0.0.9, agent: dc1 }\n",
+      ),
+    );
     expect(warnings).toEqual(["mail-1: a host with this name was added in Infrastructure; remove it there to let the file manage it."]);
     expect((await hosts()).map((h) => `${h.name} ${h.source}`)).toEqual(["mail-1 ui", "web-1 file"]);
     expect(await host("web-1")).toMatchObject({ address: "10.0.0.15", jumpHost: null, status: "new", hostKeys: [] });
@@ -131,8 +147,15 @@ describe("hosts from the file", () => {
 
   it("need their jump host read by the same agent", async () => {
     await app.enroll("dc2");
-    const warnings = app.infra.syncFile(parseHosts("hosts:\n  - { name: gate, address: 10.1.0.1, agent: dc2 }\n  - { name: app-1, address: 10.1.0.2, agent: dc1, jump: gate }\n  - { name: app-2, address: 10.1.0.3, jump: gate }\n"));
-    expect(warnings).toEqual(["app-2: name the agent that reaches it with agent:, as there are 2.", "app-1: its jump host gate is read by another agent; a jump host must be read by the same agent."]);
+    const warnings = app.infra.syncFile(
+      parseHosts(
+        "hosts:\n  - { name: gate, address: 10.1.0.1, agent: dc2 }\n  - { name: app-1, address: 10.1.0.2, agent: dc1, jump: gate }\n  - { name: app-2, address: 10.1.0.3, jump: gate }\n",
+      ),
+    );
+    expect(warnings).toEqual([
+      "app-2: name the agent that reaches it with agent:, as there are 2.",
+      "app-1: its jump host gate is read by another agent; a jump host must be read by the same agent.",
+    ]);
     expect((await hosts()).filter((h) => h.source === "file").map((h) => h.name)).toEqual(["gate"]);
   });
 });

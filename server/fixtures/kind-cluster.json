@@ -1,575 +1,550 @@
 {
- "collectedAt": "2026-10-20T10:49:51.137Z",
- "version": {
-  "gitVersion": "v1.37.0",
-  "platform": "linux/arm64"
- },
- "nodes": [
-  {
-   "namespace": null,
-   "name": "infra-dev-control-plane",
-   "createdAt": "2026-10-20T10:44:35Z",
-   "labels": {
-    "beta.kubernetes.io/arch": "arm64",
-    "beta.kubernetes.io/os": "linux",
-    "kubernetes.io/arch": "arm64",
-    "kubernetes.io/hostname": "infra-dev-control-plane",
-    "kubernetes.io/os": "linux",
-    "node-role.kubernetes.io/control-plane": ""
-   },
-   "roles": [
-    "control-plane"
-   ],
-   "ready": true,
-   "conditions": [],
-   "kubelet": "v1.37.0",
-   "runtime": "containerd://2.3.4",
-   "os": "Debian GNU/Linux 13 (trixie)",
-   "kernel": "7.0.12-linuxkit",
-   "arch": "arm64",
-   "internalIp": "172.18.0.2",
-   "cpu": "14",
-   "memory": "8124000Ki",
-   "pods": "110",
-   "unschedulable": false,
-   "taints": []
-  }
- ],
- "namespaces": [
-  {
-   "name": "default",
-   "phase": "Active",
-   "createdAt": "2026-10-20T10:44:35Z"
+  "collectedAt": "2026-10-20T10:49:51.137Z",
+  "version": {
+    "gitVersion": "v1.37.0",
+    "platform": "linux/arm64"
   },
-  {
-   "name": "kube-node-lease",
-   "phase": "Active",
-   "createdAt": "2026-10-20T10:44:35Z"
-  },
-  {
-   "name": "kube-public",
-   "phase": "Active",
-   "createdAt": "2026-10-20T10:44:35Z"
-  },
-  {
-   "name": "kube-system",
-   "phase": "Active",
-   "createdAt": "2026-10-20T10:44:35Z"
-  },
-  {
-   "name": "local-path-storage",
-   "phase": "Active",
-   "createdAt": "2026-10-20T10:44:38Z"
-  },
-  {
-   "name": "openasy",
-   "phase": "Active",
-   "createdAt": "2026-10-20T10:47:16Z"
-  }
- ],
- "workloads": [
-  {
-   "kind": "Deployment",
-   "namespace": "default",
-   "name": "broken",
-   "createdAt": "2026-10-20T10:47:17Z",
-   "replicas": 1,
-   "ready": 0,
-   "images": [
-    "busybox:1.37"
-   ]
-  },
-  {
-   "kind": "Deployment",
-   "namespace": "default",
-   "name": "web",
-   "createdAt": "2026-10-20T10:47:16Z",
-   "replicas": 2,
-   "ready": 2,
-   "images": [
-    "nginx:1.27-alpine"
-   ]
-  },
-  {
-   "kind": "Deployment",
-   "namespace": "kube-system",
-   "name": "coredns",
-   "createdAt": "2026-10-20T10:44:37Z",
-   "replicas": 2,
-   "ready": 2,
-   "images": [
-    "registry.k8s.io/coredns/coredns:v1.14.6"
-   ]
-  },
-  {
-   "kind": "Deployment",
-   "namespace": "local-path-storage",
-   "name": "local-path-provisioner",
-   "createdAt": "2026-10-20T10:44:38Z",
-   "replicas": 1,
-   "ready": 1,
-   "images": [
-    "docker.io/kindest/local-path-provisioner:v20260820-69b56db7"
-   ]
-  },
-  {
-   "kind": "DaemonSet",
-   "namespace": "kube-system",
-   "name": "kindnet",
-   "createdAt": "2026-10-20T10:44:38Z",
-   "replicas": 1,
-   "ready": 1,
-   "images": [
-    "docker.io/kindest/kindnetd:v20260820-69b56db7"
-   ]
-  },
-  {
-   "kind": "DaemonSet",
-   "namespace": "kube-system",
-   "name": "kube-proxy",
-   "createdAt": "2026-10-20T10:44:37Z",
-   "replicas": 1,
-   "ready": 1,
-   "images": [
-    "registry.k8s.io/kube-proxy:v1.37.0"
-   ]
-  }
- ],
- "pods": [
-  {
-   "namespace": "default",
-   "name": "broken-5c44cd594c-m89h7",
-   "node": "infra-dev-control-plane",
-   "phase": "Running",
-   "ready": "0/1",
-   "restarts": 4,
-   "reason": "Error",
-   "owner": "ReplicaSet/broken-5c44cd594c",
-   "ip": "10.244.0.7",
-   "startedAt": "2026-10-20T10:47:17Z",
-   "containers": [
+  "nodes": [
     {
-     "name": "busybox",
-     "image": "busybox:1.37",
-     "ready": false,
-     "restarts": 4,
-     "state": "terminated",
-     "reason": "Error",
-     "requests": {},
-     "limits": {},
-     "privileged": false
+      "namespace": null,
+      "name": "infra-dev-control-plane",
+      "createdAt": "2026-10-20T10:44:35Z",
+      "labels": {
+        "beta.kubernetes.io/arch": "arm64",
+        "beta.kubernetes.io/os": "linux",
+        "kubernetes.io/arch": "arm64",
+        "kubernetes.io/hostname": "infra-dev-control-plane",
+        "kubernetes.io/os": "linux",
+        "node-role.kubernetes.io/control-plane": ""
+      },
+      "roles": ["control-plane"],
+      "ready": true,
+      "conditions": [],
+      "kubelet": "v1.37.0",
+      "runtime": "containerd://2.3.4",
+      "os": "Debian GNU/Linux 13 (trixie)",
+      "kernel": "7.0.12-linuxkit",
+      "arch": "arm64",
+      "internalIp": "172.18.0.2",
+      "cpu": "14",
+      "memory": "8124000Ki",
+      "pods": "110",
+      "unschedulable": false,
+      "taints": []
     }
-   ]
-  },
-  {
-   "namespace": "default",
-   "name": "web-7c6cdd646-p7klh",
-   "node": "infra-dev-control-plane",
-   "phase": "Running",
-   "ready": "1/1",
-   "restarts": 0,
-   "reason": null,
-   "owner": "ReplicaSet/web-7c6cdd646",
-   "ip": "10.244.0.5",
-   "startedAt": "2026-10-20T10:47:16Z",
-   "containers": [
+  ],
+  "namespaces": [
     {
-     "name": "nginx",
-     "image": "nginx:1.27-alpine",
-     "ready": true,
-     "restarts": 0,
-     "state": "running",
-     "reason": null,
-     "requests": {},
-     "limits": {},
-     "privileged": false
-    }
-   ]
-  },
-  {
-   "namespace": "default",
-   "name": "web-7c6cdd646-xz2jv",
-   "node": "infra-dev-control-plane",
-   "phase": "Running",
-   "ready": "1/1",
-   "restarts": 0,
-   "reason": null,
-   "owner": "ReplicaSet/web-7c6cdd646",
-   "ip": "10.244.0.6",
-   "startedAt": "2026-10-20T10:47:16Z",
-   "containers": [
+      "name": "default",
+      "phase": "Active",
+      "createdAt": "2026-10-20T10:44:35Z"
+    },
     {
-     "name": "nginx",
-     "image": "nginx:1.27-alpine",
-     "ready": true,
-     "restarts": 0,
-     "state": "running",
-     "reason": null,
-     "requests": {},
-     "limits": {},
-     "privileged": false
-    }
-   ]
-  },
-  {
-   "namespace": "kube-system",
-   "name": "coredns-559f6c778d-dgrjx",
-   "node": "infra-dev-control-plane",
-   "phase": "Running",
-   "ready": "1/1",
-   "restarts": 0,
-   "reason": null,
-   "owner": "ReplicaSet/coredns-559f6c778d",
-   "ip": "10.244.0.4",
-   "startedAt": "2026-10-20T10:44:55Z",
-   "containers": [
+      "name": "kube-node-lease",
+      "phase": "Active",
+      "createdAt": "2026-10-20T10:44:35Z"
+    },
     {
-     "name": "coredns",
-     "image": "registry.k8s.io/coredns/coredns:v1.14.6",
-     "ready": true,
-     "restarts": 0,
-     "state": "running",
-     "reason": null,
-     "requests": {
-      "cpu": "100m",
-      "memory": "70Mi"
-     },
-     "limits": {
-      "memory": "170Mi"
-     },
-     "privileged": false
-    }
-   ]
-  },
-  {
-   "namespace": "kube-system",
-   "name": "coredns-559f6c778d-w7sqp",
-   "node": "infra-dev-control-plane",
-   "phase": "Running",
-   "ready": "1/1",
-   "restarts": 0,
-   "reason": null,
-   "owner": "ReplicaSet/coredns-559f6c778d",
-   "ip": "10.244.0.2",
-   "startedAt": "2026-10-20T10:44:55Z",
-   "containers": [
+      "name": "kube-public",
+      "phase": "Active",
+      "createdAt": "2026-10-20T10:44:35Z"
+    },
     {
-     "name": "coredns",
-     "image": "registry.k8s.io/coredns/coredns:v1.14.6",
-     "ready": true,
-     "restarts": 0,
-     "state": "running",
-     "reason": null,
-     "requests": {
-      "cpu": "100m",
-      "memory": "70Mi"
-     },
-     "limits": {
-      "memory": "170Mi"
-     },
-     "privileged": false
-    }
-   ]
-  },
-  {
-   "namespace": "kube-system",
-   "name": "etcd-infra-dev-control-plane",
-   "node": "infra-dev-control-plane",
-   "phase": "Running",
-   "ready": "1/1",
-   "restarts": 0,
-   "reason": null,
-   "owner": "Node/infra-dev-control-plane",
-   "ip": "172.18.0.2",
-   "startedAt": "2026-10-20T10:44:37Z",
-   "containers": [
+      "name": "kube-system",
+      "phase": "Active",
+      "createdAt": "2026-10-20T10:44:35Z"
+    },
     {
-     "name": "etcd",
-     "image": "registry.k8s.io/etcd:3.7.0-0",
-     "ready": true,
-     "restarts": 0,
-     "state": "running",
-     "reason": null,
-     "requests": {
-      "cpu": "100m",
-      "memory": "100Mi"
-     },
-     "limits": {},
-     "privileged": false
-    }
-   ]
-  },
-  {
-   "namespace": "kube-system",
-   "name": "kindnet-pq9qk",
-   "node": "infra-dev-control-plane",
-   "phase": "Running",
-   "ready": "1/1",
-   "restarts": 0,
-   "reason": null,
-   "owner": "DaemonSet/kindnet",
-   "ip": "172.18.0.2",
-   "startedAt": "2026-10-20T10:44:44Z",
-   "containers": [
+      "name": "local-path-storage",
+      "phase": "Active",
+      "createdAt": "2026-10-20T10:44:38Z"
+    },
     {
-     "name": "kindnet-cni",
-     "image": "docker.io/kindest/kindnetd:v20260820-69b56db7",
-     "ready": true,
-     "restarts": 0,
-     "state": "running",
-     "reason": null,
-     "requests": {
-      "cpu": "100m",
-      "memory": "50Mi"
-     },
-     "limits": {},
-     "privileged": false
+      "name": "openasy",
+      "phase": "Active",
+      "createdAt": "2026-10-20T10:47:16Z"
     }
-   ]
-  },
-  {
-   "namespace": "kube-system",
-   "name": "kube-apiserver-infra-dev-control-plane",
-   "node": "infra-dev-control-plane",
-   "phase": "Running",
-   "ready": "1/1",
-   "restarts": 0,
-   "reason": null,
-   "owner": "Node/infra-dev-control-plane",
-   "ip": "172.18.0.2",
-   "startedAt": "2026-10-20T10:44:37Z",
-   "containers": [
+  ],
+  "workloads": [
     {
-     "name": "kube-apiserver",
-     "image": "registry.k8s.io/kube-apiserver:v1.37.0",
-     "ready": true,
-     "restarts": 0,
-     "state": "running",
-     "reason": null,
-     "requests": {
-      "cpu": "250m"
-     },
-     "limits": {},
-     "privileged": false
-    }
-   ]
-  },
-  {
-   "namespace": "kube-system",
-   "name": "kube-controller-manager-infra-dev-control-plane",
-   "node": "infra-dev-control-plane",
-   "phase": "Running",
-   "ready": "1/1",
-   "restarts": 0,
-   "reason": null,
-   "owner": "Node/infra-dev-control-plane",
-   "ip": "172.18.0.2",
-   "startedAt": "2026-10-20T10:44:37Z",
-   "containers": [
+      "kind": "Deployment",
+      "namespace": "default",
+      "name": "broken",
+      "createdAt": "2026-10-20T10:47:17Z",
+      "replicas": 1,
+      "ready": 0,
+      "images": ["busybox:1.37"]
+    },
     {
-     "name": "kube-controller-manager",
-     "image": "registry.k8s.io/kube-controller-manager:v1.37.0",
-     "ready": true,
-     "restarts": 0,
-     "state": "running",
-     "reason": null,
-     "requests": {
-      "cpu": "200m"
-     },
-     "limits": {},
-     "privileged": false
-    }
-   ]
-  },
-  {
-   "namespace": "kube-system",
-   "name": "kube-proxy-6m4kw",
-   "node": "infra-dev-control-plane",
-   "phase": "Running",
-   "ready": "1/1",
-   "restarts": 0,
-   "reason": null,
-   "owner": "DaemonSet/kube-proxy",
-   "ip": "172.18.0.2",
-   "startedAt": "2026-10-20T10:44:44Z",
-   "containers": [
+      "kind": "Deployment",
+      "namespace": "default",
+      "name": "web",
+      "createdAt": "2026-10-20T10:47:16Z",
+      "replicas": 2,
+      "ready": 2,
+      "images": ["nginx:1.27-alpine"]
+    },
     {
-     "name": "kube-proxy",
-     "image": "registry.k8s.io/kube-proxy:v1.37.0",
-     "ready": true,
-     "restarts": 0,
-     "state": "running",
-     "reason": null,
-     "requests": {},
-     "limits": {},
-     "privileged": true
-    }
-   ]
-  },
-  {
-   "namespace": "kube-system",
-   "name": "kube-scheduler-infra-dev-control-plane",
-   "node": "infra-dev-control-plane",
-   "phase": "Running",
-   "ready": "1/1",
-   "restarts": 0,
-   "reason": null,
-   "owner": "Node/infra-dev-control-plane",
-   "ip": "172.18.0.2",
-   "startedAt": "2026-10-20T10:44:37Z",
-   "containers": [
+      "kind": "Deployment",
+      "namespace": "kube-system",
+      "name": "coredns",
+      "createdAt": "2026-10-20T10:44:37Z",
+      "replicas": 2,
+      "ready": 2,
+      "images": ["registry.k8s.io/coredns/coredns:v1.14.6"]
+    },
     {
-     "name": "kube-scheduler",
-     "image": "registry.k8s.io/kube-scheduler:v1.37.0",
-     "ready": true,
-     "restarts": 0,
-     "state": "running",
-     "reason": null,
-     "requests": {
-      "cpu": "100m"
-     },
-     "limits": {},
-     "privileged": false
-    }
-   ]
-  },
-  {
-   "namespace": "local-path-storage",
-   "name": "local-path-provisioner-75f7fc7dc5-6vdkd",
-   "node": "infra-dev-control-plane",
-   "phase": "Running",
-   "ready": "1/1",
-   "restarts": 0,
-   "reason": null,
-   "owner": "ReplicaSet/local-path-provisioner-75f7fc7dc5",
-   "ip": "10.244.0.3",
-   "startedAt": "2026-10-20T10:44:55Z",
-   "containers": [
+      "kind": "Deployment",
+      "namespace": "local-path-storage",
+      "name": "local-path-provisioner",
+      "createdAt": "2026-10-20T10:44:38Z",
+      "replicas": 1,
+      "ready": 1,
+      "images": ["docker.io/kindest/local-path-provisioner:v20260820-69b56db7"]
+    },
     {
-     "name": "local-path-provisioner",
-     "image": "docker.io/kindest/local-path-provisioner:v20260820-69b56db7",
-     "ready": true,
-     "restarts": 0,
-     "state": "running",
-     "reason": null,
-     "requests": {},
-     "limits": {},
-     "privileged": false
+      "kind": "DaemonSet",
+      "namespace": "kube-system",
+      "name": "kindnet",
+      "createdAt": "2026-10-20T10:44:38Z",
+      "replicas": 1,
+      "ready": 1,
+      "images": ["docker.io/kindest/kindnetd:v20260820-69b56db7"]
+    },
+    {
+      "kind": "DaemonSet",
+      "namespace": "kube-system",
+      "name": "kube-proxy",
+      "createdAt": "2026-10-20T10:44:37Z",
+      "replicas": 1,
+      "ready": 1,
+      "images": ["registry.k8s.io/kube-proxy:v1.37.0"]
     }
-   ]
-  }
- ],
- "services": [
-  {
-   "namespace": "default",
-   "name": "kubernetes",
-   "type": "ClusterIP",
-   "clusterIp": "10.96.0.1",
-   "externalIps": [],
-   "ports": [
-    "443/TCP"
-   ]
-  },
-  {
-   "namespace": "default",
-   "name": "web",
-   "type": "ClusterIP",
-   "clusterIp": "10.96.52.218",
-   "externalIps": [],
-   "ports": [
-    "80/TCP"
-   ]
-  },
-  {
-   "namespace": "kube-system",
-   "name": "kube-dns",
-   "type": "ClusterIP",
-   "clusterIp": "10.96.0.10",
-   "externalIps": [],
-   "ports": [
-    "53/UDP",
-    "53/TCP",
-    "9153/TCP"
-   ]
-  }
- ],
- "ingresses": [],
- "volumes": [],
- "storageClasses": [
-  {
-   "name": "standard",
-   "provisioner": "rancher.io/local-path",
-   "default": true
-  }
- ],
- "clusterAdmins": [
-  "Group kubeadm:cluster-admins (kubeadm:cluster-admins)",
-  "Group system:masters (cluster-admin)"
- ],
- "events": [
-  {
-   "at": "2026-10-20T10:48:51Z",
-   "namespace": "default",
-   "object": "Pod/broken-5c44cd594c-m89h7",
-   "reason": "BackOff",
-   "message": "Back-off restarting failed container busybox in pod broken-5c44cd594c-m89h7_default(9731f287-030a-4c45-8be9-b51e6b8f1178)",
-   "count": 5
-  },
-  {
-   "at": "2026-10-20T10:44:56Z",
-   "namespace": "kube-system",
-   "object": "Pod/coredns-559f6c778d-dgrjx",
-   "reason": "Unhealthy",
-   "message": "Readiness probe failed: Get \"http://10.244.0.4:8181/ready\": dial tcp 10.244.0.4:8181: connect: connection refused",
-   "count": 1
-  },
-  {
-   "at": "2026-10-20T10:44:56Z",
-   "namespace": "kube-system",
-   "object": "Pod/coredns-559f6c778d-w7sqp",
-   "reason": "Unhealthy",
-   "message": "Readiness probe failed: Get \"http://10.244.0.2:8181/ready\": dial tcp 10.244.0.2:8181: connect: connection refused",
-   "count": 1
-  },
-  {
-   "at": "2026-10-20T10:44:44Z",
-   "namespace": "kube-system",
-   "object": "Pod/coredns-559f6c778d-dgrjx",
-   "reason": "FailedScheduling",
-   "message": "0/1 nodes are available: 1 node(s) had untolerated taint(s). preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.",
-   "count": 1
-  },
-  {
-   "at": "2026-10-20T10:44:44Z",
-   "namespace": "kube-system",
-   "object": "Pod/coredns-559f6c778d-w7sqp",
-   "reason": "FailedScheduling",
-   "message": "0/1 nodes are available: 1 node(s) had untolerated taint(s). preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.",
-   "count": 1
-  },
-  {
-   "at": "2026-10-20T10:44:44Z",
-   "namespace": "local-path-storage",
-   "object": "Pod/local-path-provisioner-75f7fc7dc5-6vdkd",
-   "reason": "FailedScheduling",
-   "message": "0/1 nodes are available: 1 node(s) had untolerated taint(s). preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.",
-   "count": 1
-  },
-  {
-   "at": "2026-10-20T10:44:43Z",
-   "namespace": "kube-system",
-   "object": "Pod/etcd-infra-dev-control-plane",
-   "reason": "NodeNotReady",
-   "message": "Node is not ready",
-   "count": 1
-  },
-  {
-   "at": "2026-10-20T10:44:38Z",
-   "namespace": "kube-system",
-   "object": "Pod/kube-scheduler-infra-dev-control-plane",
-   "reason": "Unhealthy",
-   "message": "Readiness probe failed: HTTP probe failed with statuscode: 500",
-   "count": 2
-  }
- ]
+  ],
+  "pods": [
+    {
+      "namespace": "default",
+      "name": "broken-5c44cd594c-m89h7",
+      "node": "infra-dev-control-plane",
+      "phase": "Running",
+      "ready": "0/1",
+      "restarts": 4,
+      "reason": "Error",
+      "owner": "ReplicaSet/broken-5c44cd594c",
+      "ip": "10.244.0.7",
+      "startedAt": "2026-10-20T10:47:17Z",
+      "containers": [
+        {
+          "name": "busybox",
+          "image": "busybox:1.37",
+          "ready": false,
+          "restarts": 4,
+          "state": "terminated",
+          "reason": "Error",
+          "requests": {},
+          "limits": {},
+          "privileged": false
+        }
+      ]
+    },
+    {
+      "namespace": "default",
+      "name": "web-7c6cdd646-p7klh",
+      "node": "infra-dev-control-plane",
+      "phase": "Running",
+      "ready": "1/1",
+      "restarts": 0,
+      "reason": null,
+      "owner": "ReplicaSet/web-7c6cdd646",
+      "ip": "10.244.0.5",
+      "startedAt": "2026-10-20T10:47:16Z",
+      "containers": [
+        {
+          "name": "nginx",
+          "image": "nginx:1.27-alpine",
+          "ready": true,
+          "restarts": 0,
+          "state": "running",
+          "reason": null,
+          "requests": {},
+          "limits": {},
+          "privileged": false
+        }
+      ]
+    },
+    {
+      "namespace": "default",
+      "name": "web-7c6cdd646-xz2jv",
+      "node": "infra-dev-control-plane",
+      "phase": "Running",
+      "ready": "1/1",
+      "restarts": 0,
+      "reason": null,
+      "owner": "ReplicaSet/web-7c6cdd646",
+      "ip": "10.244.0.6",
+      "startedAt": "2026-10-20T10:47:16Z",
+      "containers": [
+        {
+          "name": "nginx",
+          "image": "nginx:1.27-alpine",
+          "ready": true,
+          "restarts": 0,
+          "state": "running",
+          "reason": null,
+          "requests": {},
+          "limits": {},
+          "privileged": false
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "coredns-559f6c778d-dgrjx",
+      "node": "infra-dev-control-plane",
+      "phase": "Running",
+      "ready": "1/1",
+      "restarts": 0,
+      "reason": null,
+      "owner": "ReplicaSet/coredns-559f6c778d",
+      "ip": "10.244.0.4",
+      "startedAt": "2026-10-20T10:44:55Z",
+      "containers": [
+        {
+          "name": "coredns",
+          "image": "registry.k8s.io/coredns/coredns:v1.14.6",
+          "ready": true,
+          "restarts": 0,
+          "state": "running",
+          "reason": null,
+          "requests": {
+            "cpu": "100m",
+            "memory": "70Mi"
+          },
+          "limits": {
+            "memory": "170Mi"
+          },
+          "privileged": false
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "coredns-559f6c778d-w7sqp",
+      "node": "infra-dev-control-plane",
+      "phase": "Running",
+      "ready": "1/1",
+      "restarts": 0,
+      "reason": null,
+      "owner": "ReplicaSet/coredns-559f6c778d",
+      "ip": "10.244.0.2",
+      "startedAt": "2026-10-20T10:44:55Z",
+      "containers": [
+        {
+          "name": "coredns",
+          "image": "registry.k8s.io/coredns/coredns:v1.14.6",
+          "ready": true,
+          "restarts": 0,
+          "state": "running",
+          "reason": null,
+          "requests": {
+            "cpu": "100m",
+            "memory": "70Mi"
+          },
+          "limits": {
+            "memory": "170Mi"
+          },
+          "privileged": false
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "etcd-infra-dev-control-plane",
+      "node": "infra-dev-control-plane",
+      "phase": "Running",
+      "ready": "1/1",
+      "restarts": 0,
+      "reason": null,
+      "owner": "Node/infra-dev-control-plane",
+      "ip": "172.18.0.2",
+      "startedAt": "2026-10-20T10:44:37Z",
+      "containers": [
+        {
+          "name": "etcd",
+          "image": "registry.k8s.io/etcd:3.7.0-0",
+          "ready": true,
+          "restarts": 0,
+          "state": "running",
+          "reason": null,
+          "requests": {
+            "cpu": "100m",
+            "memory": "100Mi"
+          },
+          "limits": {},
+          "privileged": false
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "kindnet-pq9qk",
+      "node": "infra-dev-control-plane",
+      "phase": "Running",
+      "ready": "1/1",
+      "restarts": 0,
+      "reason": null,
+      "owner": "DaemonSet/kindnet",
+      "ip": "172.18.0.2",
+      "startedAt": "2026-10-20T10:44:44Z",
+      "containers": [
+        {
+          "name": "kindnet-cni",
+          "image": "docker.io/kindest/kindnetd:v20260820-69b56db7",
+          "ready": true,
+          "restarts": 0,
+          "state": "running",
+          "reason": null,
+          "requests": {
+            "cpu": "100m",
+            "memory": "50Mi"
+          },
+          "limits": {},
+          "privileged": false
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "kube-apiserver-infra-dev-control-plane",
+      "node": "infra-dev-control-plane",
+      "phase": "Running",
+      "ready": "1/1",
+      "restarts": 0,
+      "reason": null,
+      "owner": "Node/infra-dev-control-plane",
+      "ip": "172.18.0.2",
+      "startedAt": "2026-10-20T10:44:37Z",
+      "containers": [
+        {
+          "name": "kube-apiserver",
+          "image": "registry.k8s.io/kube-apiserver:v1.37.0",
+          "ready": true,
+          "restarts": 0,
+          "state": "running",
+          "reason": null,
+          "requests": {
+            "cpu": "250m"
+          },
+          "limits": {},
+          "privileged": false
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "kube-controller-manager-infra-dev-control-plane",
+      "node": "infra-dev-control-plane",
+      "phase": "Running",
+      "ready": "1/1",
+      "restarts": 0,
+      "reason": null,
+      "owner": "Node/infra-dev-control-plane",
+      "ip": "172.18.0.2",
+      "startedAt": "2026-10-20T10:44:37Z",
+      "containers": [
+        {
+          "name": "kube-controller-manager",
+          "image": "registry.k8s.io/kube-controller-manager:v1.37.0",
+          "ready": true,
+          "restarts": 0,
+          "state": "running",
+          "reason": null,
+          "requests": {
+            "cpu": "200m"
+          },
+          "limits": {},
+          "privileged": false
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "kube-proxy-6m4kw",
+      "node": "infra-dev-control-plane",
+      "phase": "Running",
+      "ready": "1/1",
+      "restarts": 0,
+      "reason": null,
+      "owner": "DaemonSet/kube-proxy",
+      "ip": "172.18.0.2",
+      "startedAt": "2026-10-20T10:44:44Z",
+      "containers": [
+        {
+          "name": "kube-proxy",
+          "image": "registry.k8s.io/kube-proxy:v1.37.0",
+          "ready": true,
+          "restarts": 0,
+          "state": "running",
+          "reason": null,
+          "requests": {},
+          "limits": {},
+          "privileged": true
+        }
+      ]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "kube-scheduler-infra-dev-control-plane",
+      "node": "infra-dev-control-plane",
+      "phase": "Running",
+      "ready": "1/1",
+      "restarts": 0,
+      "reason": null,
+      "owner": "Node/infra-dev-control-plane",
+      "ip": "172.18.0.2",
+      "startedAt": "2026-10-20T10:44:37Z",
+      "containers": [
+        {
+          "name": "kube-scheduler",
+          "image": "registry.k8s.io/kube-scheduler:v1.37.0",
+          "ready": true,
+          "restarts": 0,
+          "state": "running",
+          "reason": null,
+          "requests": {
+            "cpu": "100m"
+          },
+          "limits": {},
+          "privileged": false
+        }
+      ]
+    },
+    {
+      "namespace": "local-path-storage",
+      "name": "local-path-provisioner-75f7fc7dc5-6vdkd",
+      "node": "infra-dev-control-plane",
+      "phase": "Running",
+      "ready": "1/1",
+      "restarts": 0,
+      "reason": null,
+      "owner": "ReplicaSet/local-path-provisioner-75f7fc7dc5",
+      "ip": "10.244.0.3",
+      "startedAt": "2026-10-20T10:44:55Z",
+      "containers": [
+        {
+          "name": "local-path-provisioner",
+          "image": "docker.io/kindest/local-path-provisioner:v20260820-69b56db7",
+          "ready": true,
+          "restarts": 0,
+          "state": "running",
+          "reason": null,
+          "requests": {},
+          "limits": {},
+          "privileged": false
+        }
+      ]
+    }
+  ],
+  "services": [
+    {
+      "namespace": "default",
+      "name": "kubernetes",
+      "type": "ClusterIP",
+      "clusterIp": "10.96.0.1",
+      "externalIps": [],
+      "ports": ["443/TCP"]
+    },
+    {
+      "namespace": "default",
+      "name": "web",
+      "type": "ClusterIP",
+      "clusterIp": "10.96.52.218",
+      "externalIps": [],
+      "ports": ["80/TCP"]
+    },
+    {
+      "namespace": "kube-system",
+      "name": "kube-dns",
+      "type": "ClusterIP",
+      "clusterIp": "10.96.0.10",
+      "externalIps": [],
+      "ports": ["53/UDP", "53/TCP", "9153/TCP"]
+    }
+  ],
+  "ingresses": [],
+  "volumes": [],
+  "storageClasses": [
+    {
+      "name": "standard",
+      "provisioner": "rancher.io/local-path",
+      "default": true
+    }
+  ],
+  "clusterAdmins": ["Group kubeadm:cluster-admins (kubeadm:cluster-admins)", "Group system:masters (cluster-admin)"],
+  "events": [
+    {
+      "at": "2026-10-20T10:48:51Z",
+      "namespace": "default",
+      "object": "Pod/broken-5c44cd594c-m89h7",
+      "reason": "BackOff",
+      "message": "Back-off restarting failed container busybox in pod broken-5c44cd594c-m89h7_default(9731f287-030a-4c45-8be9-b51e6b8f1178)",
+      "count": 5
+    },
+    {
+      "at": "2026-10-20T10:44:56Z",
+      "namespace": "kube-system",
+      "object": "Pod/coredns-559f6c778d-dgrjx",
+      "reason": "Unhealthy",
+      "message": "Readiness probe failed: Get \"http://10.244.0.4:8181/ready\": dial tcp 10.244.0.4:8181: connect: connection refused",
+      "count": 1
+    },
+    {
+      "at": "2026-10-20T10:44:56Z",
+      "namespace": "kube-system",
+      "object": "Pod/coredns-559f6c778d-w7sqp",
+      "reason": "Unhealthy",
+      "message": "Readiness probe failed: Get \"http://10.244.0.2:8181/ready\": dial tcp 10.244.0.2:8181: connect: connection refused",
+      "count": 1
+    },
+    {
+      "at": "2026-10-20T10:44:44Z",
+      "namespace": "kube-system",
+      "object": "Pod/coredns-559f6c778d-dgrjx",
+      "reason": "FailedScheduling",
+      "message": "0/1 nodes are available: 1 node(s) had untolerated taint(s). preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.",
+      "count": 1
+    },
+    {
+      "at": "2026-10-20T10:44:44Z",
+      "namespace": "kube-system",
+      "object": "Pod/coredns-559f6c778d-w7sqp",
+      "reason": "FailedScheduling",
+      "message": "0/1 nodes are available: 1 node(s) had untolerated taint(s). preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.",
+      "count": 1
+    },
+    {
+      "at": "2026-10-20T10:44:44Z",
+      "namespace": "local-path-storage",
+      "object": "Pod/local-path-provisioner-75f7fc7dc5-6vdkd",
+      "reason": "FailedScheduling",
+      "message": "0/1 nodes are available: 1 node(s) had untolerated taint(s). preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.",
+      "count": 1
+    },
+    {
+      "at": "2026-10-20T10:44:43Z",
+      "namespace": "kube-system",
+      "object": "Pod/etcd-infra-dev-control-plane",
+      "reason": "NodeNotReady",
+      "message": "Node is not ready",
+      "count": 1
+    },
+    {
+      "at": "2026-10-20T10:44:38Z",
+      "namespace": "kube-system",
+      "object": "Pod/kube-scheduler-infra-dev-control-plane",
+      "reason": "Unhealthy",
+      "message": "Readiness probe failed: HTTP probe failed with statuscode: 500",
+      "count": 2
+    }
+  ]
 }

@@ -77,7 +77,12 @@ export function AgentsPage({ call }: { call: Call }) {
   };
   const cols: Column<Agent>[] = [
     { id: "name", header: t("agentsPage.agent"), cell: (a) => a.name, sortValue: (a) => a.name },
-    { id: "status", header: t("agentsPage.status"), width: "150px", cell: (a) => <Badge tone={STATUS(t)[a.status]?.tone ?? "neutral"}>{STATUS(t)[a.status]?.label ?? a.status}</Badge> },
+    {
+      id: "status",
+      header: t("agentsPage.status"),
+      width: "150px",
+      cell: (a) => <Badge tone={STATUS(t)[a.status]?.tone ?? "neutral"}>{STATUS(t)[a.status]?.label ?? a.status}</Badge>,
+    },
     { id: "hosts", header: t("agentsPage.hosts"), width: "80px", align: "right", cell: (a) => a.hosts },
     { id: "version", header: t("agentsPage.version"), width: "90px", mono: true, cell: (a) => a.version ?? "–" },
     { id: "ca", header: t("agentsPage.caFingerprint"), cell: (a) => <span className="infra-wrap font-mono text-xs">{a.caFingerprint ?? "–"}</span> },
@@ -89,11 +94,26 @@ export function AgentsPage({ call }: { call: Call }) {
       cell: (a) =>
         can("admin") && (
           <span className="flex gap-1">
-            <Button size="xs" variant="ghost" icon={<RotateCw />} onClick={() => window.confirm(t("agentsPage.enrolAgainItsSecretStops", { name: a.name })) && void call<NewAgent>(`/api/v1/agents/${a.id}/enroll-token`, { method: "POST" }).then((r) => (setCreated(r), reload()))}>
+            <Button
+              size="xs"
+              variant="ghost"
+              icon={<RotateCw />}
+              onClick={() =>
+                window.confirm(t("agentsPage.enrolAgainItsSecretStops", { name: a.name })) &&
+                void call<NewAgent>(`/api/v1/agents/${a.id}/enroll-token`, { method: "POST" }).then((r) => (setCreated(r), reload()))
+              }
+            >
               {t("agentsPage.enrolAgain")}
             </Button>
             {a.hosts === 0 && (
-              <Button size="xs" variant="ghost" icon={<Trash2 />} onClick={() => window.confirm(t("agentsPage.remove", { name: a.name })) && void call(`/api/v1/agents/${a.id}`, { method: "DELETE" }).then(reload)}>
+              <Button
+                size="xs"
+                variant="ghost"
+                icon={<Trash2 />}
+                onClick={() =>
+                  window.confirm(t("agentsPage.remove", { name: a.name })) && void call(`/api/v1/agents/${a.id}`, { method: "DELETE" }).then(reload)
+                }
+              >
                 {t("agentsPage.remove2")}
               </Button>
             )}

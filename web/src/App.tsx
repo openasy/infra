@@ -1,4 +1,23 @@
-import { AppShell, BrandProvider, Button, Callout, EmptyState, KpiCard, KpiGrid, navigate, PageHeader, Panel, PRODUCT_IDS, SegmentedControl, SelectField, Tabs, usePath, type Column, type ProductId, useThemePreference } from "@openasy/ui";
+import {
+  AppShell,
+  BrandProvider,
+  Button,
+  Callout,
+  EmptyState,
+  KpiCard,
+  KpiGrid,
+  navigate,
+  PageHeader,
+  Panel,
+  PRODUCT_IDS,
+  SegmentedControl,
+  SelectField,
+  Tabs,
+  usePath,
+  type Column,
+  type ProductId,
+  useThemePreference,
+} from "@openasy/ui";
 import { AccountSettings, AuthGate, MembersSettings, SignInSettings, TokensSettings, useAuth } from "@openasy/auth/react";
 import { Bot, Boxes, GitCompare, KeyRound, LayoutDashboard, LogIn, LogOut, Server, Settings2, UserRound, Users, Network } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -34,7 +53,14 @@ function OverviewPage({ call }: { call: Call }) {
     return (
       <>
         <PageHeader title={t("overviewPage.getStarted")} description={t("overviewPage.anAgentReadsHostsOver")} />
-        <EmptyState title={t("overviewPage.nothingToReadYet")} action={<Button variant="primary" onClick={() => navigate(total(s.agents) ? "/setup" : "/agents")}>{total(s.agents) ? t("overviewPage.prepareAHost") : t("overviewPage.addAnAgent")}</Button>}>
+        <EmptyState
+          title={t("overviewPage.nothingToReadYet")}
+          action={
+            <Button variant="primary" onClick={() => navigate(total(s.agents) ? "/setup" : "/agents")}>
+              {total(s.agents) ? t("overviewPage.prepareAHost") : t("overviewPage.addAnAgent")}
+            </Button>
+          }
+        >
           {t("overviewPage.addAnAgentAndStart")}
         </EmptyState>
       </>
@@ -43,13 +69,22 @@ function OverviewPage({ call }: { call: Call }) {
   const cols: Column<Host>[] = [
     { id: "name", header: t("overviewPage.host"), cell: (h) => <a href={`/hosts/${h.id}`}>{h.name}</a> },
     { id: "status", header: t("overviewPage.status"), width: "180px", cell: (h) => <Status status={h.status} /> },
-    { id: "why", header: t("overviewPage.why"), cell: (h) => (h.status !== "ok" ? (h.statusDetail ?? "") : `${h.summary!.fullestDisk!.mount} is ${h.summary!.fullestDisk!.pct}% full`) },
+    {
+      id: "why",
+      header: t("overviewPage.why"),
+      cell: (h) => (h.status !== "ok" ? (h.statusDetail ?? "") : `${h.summary!.fullestDisk!.mount} is ${h.summary!.fullestDisk!.pct}% full`),
+    },
   ];
   return (
     <>
       <PageHeader title={t("overviewPage.overview")} description={t("overviewPage.everyHostContainerAndCluster")} />
       <KpiGrid>
-        <KpiCard label={t("overviewPage.hostsCollected")} value={`${s?.hosts.ok ?? 0}/${total(s?.hosts)}`} tone={s && (s.hosts.ok ?? 0) < total(s.hosts) ? "warning" : undefined} href="/hosts" />
+        <KpiCard
+          label={t("overviewPage.hostsCollected")}
+          value={`${s?.hosts.ok ?? 0}/${total(s?.hosts)}`}
+          tone={s && (s.hosts.ok ?? 0) < total(s.hosts) ? "warning" : undefined}
+          href="/hosts"
+        />
         <KpiCard label={t("overviewPage.containers")} value={s?.containers ?? "–"} href="/containers" />
         <KpiCard label={t("overviewPage.clustersCollected")} value={`${s?.clusters.ok ?? 0}/${total(s?.clusters)}`} href="/clusters" />
         <KpiCard label={t("overviewPage.changesIn24H")} value={s?.changesLastDay ?? "–"} href="/changes" />
@@ -87,7 +122,13 @@ function ChangesPage({ call }: { call: Call }) {
   return (
     <>
       <PageHeader title={t("changesPage.changes")} description={t("changesPage.everythingThatWasAddedRemoved")} />
-      <SegmentedControl label={t("changesPage.whatChanged")} size="sm" value={category} onChange={setCategory} options={CATEGORIES.map((c) => ({ value: c, label: c === "all" ? t("changesPage.all") : c }))} />
+      <SegmentedControl
+        label={t("changesPage.whatChanged")}
+        size="sm"
+        value={category}
+        onChange={setCategory}
+        options={CATEGORIES.map((c) => ({ value: c, label: c === "all" ? t("changesPage.all") : c }))}
+      />
       <Panel flush>
         <ChangeList changes={data?.changes} showTarget />
       </Panel>
@@ -121,13 +162,18 @@ function SetupPage({ call }: { call: Call }) {
       {tab !== "kubernetes" &&
         (enrolled.length === 0 ? (
           <EmptyState title={t("setupPage.noAgentYet")}>
-            {t("setupPage.hostsTrustTheCertificateAuthority")}{" "}<a href="/agents">{t("setupPage.agents")}</a> {t("setupPage.andStartItItsSetup")}
+            {t("setupPage.hostsTrustTheCertificateAuthority")} <a href="/agents">{t("setupPage.agents")}</a> {t("setupPage.andStartItItsSetup")}
           </EmptyState>
         ) : (
           <>
             {enrolled.length > 1 && (
               <div style={{ maxWidth: 320 }}>
-                <SelectField label={t("setupPage.forHostsReadBy")} value={chosen} onChange={(e) => setAgentId(e.target.value)} options={enrolled.map((a) => ({ value: a.id, label: a.name }))} />
+                <SelectField
+                  label={t("setupPage.forHostsReadBy")}
+                  value={chosen}
+                  onChange={(e) => setAgentId(e.target.value)}
+                  options={enrolled.map((a) => ({ value: a.id, label: a.name }))}
+                />
               </div>
             )}
             {s && tab === "host" && (
@@ -136,7 +182,10 @@ function SetupPage({ call }: { call: Call }) {
                   <Code label={t("setupPage.commandsToPrepareAHost")}>{s.hostSetup}</Code>
                 </Panel>
                 <Panel title={t("setupPage.n2AddItUnderHosts")} description={t("setupPage.theAgentAsksTheHost")} />
-                <Panel title={t("setupPage.theCaOf", { name: s.agent.name })} description={t("setupPage.itStaysOnTheAgent", { caFingerprint: s.caFingerprint })}>
+                <Panel
+                  title={t("setupPage.theCaOf", { name: s.agent.name })}
+                  description={t("setupPage.itStaysOnTheAgent", { caFingerprint: s.caFingerprint })}
+                >
                   <Code label={t("setupPage.caPublicKey")}>{s.caPublicKey}</Code>
                 </Panel>
                 <Panel title={t("setupPage.jumpHosts")} description={t("setupPage.toReachHostsInAnother")} />
@@ -165,8 +214,14 @@ function SetupPage({ call }: { call: Call }) {
 
 const SETTINGS = {
   account: ["Account", "Your profile, password, two-step verification and where you are signed in."],
-  members: ["Members", "Who can sign in, and with which role. Viewers see everything; editors also start collections; admins also add and remove agents, hosts and clusters, accept host keys, and manage members and tokens."],
-  signin: ["Sign-in", "Identity providers people can sign in with, such as OpenAsy Identity, Keycloak or Microsoft Entra ID, and which of their groups give which role."],
+  members: [
+    "Members",
+    "Who can sign in, and with which role. Viewers see everything; editors also start collections; admins also add and remove agents, hosts and clusters, accept host keys, and manage members and tokens.",
+  ],
+  signin: [
+    "Sign-in",
+    "Identity providers people can sign in with, such as OpenAsy Identity, Keycloak or Microsoft Entra ID, and which of their groups give which role.",
+  ],
   tokens: ["API tokens", "For scripts. Each token has one role and an expiry; the secret is shown once."],
 } as const;
 
@@ -181,7 +236,10 @@ function Product() {
   // The install's other products (OPENASY_PRODUCTS), for the switcher; ids this UI does not know are left out.
   useEffect(() => {
     void call<{ products: ProductLink[] }>("/api/v1/products").then(
-      (r) => setProducts(r.products.filter((p): p is ProductLink & { id: ProductId } => p.id !== "infrastructure" && (PRODUCT_IDS as readonly string[]).includes(p.id))),
+      (r) =>
+        setProducts(
+          r.products.filter((p): p is ProductLink & { id: ProductId } => p.id !== "infrastructure" && (PRODUCT_IDS as readonly string[]).includes(p.id)),
+        ),
       () => {},
     );
   }, [call]);

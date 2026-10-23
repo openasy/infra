@@ -17,7 +17,12 @@ export function ClustersPage({ call }: { call: Call }) {
     { id: "status", header: t("clustersPage.status"), width: "150px", cell: (c) => <Status status={c.status} /> },
     { id: "version", header: t("clustersPage.version"), width: "110px", mono: true, cell: (c) => c.summary?.version ?? "–" },
     { id: "nodes", header: t("clustersPage.nodesReady"), width: "110px", cell: (c) => (c.summary ? `${c.summary.nodesReady}/${c.summary.nodes}` : "–") },
-    { id: "pods", header: t("clustersPage.pods"), width: "140px", cell: (c) => (c.summary ? `${c.summary.pods}${c.summary.podsNotRunning ? `, ${c.summary.podsNotRunning} not running` : ""}` : "–") },
+    {
+      id: "pods",
+      header: t("clustersPage.pods"),
+      width: "140px",
+      cell: (c) => (c.summary ? `${c.summary.pods}${c.summary.podsNotRunning ? `, ${c.summary.podsNotRunning} not running` : ""}` : "–"),
+    },
     { id: "warnings", header: t("clustersPage.warnings"), width: "100px", align: "right", cell: (c) => c.summary?.warnings ?? "–" },
     { id: "seen", header: t("clustersPage.collected"), width: "110px", cell: (c) => ago(c.lastSuccessAt) },
   ];
@@ -37,7 +42,7 @@ export function ClustersPage({ call }: { call: Call }) {
       {adding && <AddCluster call={call} onDone={(c) => (setAdding(false), reload(), c && navigate(`/clusters/${c.id}`))} />}
       {data?.clusters.length === 0 ? (
         <EmptyState title={t("clustersPage.noClustersYet")}>
-          {t("clustersPage.applyTheReadOnlyRole")}{" "}<a href="/setup">{t("clustersPage.setup")}</a> {t("clustersPage.toAClusterThenAdd")}
+          {t("clustersPage.applyTheReadOnlyRole")} <a href="/setup">{t("clustersPage.setup")}</a> {t("clustersPage.toAClusterThenAdd")}
         </EmptyState>
       ) : (
         <Panel flush>
@@ -58,7 +63,9 @@ function AddCluster({ call, onDone }: { call: Call; onDone: (c?: Cluster) => voi
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      onDone(await call<Cluster>("/api/v1/clusters", { method: "POST", body: JSON.stringify({ name, server, caCert: ca.trim() || null, token: token.trim() }) }));
+      onDone(
+        await call<Cluster>("/api/v1/clusters", { method: "POST", body: JSON.stringify({ name, server, caCert: ca.trim() || null, token: token.trim() }) }),
+      );
     } catch (err) {
       setError((err as Error).message);
     }
@@ -114,7 +121,9 @@ export function ClusterPage({ call, id }: { call: Call; id: string }) {
   if (cluster.error && !c) return <EmptyState title={t("clusterPage.notFound")}>{t("clusterPage.thisClusterNoLongerExists")}</EmptyState>;
   if (!c) return null;
   const f = facts.data;
-  const remove = () => window.confirm(t("clusterPage.removeAndItsHistory", { name: c.name })) && void call(`/api/v1/clusters/${id}`, { method: "DELETE" }).then(() => navigate("/clusters"));
+  const remove = () =>
+    window.confirm(t("clusterPage.removeAndItsHistory", { name: c.name })) &&
+    void call(`/api/v1/clusters/${id}`, { method: "DELETE" }).then(() => navigate("/clusters"));
   return (
     <>
       <PageHeader
@@ -125,7 +134,10 @@ export function ClusterPage({ call, id }: { call: Call; id: string }) {
         actions={
           <>
             {can("editor") && (
-              <Button icon={<Play />} onClick={() => void call(`/api/v1/clusters/${id}/collect`, { method: "POST" }).then(() => setTimeout(cluster.reload, 3000))}>
+              <Button
+                icon={<Play />}
+                onClick={() => void call(`/api/v1/clusters/${id}/collect`, { method: "POST" }).then(() => setTimeout(cluster.reload, 3000))}
+              >
                 {t("clusterPage.collectNow")}
               </Button>
             )}
@@ -145,10 +157,27 @@ export function ClusterPage({ call, id }: { call: Call; id: string }) {
       {f && c.summary && (
         <>
           <KpiGrid>
-            <KpiCard label={t("clusterPage.nodesReady")} value={`${c.summary.nodesReady}/${c.summary.nodes}`} tone={c.summary.nodesReady < c.summary.nodes ? "danger" : undefined} />
-            <KpiCard label={t("clusterPage.workloads")} value={c.summary.workloads} footer={t("clusterPage.namespaces", { namespaces: c.summary.namespaces })} />
-            <KpiCard label={t("clusterPage.podsNotRunning")} value={c.summary.podsNotRunning} tone={c.summary.podsNotRunning ? "warning" : undefined} footer={t("clusterPage.of", { pods: c.summary.pods })} />
-            <KpiCard label={t("clusterPage.containerRestarts")} value={c.summary.restarts} footer={t("clusterPage.warnings", { warnings: c.summary.warnings })} />
+            <KpiCard
+              label={t("clusterPage.nodesReady")}
+              value={`${c.summary.nodesReady}/${c.summary.nodes}`}
+              tone={c.summary.nodesReady < c.summary.nodes ? "danger" : undefined}
+            />
+            <KpiCard
+              label={t("clusterPage.workloads")}
+              value={c.summary.workloads}
+              footer={t("clusterPage.namespaces", { namespaces: c.summary.namespaces })}
+            />
+            <KpiCard
+              label={t("clusterPage.podsNotRunning")}
+              value={c.summary.podsNotRunning}
+              tone={c.summary.podsNotRunning ? "warning" : undefined}
+              footer={t("clusterPage.of", { pods: c.summary.pods })}
+            />
+            <KpiCard
+              label={t("clusterPage.containerRestarts")}
+              value={c.summary.restarts}
+              footer={t("clusterPage.warnings", { warnings: c.summary.warnings })}
+            />
           </KpiGrid>
           <Tabs<Tab>
             label={t("clusterPage.clusterDetails")}
@@ -173,13 +202,32 @@ export function ClusterPage({ call, id }: { call: Call; id: string }) {
               empty={t("clusterPage.noNodes")}
               columns={[
                 { id: "name", header: t("clusterPage.node"), cell: (n) => n.name, sortValue: (n) => n.name },
-                { id: "ready", header: t("clusterPage.ready"), width: "130px", cell: (n) => <Badge tone={n.ready ? "success" : "danger"}>{n.ready ? t("clusterPage.ready") : n.conditions.join(", ") || t("clusterPage.notReady")}</Badge> },
+                {
+                  id: "ready",
+                  header: t("clusterPage.ready"),
+                  width: "130px",
+                  cell: (n) => (
+                    <Badge tone={n.ready ? "success" : "danger"}>
+                      {n.ready ? t("clusterPage.ready") : n.conditions.join(", ") || t("clusterPage.notReady")}
+                    </Badge>
+                  ),
+                },
                 { id: "roles", header: t("clusterPage.roles"), width: "130px", cell: (n) => n.roles.join(", ") || "worker" },
                 { id: "kubelet", header: t("clusterPage.kubelet"), width: "100px", mono: true, cell: (n) => n.kubelet },
                 { id: "os", header: t("clusterPage.system"), cell: (n) => `${n.os} · ${n.kernel}` },
                 { id: "size", header: t("clusterPage.capacity"), width: "150px", cell: (n) => `${n.cpu} CPU · ${n.memory}` },
                 { id: "ip", header: t("clusterPage.address"), width: "120px", mono: true, cell: (n) => n.internalIp ?? "–" },
-                { id: "flags", header: "", width: "120px", cell: (n) => (n.unschedulable ? <Badge tone="warning">cordoned</Badge> : n.taints.length ? <Badge>{t("clusterPage.taints", { length: n.taints.length })}</Badge> : null) },
+                {
+                  id: "flags",
+                  header: "",
+                  width: "120px",
+                  cell: (n) =>
+                    n.unschedulable ? (
+                      <Badge tone="warning">cordoned</Badge>
+                    ) : n.taints.length ? (
+                      <Badge>{t("clusterPage.taints", { length: n.taints.length })}</Badge>
+                    ) : null,
+                },
               ]}
             />
           )}
@@ -192,7 +240,17 @@ export function ClusterPage({ call, id }: { call: Call; id: string }) {
               columns={[
                 { id: "kind", header: t("clusterPage.kind"), width: "110px", cell: (w) => w.kind },
                 { id: "name", header: t("clusterPage.name"), cell: (w) => `${w.namespace}/${w.name}`, sortValue: (w) => `${w.namespace}/${w.name}` },
-                { id: "ready", header: t("clusterPage.ready"), width: "90px", cell: (w) => (w.replicas === null ? (w.schedule ?? "–") : <Badge tone={w.ready === w.replicas ? "success" : "warning"}>{`${w.ready}/${w.replicas}`}</Badge>) },
+                {
+                  id: "ready",
+                  header: t("clusterPage.ready"),
+                  width: "90px",
+                  cell: (w) =>
+                    w.replicas === null ? (
+                      (w.schedule ?? "–")
+                    ) : (
+                      <Badge tone={w.ready === w.replicas ? "success" : "warning"}>{`${w.ready}/${w.replicas}`}</Badge>
+                    ),
+                },
                 { id: "images", header: t("clusterPage.images"), cell: (w) => <span className="infra-wrap font-mono text-xs">{w.images.join(", ")}</span> },
               ]}
             />
@@ -206,11 +264,32 @@ export function ClusterPage({ call, id }: { call: Call; id: string }) {
               pageSize={100}
               columns={[
                 { id: "name", header: t("clusterPage.pod"), cell: (p) => `${p.namespace}/${p.name}`, sortValue: (p) => `${p.namespace}/${p.name}` },
-                { id: "phase", header: t("clusterPage.phase"), width: "160px", cell: (p) => <Badge tone={p.phase === "Running" && !p.reason ? "success" : p.phase === "Succeeded" ? "neutral" : "warning"}>{p.reason ?? p.phase}</Badge>, sortValue: (p) => p.phase },
+                {
+                  id: "phase",
+                  header: t("clusterPage.phase"),
+                  width: "160px",
+                  cell: (p) => (
+                    <Badge tone={p.phase === "Running" && !p.reason ? "success" : p.phase === "Succeeded" ? "neutral" : "warning"}>{p.reason ?? p.phase}</Badge>
+                  ),
+                  sortValue: (p) => p.phase,
+                },
                 { id: "ready", header: t("clusterPage.ready"), width: "70px", mono: true, cell: (p) => p.ready },
-                { id: "restarts", header: t("clusterPage.restarts"), width: "90px", align: "right", mono: true, cell: (p) => p.restarts, sortValue: (p) => p.restarts },
+                {
+                  id: "restarts",
+                  header: t("clusterPage.restarts"),
+                  width: "90px",
+                  align: "right",
+                  mono: true,
+                  cell: (p) => p.restarts,
+                  sortValue: (p) => p.restarts,
+                },
                 { id: "node", header: t("clusterPage.node"), cell: (p) => p.node ?? "–" },
-                { id: "flags", header: "", width: "110px", cell: (p) => (p.containers.some((x) => x.privileged) ? <Badge tone="danger">privileged</Badge> : null) },
+                {
+                  id: "flags",
+                  header: "",
+                  width: "110px",
+                  cell: (p) => (p.containers.some((x) => x.privileged) ? <Badge tone="danger">privileged</Badge> : null),
+                },
               ]}
             />
           )}
@@ -223,7 +302,12 @@ export function ClusterPage({ call, id }: { call: Call; id: string }) {
                 empty={t("clusterPage.noServices")}
                 columns={[
                   { id: "name", header: t("clusterPage.service"), cell: (s) => `${s.namespace}/${s.name}` },
-                  { id: "type", header: t("clusterPage.type"), width: "120px", cell: (s) => <Badge tone={s.type === "LoadBalancer" || s.type === "NodePort" ? "warning" : "neutral"}>{s.type}</Badge> },
+                  {
+                    id: "type",
+                    header: t("clusterPage.type"),
+                    width: "120px",
+                    cell: (s) => <Badge tone={s.type === "LoadBalancer" || s.type === "NodePort" ? "warning" : "neutral"}>{s.type}</Badge>,
+                  },
                   { id: "ip", header: t("clusterPage.clusterIp"), width: "130px", mono: true, cell: (s) => s.clusterIp ?? "–" },
                   { id: "ext", header: t("clusterPage.external"), mono: true, cell: (s) => s.externalIps.join(", ") || "–" },
                   { id: "ports", header: t("clusterPage.ports"), mono: true, cell: (s) => s.ports.join(", ") },

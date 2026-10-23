@@ -8,7 +8,9 @@ import { CA_KEY, facts, HOST_KEY, OTHER_KEY, REPORT, startApp } from "./test-app
 // Contract tests (ADR 0024): every response matches openapi.json and every operation is called. The scenario is
 // also the behaviour test: agents, roles, host keys, collections, changes.
 
-type Spec = typeof OPENAPI & { paths: Record<string, Record<string, { responses: Record<string, { $ref?: string; content?: Record<string, { schema: object }> }> }>> };
+type Spec = typeof OPENAPI & {
+  paths: Record<string, Record<string, { responses: Record<string, { $ref?: string; content?: Record<string, { schema: object }> }> }>>;
+};
 const spec = JSON.parse(readFileSync(new URL("../openapi.json", import.meta.url), "utf8")) as Spec;
 const { version } = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
 const ajv = new Ajv2020({ strict: false, validateFormats: false });
@@ -41,7 +43,9 @@ async function call(role: Role | { secret: string }, method: string, path: strin
   if (!response.content) return { status: res.status, body: undefined as never };
   const type = res.headers.get("content-type")!.split(";")[0]!;
   const data = type.endsWith("json") ? await res.json() : await res.text();
-  const at = shared ? `openapi#/components/responses/${shared}` : `openapi#/paths/${path.replaceAll("/", "~1")}/${method.toLowerCase()}/responses/${res.status}`;
+  const at = shared
+    ? `openapi#/components/responses/${shared}`
+    : `openapi#/paths/${path.replaceAll("/", "~1")}/${method.toLowerCase()}/responses/${res.status}`;
   const validate = ajv.getSchema(`${at}/content/${type.replace("/", "~1")}/schema`)!;
   expect(validate(data), `${method} ${opts.concrete ?? path}: ${JSON.stringify(validate.errors)}`).toBe(true);
   return { status: res.status, body: data };
@@ -73,11 +77,16 @@ describe("agents", () => {
     expect((await call("admin", "POST", "/api/v1/agents", { body: { name: "dc-1" } })).status).toBe(409);
     expect((await call("viewer", "GET", "/api/v1/agents/{id}/setup", { concrete: `/api/v1/agents/${a.id}/setup` })).status).toBe(409);
     expect((await call("none", "POST", "/api/v1/agent/enroll", { body: { token: "oie_wrong", ...REPORT(version) } })).status).toBe(401);
-    expect((await call("none", "POST", "/api/v1/agent/enroll", { body: { token: enrollToken, ...REPORT(version), caPublicKey: "not a key" } })).status).toBe(422);
+    expect((await call("none", "POST", "/api/v1/agent/enroll", { body: { token: enrollToken, ...REPORT(version), caPublicKey: "not a key" } })).status).toBe(
+      422,
+    );
     expect((await call("none", "POST", "/api/v1/agent/enroll", { body: { token: enrollToken, ...REPORT(version) } })).status).toBe(200);
     // The token works once.
     expect((await call("none", "POST", "/api/v1/agent/enroll", { body: { token: enrollToken, ...REPORT(version) } })).status).toBe(401);
-    const setup = (await call("viewer", "GET", "/api/v1/agents/{id}/setup", { concrete: `/api/v1/agents/${a.id}/setup` })).body as { caPublicKey: string; caFingerprint: string };
+    const setup = (await call("viewer", "GET", "/api/v1/agents/{id}/setup", { concrete: `/api/v1/agents/${a.id}/setup` })).body as {
+      caPublicKey: string;
+      caFingerprint: string;
+    };
     expect(setup).toMatchObject({ caPublicKey: CA_KEY, caFingerprint: fingerprint(CA_KEY) });
     expect((await call("admin", "DELETE", "/api/v1/agents/{id}", { concrete: `/api/v1/agents/${a.id}` })).status).toBe(204);
     agent = await app.enroll("dc-main");
@@ -90,7 +99,9 @@ describe("agents", () => {
     const res = await agent.post("/api/v1/agent/work", REPORT("0.0.1"));
     expect(res.status).toBe(409);
     expect(await res.json()).toMatchObject({ code: "version-mismatch" });
-    expect(((await call("viewer", "GET", "/api/v1/agents/{id}", { concrete: `/api/v1/agents/${agent.id}` })).body as { status: string }).status).toBe("version-mismatch");
+    expect(((await call("viewer", "GET", "/api/v1/agents/{id}", { concrete: `/api/v1/agents/${agent.id}` })).body as { status: string }).status).toBe(
+      "version-mismatch",
+    );
     await agent.round();
   });
 });
@@ -115,23 +126,38 @@ describe("hosts", () => {
   });
 
   it("refuse bad input, including values ssh could read as options", async () => {
-    for (const body of [{ name: "x", address: "-oProxyCommand=sh" }, { name: "x", address: "10.0.0.6", user: "-oX" }, { name: "x y", address: "a" }, { name: "x", address: "a", port: 0 }, { name: "x", address: "a", tags: { "": "x" } }, { name: "x", address: "a", agentId: "nope" }]) {
+    for (const body of [
+      { name: "x", address: "-oProxyCommand=sh" },
+      { name: "x", address: "10.0.0.6", user: "-oX" },
+      { name: "x y", address: "a" },
+      { name: "x", address: "a", port: 0 },
+      { name: "x", address: "a", tags: { "": "x" } },
+      { name: "x", address: "a", agentId: "nope" },
+    ]) {
       expect((await call("admin", "POST", "/api/v1/hosts", { body })).status, JSON.stringify(body)).toBe(422);
     }
     expect((await call("admin", "POST", "/api/v1/hosts", { body: { name: "web-1", address: "10.0.0.7" } })).status).toBe(409);
-    expect((await fetch(`${app.base}/api/v1/hosts`, { method: "POST", headers: { authorization: `Bearer ${app.tokens.admin}` }, body: "nope" })).status).toBe(400);
+    expect((await fetch(`${app.base}/api/v1/hosts`, { method: "POST", headers: { authorization: `Bearer ${app.tokens.admin}` }, body: "nope" })).status).toBe(
+      400,
+    );
   });
 
   it("are collected once the key is accepted", async () => {
     const path = "/api/v1/hosts/{id}/host-key/accept";
-    expect((await call("admin", "POST", path, { concrete: hostPath(web.id, "/host-key/accept"), body: { fingerprint: fingerprint(OTHER_KEY) } })).status).toBe(422);
-    expect((await call("admin", "POST", path, { concrete: hostPath(web.id, "/host-key/accept"), body: { fingerprint: fingerprint(HOST_KEY) } })).status).toBe(200);
+    expect((await call("admin", "POST", path, { concrete: hostPath(web.id, "/host-key/accept"), body: { fingerprint: fingerprint(OTHER_KEY) } })).status).toBe(
+      422,
+    );
+    expect((await call("admin", "POST", path, { concrete: hostPath(web.id, "/host-key/accept"), body: { fingerprint: fingerprint(HOST_KEY) } })).status).toBe(
+      200,
+    );
     expect((await agent.round()).map((j) => j.action)).toEqual(["collect"]);
     // Not handed out again until it is due.
     expect(await agent.round()).toEqual([]);
     const h = (await call("viewer", "GET", "/api/v1/hosts/{id}", { concrete: hostPath(web.id) })).body as Host & { summary: Record<string, unknown> };
     expect(h).toMatchObject({ status: "ok", summary: { hostname: "web-1", os: "Debian GNU/Linux 13 (trixie)" } });
-    const f = (await call("viewer", "GET", "/api/v1/hosts/{id}/facts", { concrete: hostPath(web.id, "/facts") })).body as { facts: { users: Array<{ name: string }> } };
+    const f = (await call("viewer", "GET", "/api/v1/hosts/{id}/facts", { concrete: hostPath(web.id, "/facts") })).body as {
+      facts: { users: Array<{ name: string }> };
+    };
     expect(f.facts.users.map((u) => u.name)).toContain("dana");
     expect((await call("viewer", "GET", "/api/v1/hosts")).status).toBe(200);
   });
@@ -149,7 +175,9 @@ describe("hosts", () => {
     h.facts.ports!.push({ proto: "tcp", address: "0.0.0.0", port: 4444, process: "nc", pid: 999 });
     expect((await call("editor", "POST", "/api/v1/hosts/{id}/collect", { concrete: hostPath(web.id, "/collect") })).status).toBe(202);
     await agent.round();
-    const { changes } = (await call("viewer", "GET", "/api/v1/hosts/{id}/changes", { concrete: hostPath(web.id, "/changes") })).body as { changes: Array<{ category: string; item: string; change: string; after: string }> };
+    const { changes } = (await call("viewer", "GET", "/api/v1/hosts/{id}/changes", { concrete: hostPath(web.id, "/changes") })).body as {
+      changes: Array<{ category: string; item: string; change: string; after: string }>;
+    };
     expect(changes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ category: "user", item: "mallory", change: "added" }),
@@ -157,10 +185,17 @@ describe("hosts", () => {
       ]),
     );
     expect(changes).toHaveLength(2);
-    const all = (await call("viewer", "GET", "/api/v1/changes", { concrete: "/api/v1/changes?category=user&limit=1" })).body as { changes: Array<{ target: { name: string } }> };
+    const all = (await call("viewer", "GET", "/api/v1/changes", { concrete: "/api/v1/changes?category=user&limit=1" })).body as {
+      changes: Array<{ target: { name: string } }>;
+    };
     expect(all.changes[0]!.target.name).toBe("web-1");
     expect((await call("viewer", "GET", "/api/v1/changes", { concrete: "/api/v1/changes?limit=0" })).status).toBe(422);
-    const users = async (q: string) => ((await call("viewer", "GET", "/api/v1/hosts/{id}/facts", { concrete: hostPath(web.id, `/facts${q}`) })).body as { facts: { users: Array<{ name: string }> } }).facts.users.map((u) => u.name);
+    const users = async (q: string) =>
+      (
+        (await call("viewer", "GET", "/api/v1/hosts/{id}/facts", { concrete: hostPath(web.id, `/facts${q}`) })).body as {
+          facts: { users: Array<{ name: string }> };
+        }
+      ).facts.users.map((u) => u.name);
     expect(await users(`?at=${encodeURIComponent(beforeChange)}`)).not.toContain("mallory");
     expect(await users("")).toContain("mallory");
   });
@@ -175,7 +210,10 @@ describe("hosts", () => {
     expect(await agent.round()).toEqual([]);
     expect((await call("admin", "POST", "/api/v1/hosts/{id}/host-key", { concrete: hostPath(web.id, "/host-key") })).status).toBe(200);
     await agent.round();
-    await call("admin", "POST", "/api/v1/hosts/{id}/host-key/accept", { concrete: hostPath(web.id, "/host-key/accept"), body: { fingerprint: fingerprint(OTHER_KEY) } });
+    await call("admin", "POST", "/api/v1/hosts/{id}/host-key/accept", {
+      concrete: hostPath(web.id, "/host-key/accept"),
+      body: { fingerprint: fingerprint(OTHER_KEY) },
+    });
     await agent.round();
     expect(((await call("viewer", "GET", "/api/v1/hosts/{id}", { concrete: hostPath(web.id) })).body as Host).status).toBe("ok");
   });
@@ -184,7 +222,10 @@ describe("hosts", () => {
     agent.hosts.get("10.0.0.5")!.fail = { kind: "auth-failed", message: "Not allowed to log in: Permission denied (publickey)." };
     await call("editor", "POST", "/api/v1/hosts/{id}/collect", { concrete: hostPath(web.id, "/collect") });
     await agent.round();
-    expect((await call("viewer", "GET", "/api/v1/hosts/{id}", { concrete: hostPath(web.id) })).body).toMatchObject({ status: "auth-failed", statusDetail: expect.stringContaining("Permission denied") });
+    expect((await call("viewer", "GET", "/api/v1/hosts/{id}", { concrete: hostPath(web.id) })).body).toMatchObject({
+      status: "auth-failed",
+      statusDetail: expect.stringContaining("Permission denied"),
+    });
     delete agent.hosts.get("10.0.0.5")!.fail;
     await call("editor", "POST", "/api/v1/hosts/{id}/collect", { concrete: hostPath(web.id, "/collect") });
     await agent.round();
@@ -193,12 +234,16 @@ describe("hosts", () => {
 
   it("take results only from their own agent, for accepted keys, in the right shape", async () => {
     const other = await app.enroll("dc-other");
-    expect((await call({ secret: "oia_nope" }, "POST", "/api/v1/agent/results", { body: { jobId: "x", hostId: web.id, ok: true, hostKeys: [HOST_KEY] } })).status).toBe(401);
+    expect(
+      (await call({ secret: "oia_nope" }, "POST", "/api/v1/agent/results", { body: { jobId: "x", hostId: web.id, ok: true, hostKeys: [HOST_KEY] } })).status,
+    ).toBe(401);
     expect((await other.post("/api/v1/agent/results", { jobId: "x", hostId: web.id, ok: true, facts: facts("debian-sudo") })).status).toBe(404);
     expect((await agent.post("/api/v1/agent/results", { jobId: "x", hostId: web.id, ok: true, facts: { system: {} } })).status).toBe(422);
     expect((await agent.post("/api/v1/agent/results", { jobId: "x", hostId: web.id, ok: false, error: { kind: "rm -rf", message: "x" } })).status).toBe(422);
     // A jump host must be read by the same agent.
-    expect((await call("admin", "POST", "/api/v1/hosts", { body: { name: "elsewhere", address: "10.9.0.1", agentId: other.id, jumpHostId: web.id } })).status).toBe(422);
+    expect(
+      (await call("admin", "POST", "/api/v1/hosts", { body: { name: "elsewhere", address: "10.9.0.1", agentId: other.id, jumpHostId: web.id } })).status,
+    ).toBe(422);
     // With two agents, the host must say which one reads it.
     expect((await call("admin", "POST", "/api/v1/hosts", { body: { name: "which", address: "10.9.0.2" } })).status).toBe(422);
     // Facts for a host whose key is not accepted are not stored.
@@ -212,10 +257,15 @@ describe("hosts", () => {
     agent.hosts.set("10.0.0.8", { key: HOST_KEY, facts: facts("debian-unprivileged-containers") });
     const h = (await call("admin", "POST", "/api/v1/hosts", { body: { name: "docker-1", address: "10.0.0.8", containers: true, auth: "key" } })).body as Host;
     await agent.round();
-    await call("admin", "POST", "/api/v1/hosts/{id}/host-key/accept", { concrete: hostPath(h.id, "/host-key/accept"), body: { fingerprint: fingerprint(HOST_KEY) } });
+    await call("admin", "POST", "/api/v1/hosts/{id}/host-key/accept", {
+      concrete: hostPath(h.id, "/host-key/accept"),
+      body: { fingerprint: fingerprint(HOST_KEY) },
+    });
     const jobs = (await agent.round()) as unknown as Array<{ target: { containers: boolean; auth: string } }>;
     expect(jobs[0]!.target).toMatchObject({ containers: true, auth: "key" });
-    const { containers } = (await call("viewer", "GET", "/api/v1/containers")).body as { containers: Array<{ name: string; envNames: string[]; host: { name: string } }> };
+    const { containers } = (await call("viewer", "GET", "/api/v1/containers")).body as {
+      containers: Array<{ name: string; envNames: string[]; host: { name: string } }>;
+    };
     expect(containers.find((c) => c.name === "fx-api")).toMatchObject({ host: { name: "docker-1" }, envNames: ["DATABASE_PASSWORD", "LOG_LEVEL", "PATH"] });
   });
 
@@ -230,7 +280,8 @@ describe("hosts", () => {
     expect((await call("admin", "DELETE", "/api/v1/hosts/{id}", { concrete: hostPath(web.id) })).status).toBe(409);
     expect((await call("admin", "DELETE", "/api/v1/agents/{id}", { concrete: `/api/v1/agents/${agent.id}` })).status).toBe(409);
     // A new address is a new machine: its key must be checked again.
-    const moved = (await call("admin", "PATCH", "/api/v1/hosts/{id}", { concrete: hostPath(inner.id), body: { address: "10.1.0.10", intervalMinutes: 15 } })).body as Host;
+    const moved = (await call("admin", "PATCH", "/api/v1/hosts/{id}", { concrete: hostPath(inner.id), body: { address: "10.1.0.10", intervalMinutes: 15 } }))
+      .body as Host;
     expect(moved.status).toBe("new");
     expect((await call("admin", "DELETE", "/api/v1/hosts/{id}", { concrete: hostPath(inner.id) })).status).toBe(204);
     expect((await call("viewer", "GET", "/api/v1/hosts/{id}", { concrete: hostPath(inner.id) })).status).toBe(404);
@@ -248,14 +299,21 @@ describe("clusters", () => {
     expect(JSON.stringify(r.body)).not.toContain(token);
     expect((await call("admin", "POST", "/api/v1/clusters", { body: { name: "kind", server: "https://x:6443", token } })).status).toBe(409);
     await app.infra.tick();
-    expect((await call("viewer", "GET", "/api/v1/clusters/{id}", { concrete: `/api/v1/clusters/${c.id}` })).body).toMatchObject({ status: "ok", summary: { nodes: 1 } });
+    expect((await call("viewer", "GET", "/api/v1/clusters/{id}", { concrete: `/api/v1/clusters/${c.id}` })).body).toMatchObject({
+      status: "ok",
+      summary: { nodes: 1 },
+    });
     expect(JSON.stringify(app.db.prepare("SELECT * FROM clusters").all())).not.toContain(token);
-    const f = (await call("viewer", "GET", "/api/v1/clusters/{id}/facts", { concrete: `/api/v1/clusters/${c.id}/facts` })).body as { workloads: Array<{ name: string }> };
+    const f = (await call("viewer", "GET", "/api/v1/clusters/{id}/facts", { concrete: `/api/v1/clusters/${c.id}/facts` })).body as {
+      workloads: Array<{ name: string }>;
+    };
     expect(f.workloads.map((w) => w.name)).toContain("web");
     app.clusters.facts.workloads = app.clusters.facts.workloads.map((w) => (w.name === "web" ? { ...w, images: ["nginx:1.28-alpine"] } : w));
     expect((await call("editor", "POST", "/api/v1/clusters/{id}/collect", { concrete: `/api/v1/clusters/${c.id}/collect` })).status).toBe(202);
     await app.infra.tick();
-    const { changes } = (await call("viewer", "GET", "/api/v1/clusters/{id}/changes", { concrete: `/api/v1/clusters/${c.id}/changes` })).body as { changes: Array<{ item: string }> };
+    const { changes } = (await call("viewer", "GET", "/api/v1/clusters/{id}/changes", { concrete: `/api/v1/clusters/${c.id}/changes` })).body as {
+      changes: Array<{ item: string }>;
+    };
     expect(changes.map((x) => x.item)).toEqual(["Deployment default/web"]);
     expect((await call("viewer", "GET", "/api/v1/clusters")).status).toBe(200);
     expect((await call("admin", "PATCH", "/api/v1/clusters/{id}", { concrete: `/api/v1/clusters/${c.id}`, body: { intervalMinutes: 10 } })).status).toBe(200);

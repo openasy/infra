@@ -59,7 +59,9 @@ describe("changes", () => {
     b.pods = b.pods.map((p) => ({ ...p, name: `${p.name}-x`, restarts: p.restarts + 3 }));
     expect(diff(clusterItems(a), clusterItems(b))).toEqual([]);
     b.workloads = b.workloads.map((w) => (w.name === "web" ? { ...w, images: ["nginx:1.28-alpine"] } : w));
-    expect(diff(clusterItems(a), clusterItems(b))).toEqual([expect.objectContaining({ category: "container", key: "Deployment default/web", kind: "changed" })]);
+    expect(diff(clusterItems(a), clusterItems(b))).toEqual([
+      expect.objectContaining({ category: "container", key: "Deployment default/web", kind: "changed" }),
+    ]);
   });
 });
 
@@ -80,7 +82,6 @@ describe("secrets and keys", () => {
     const pub = readFileSync(join(dir, "k.pub"), "utf8");
     expect(fingerprint(pub)).toBe(execFileSync("ssh-keygen", ["-lf", join(dir, "k.pub")], { encoding: "utf8" }).split(" ")[1]);
   });
-
 
   it("gives the cluster role no Secrets, ConfigMaps or write verbs", () => {
     const rules = RBAC.split("rules:")[1]!.split("---")[0]!;

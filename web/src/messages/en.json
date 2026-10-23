@@ -302,7 +302,21 @@
     "processes": "{{length}} processes",
     "system": "System",
     "theOpenasyAccountHasUnrestricted": "The openasy account has unrestricted sudo",
-    "itNeedsOnlyTheRead": "It needs only the read-only rules from Setup. With full sudo, anyone who controls the agent controls this host."
+    "itNeedsOnlyTheRead": "It needs only the read-only rules from Setup. With full sudo, anyone who controls the agent controls this host.",
+    "hostName": "Host name",
+    "kernel": "Kernel",
+    "threads2": "{{threads}} threads{{value}}",
+    "memory": "Memory",
+    "swap": "{{bytes}}, swap {{bytes2}}",
+    "runsOn": "Runs on",
+    "serialNumber": "Serial number",
+    "notReadable": "not readable",
+    "machineId": "Machine id",
+    "packages": "Packages",
+    "readAs": "Read as",
+    "address": "Address",
+    "readBy": "{{user}}@{{address}}:{{port}}{{value}}, read by {{name}}",
+    "tags": "Tags"
   },
   "hostPage": {
     "notFound": "Not found",

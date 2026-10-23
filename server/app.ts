@@ -168,7 +168,14 @@ export function createApp({ db, infra, version, auth, webDir, docsDir, openapi, 
   const changesOf = (url: URL, kind?: "host" | "cluster", id?: string) => {
     const kindParam = url.searchParams.get("kind");
     if (kindParam !== null && kindParam !== "host" && kindParam !== "cluster") throw new InfraError(422, "invalid-body", "kind is host or cluster.");
-    return infra.changes({ kind: kind ?? (kindParam as "host" | "cluster" | null) ?? undefined, id, category: url.searchParams.get("category") ?? undefined, since: timeOf(url, "since"), cursor: cursorOf(url), limit: limitOf(url) });
+    return infra.changes({
+      kind: kind ?? (kindParam as "host" | "cluster" | null) ?? undefined,
+      id,
+      category: url.searchParams.get("category") ?? undefined,
+      since: timeOf(url, "since"),
+      cursor: cursorOf(url),
+      limit: limitOf(url),
+    });
   };
 
   const routes: Route[] = [
@@ -190,7 +197,13 @@ export function createApp({ db, infra, version, auth, webDir, docsDir, openapi, 
     // What infra-agent calls. It asks; Infrastructure never connects to it.
     { method: "POST", path: "/api/v1/agent/enroll", auth: "none", handle: async ({ body }) => infra.enroll(await body()) },
     { method: "POST", path: "/api/v1/agent/work", auth: "agent", handle: async ({ agent, body }) => infra.work(agent, await body()) },
-    { method: "POST", path: "/api/v1/agent/results", auth: "agent", bodyLimit: RESULT_LIMIT, handle: async ({ res, agent, body }) => (json(res, 202, infra.result(agent, await body())), undefined) },
+    {
+      method: "POST",
+      path: "/api/v1/agent/results",
+      auth: "agent",
+      bodyLimit: RESULT_LIMIT,
+      handle: async ({ res, agent, body }) => (json(res, 202, infra.result(agent, await body())), undefined),
+    },
 
     // Hosts over SSH.
     { method: "GET", path: "/api/v1/hosts", auth: "viewer", handle: () => ({ hosts: infra.listHosts() }) },
@@ -208,11 +221,26 @@ export function createApp({ db, infra, version, auth, webDir, docsDir, openapi, 
         return f;
       },
     },
-    { method: "GET", path: "/api/v1/hosts/:id/changes", auth: "viewer", handle: ({ url, params }) => (infra.host(params[0]!), changesOf(url, "host", params[0]!)) },
-    { method: "POST", path: "/api/v1/hosts/:id/collect", auth: "editor", handle: ({ res, params }) => (infra.requestCollect("host", params[0]!), accepted(res)) },
+    {
+      method: "GET",
+      path: "/api/v1/hosts/:id/changes",
+      auth: "viewer",
+      handle: ({ url, params }) => (infra.host(params[0]!), changesOf(url, "host", params[0]!)),
+    },
+    {
+      method: "POST",
+      path: "/api/v1/hosts/:id/collect",
+      auth: "editor",
+      handle: ({ res, params }) => (infra.requestCollect("host", params[0]!), accepted(res)),
+    },
     // Host keys: ask the host again, and accept one after checking its fingerprint on the host (ADR 0031).
     { method: "POST", path: "/api/v1/hosts/:id/host-key", auth: "admin", handle: ({ params }) => infra.requestHostKey(params[0]!) },
-    { method: "POST", path: "/api/v1/hosts/:id/host-key/accept", auth: "admin", handle: async ({ params, body }) => infra.acceptHostKey(params[0]!, (await body()).fingerprint) },
+    {
+      method: "POST",
+      path: "/api/v1/hosts/:id/host-key/accept",
+      auth: "admin",
+      handle: async ({ params, body }) => infra.acceptHostKey(params[0]!, (await body()).fingerprint),
+    },
 
     // Kubernetes through its API.
     { method: "GET", path: "/api/v1/clusters", auth: "viewer", handle: () => ({ clusters: infra.listClusters() }) },
@@ -230,8 +258,18 @@ export function createApp({ db, infra, version, auth, webDir, docsDir, openapi, 
         return f;
       },
     },
-    { method: "GET", path: "/api/v1/clusters/:id/changes", auth: "viewer", handle: ({ url, params }) => (infra.cluster(params[0]!), changesOf(url, "cluster", params[0]!)) },
-    { method: "POST", path: "/api/v1/clusters/:id/collect", auth: "editor", handle: ({ res, params }) => (infra.requestCollect("cluster", params[0]!), accepted(res)) },
+    {
+      method: "GET",
+      path: "/api/v1/clusters/:id/changes",
+      auth: "viewer",
+      handle: ({ url, params }) => (infra.cluster(params[0]!), changesOf(url, "cluster", params[0]!)),
+    },
+    {
+      method: "POST",
+      path: "/api/v1/clusters/:id/collect",
+      auth: "editor",
+      handle: ({ res, params }) => (infra.requestCollect("cluster", params[0]!), accepted(res)),
+    },
 
     // Across everything.
     { method: "GET", path: "/api/v1/containers", auth: "viewer", handle: () => ({ containers: infra.containers() }) },

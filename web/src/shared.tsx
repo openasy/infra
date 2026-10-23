@@ -58,7 +58,7 @@ export const bytes = (n: number | null | undefined) => {
   const u = ["B", "KiB", "MiB", "GiB", "TiB"];
   let i = 0;
   let v = n;
-  while (v >= 1024 && i < u.length - 1) (v /= 1024), i++;
+  while (v >= 1024 && i < u.length - 1) ((v /= 1024), i++);
   return `${v >= 10 || i === 0 ? Math.round(v) : v.toFixed(1)} ${u[i]}`;
 };
 
@@ -127,7 +127,21 @@ export function Usage({ pct }: { pct: number }) {
 }
 
 /** A simple table of rows, with search over every column, for the many lists of a host. */
-export function List<T>({ label, rows, columns, empty, getRowId, pageSize = 50 }: { label: string; rows: T[] | undefined; columns: Column<T>[]; empty: string; getRowId: (r: T) => string; pageSize?: number }) {
+export function List<T>({
+  label,
+  rows,
+  columns,
+  empty,
+  getRowId,
+  pageSize = 50,
+}: {
+  label: string;
+  rows: T[] | undefined;
+  columns: Column<T>[];
+  empty: string;
+  getRowId: (r: T) => string;
+  pageSize?: number;
+}) {
   return (
     <DataTable
       label={label}
@@ -147,7 +161,10 @@ const pretty = (v: string | null) => {
   if (v === null) return null;
   try {
     const o = JSON.parse(v) as unknown;
-    if (o && typeof o === "object") return Object.entries(o as Record<string, unknown>).map(([k, x]) => `${k}: ${Array.isArray(x) ? x.join(", ") || "–" : String(x)}`).join(" · ");
+    if (o && typeof o === "object")
+      return Object.entries(o as Record<string, unknown>)
+        .map(([k, x]) => `${k}: ${Array.isArray(x) ? x.join(", ") || "–" : String(x)}`)
+        .join(" · ");
   } catch {
     // Not JSON: shown as it is.
   }
@@ -159,9 +176,22 @@ export function ChangeList({ changes, showTarget = false }: { changes: Change[] 
   const ago = useAgo();
   const t = useT();
   const columns: Column<Change>[] = [
-    { id: "at", header: t("changeList.when"), width: "120px", cell: (c) => <span title={new Date(c.at).toLocaleString()}>{ago(c.at)}</span>, sortValue: (c) => c.at },
+    {
+      id: "at",
+      header: t("changeList.when"),
+      width: "120px",
+      cell: (c) => <span title={new Date(c.at).toLocaleString()}>{ago(c.at)}</span>,
+      sortValue: (c) => c.at,
+    },
     ...(showTarget
-      ? [{ id: "target", header: t("changeList.where"), width: "160px", cell: (c: Change) => <a href={`/${c.target.kind === "host" ? "hosts" : "clusters"}/${c.target.id}`}>{c.target.name}</a> } satisfies Column<Change>]
+      ? [
+          {
+            id: "target",
+            header: t("changeList.where"),
+            width: "160px",
+            cell: (c: Change) => <a href={`/${c.target.kind === "host" ? "hosts" : "clusters"}/${c.target.id}`}>{c.target.name}</a>,
+          } satisfies Column<Change>,
+        ]
       : []),
     { id: "change", header: t("changeList.change"), width: "100px", cell: (c) => <Badge tone={CHANGE_TONE[c.change]}>{c.change}</Badge> },
     { id: "category", header: t("changeList.what"), width: "120px", cell: (c) => c.category },

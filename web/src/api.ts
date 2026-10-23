@@ -95,7 +95,17 @@ export interface Cluster {
   lastAttemptAt: string | null;
   lastSuccessAt: string | null;
   createdAt: string;
-  summary: { version: string; nodes: number; nodesReady: number; namespaces: number; workloads: number; pods: number; podsNotRunning: number; restarts: number; warnings: number } | null;
+  summary: {
+    version: string;
+    nodes: number;
+    nodesReady: number;
+    namespaces: number;
+    workloads: number;
+    pods: number;
+    podsNotRunning: number;
+    restarts: number;
+    warnings: number;
+  } | null;
 }
 
 export interface Change {
@@ -137,7 +147,11 @@ export class ApiError extends Error {}
 
 // The session is an HttpOnly cookie set by sign-in (@openasy/auth); the browser sends it, nothing is stored here.
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(path, { ...init, credentials: "same-origin", headers: { ...(init.body ? { "content-type": "application/json" } : {}), ...init.headers } });
+  const res = await fetch(path, {
+    ...init,
+    credentials: "same-origin",
+    headers: { ...(init.body ? { "content-type": "application/json" } : {}), ...init.headers },
+  });
   if (!res.ok) {
     const problem = (await res.json().catch(() => ({}))) as { code?: string; detail?: string };
     if (res.status === 401) throw new Unauthorized(problem.detail);

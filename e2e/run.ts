@@ -12,7 +12,8 @@ const AGENT_IMAGE = process.env.AGENT_IMAGE ?? "infra-agent:dev";
 const TARGET = process.env.TARGET_IMAGE ?? "openasy-infra-target:dev";
 const BASE = "http://localhost:18095";
 const PASSWORD = "correct horse battery staple";
-const sh = (cmd: string, args: string[], opts: { input?: string } = {}) => execFileSync(cmd, args, { encoding: "utf8", input: opts.input, stdio: ["pipe", "pipe", "pipe"] }).trim();
+const sh = (cmd: string, args: string[], opts: { input?: string } = {}) =>
+  execFileSync(cmd, args, { encoding: "utf8", input: opts.input, stdio: ["pipe", "pipe", "pipe"] }).trim();
 const docker = (...args: string[]) => sh("docker", args);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 let failed = 0;
@@ -51,20 +52,55 @@ try {
   writeFileSync(join(dir, "agent-kek"), randomBytes(32).toString("hex"));
 
   // Like compose: read-only root, tmpfs for the per-connection keys, the KEK as a mounted file.
-  docker("run", "-d", "--name", "e2e-infra", "--network", "e2e-infra-pub", "-p", "127.0.0.1:18095:8080", "--read-only", "--tmpfs", "/tmp", "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "-v", `${join(dir, "kek")}:/run/secrets/openasy-kek:ro`, "-e", "INFRA_PUBLIC_URL=http://localhost:18095", IMAGE);
+  docker(
+    "run",
+    "-d",
+    "--name",
+    "e2e-infra",
+    "--network",
+    "e2e-infra-pub",
+    "-p",
+    "127.0.0.1:18095:8080",
+    "--read-only",
+    "--tmpfs",
+    "/tmp",
+    "--cap-drop",
+    "ALL",
+    "--security-opt",
+    "no-new-privileges",
+    "-v",
+    `${join(dir, "kek")}:/run/secrets/openasy-kek:ro`,
+    "-e",
+    "INFRA_PUBLIC_URL=http://localhost:18095",
+    IMAGE,
+  );
   if (process.env.KIND_CLUSTER) docker("network", "connect", "kind", "e2e-infra");
   for (let i = 0; i < 60; i++) {
-    if (await fetch(`${BASE}/readyz`).then((r) => r.ok, () => false)) break;
+    if (
+      await fetch(`${BASE}/readyz`).then(
+        (r) => r.ok,
+        () => false,
+      )
+    )
+      break;
     await sleep(500);
   }
   await sleep(1000);
 
   // The owner from the one-time link in the log, with an authenticator app, then an admin API token.
-  const link = /"url":"([^"]+)"/.exec(docker("logs", "e2e-infra").split("\n").find((l) => l.includes("no owner yet")) ?? "")?.[1];
+  const link = /"url":"([^"]+)"/.exec(
+    docker("logs", "e2e-infra")
+      .split("\n")
+      .find((l) => l.includes("no owner yet")) ?? "",
+  )?.[1];
   ok(link, "the first start prints a one-time owner link");
   const jar = new Map<string, string>();
   const browser = async (path: string, body?: unknown) => {
-    const res = await fetch(BASE + path, { method: body === undefined ? "GET" : "POST", headers: { origin: BASE, cookie: [...jar].map(([k, v]) => `${k}=${v}`).join("; "), "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
+    const res = await fetch(BASE + path, {
+      method: body === undefined ? "GET" : "POST",
+      headers: { origin: BASE, cookie: [...jar].map(([k, v]) => `${k}=${v}`).join("; "), "content-type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
     for (const c of res.headers.getSetCookie()) jar.set(c.slice(0, c.indexOf("=")), c.slice(c.indexOf("=") + 1, c.indexOf(";")));
     return res;
   };
@@ -73,13 +109,40 @@ try {
   await browser("/api/v1/auth/me/totp/confirm", { code: totp(secret) });
   const { token } = (await (await browser("/api/v1/auth/tokens", { name: "e2e", role: "admin" })).json()) as { token: string };
   const api = async <T = any>(path: string, body?: unknown, method = body === undefined ? "GET" : "POST"): Promise<{ status: number; body: T }> => {
-    const res = await fetch(BASE + path, { method, headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
+    const res = await fetch(BASE + path, {
+      method,
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      ...(body !== undefined && { body: JSON.stringify(body) }),
+    });
     return { status: res.status, body: (res.status === 204 ? undefined : await res.json()) as T };
   };
 
   // The agent: added in Infrastructure, started with its one-time token, like compose and Settings, Agents say.
   const created = (await api<{ agent: { id: string }; enrollToken: string }>("/api/v1/agents", { name: "e2e" })).body;
-  docker("run", "-d", "--name", "e2e-agent", "--network", "e2e-infra-pub", "--read-only", "--tmpfs", "/tmp", "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "-v", `${join(dir, "agent-kek")}:/run/secrets/openasy-agent-kek:ro`, "-e", "INFRA_URL=http://e2e-infra:8080", "-e", `INFRA_ENROLL_TOKEN=${created.enrollToken}`, "-e", "POLL_SECONDS=2", AGENT_IMAGE);
+  docker(
+    "run",
+    "-d",
+    "--name",
+    "e2e-agent",
+    "--network",
+    "e2e-infra-pub",
+    "--read-only",
+    "--tmpfs",
+    "/tmp",
+    "--cap-drop",
+    "ALL",
+    "--security-opt",
+    "no-new-privileges",
+    "-v",
+    `${join(dir, "agent-kek")}:/run/secrets/openasy-agent-kek:ro`,
+    "-e",
+    "INFRA_URL=http://e2e-infra:8080",
+    "-e",
+    `INFRA_ENROLL_TOKEN=${created.enrollToken}`,
+    "-e",
+    "POLL_SECONDS=2",
+    AGENT_IMAGE,
+  );
   let agentStatus = "";
   for (let i = 0; i < 30 && agentStatus !== "online"; i++) {
     await sleep(1000);
@@ -90,8 +153,14 @@ try {
   // Hosts, prepared the way Setup says for this agent.
   const setup = (await api<{ caPublicKey: string; sudoers: string; authorizedKey: string }>(`/api/v1/agents/${created.agent.id}/setup`)).body;
   ok(setup.caPublicKey?.startsWith("ssh-ed25519 "), "Setup shows the agent's CA");
-  const target = (name: string, net: string, env: string[], extra: string[] = []) => docker("run", "-d", "--name", name, "--hostname", name.replace("e2e-", ""), "--network", net, ...env.flatMap((e) => ["-e", e]), ...extra, TARGET);
-  target("e2e-web", "e2e-infra-pub", [`OPENASY_CA=${setup.caPublicKey}`, `OPENASY_SUDOERS=${setup.sudoers}`, "OPENASY_DOCKER=1"], ["-v", "/var/run/docker.sock:/var/run/docker.sock"]);
+  const target = (name: string, net: string, env: string[], extra: string[] = []) =>
+    docker("run", "-d", "--name", name, "--hostname", name.replace("e2e-", ""), "--network", net, ...env.flatMap((e) => ["-e", e]), ...extra, TARGET);
+  target(
+    "e2e-web",
+    "e2e-infra-pub",
+    [`OPENASY_CA=${setup.caPublicKey}`, `OPENASY_SUDOERS=${setup.sudoers}`, "OPENASY_DOCKER=1"],
+    ["-v", "/var/run/docker.sock:/var/run/docker.sock"],
+  );
   target("e2e-jump", "e2e-infra-pub", [`OPENASY_CA=${setup.caPublicKey}`, "OPENASY_JUMP=1"]);
   docker("network", "connect", "e2e-infra-int", "e2e-jump");
   target("e2e-db", "e2e-infra-int", [`OPENASY_CA=${setup.caPublicKey}`]);
@@ -119,14 +188,20 @@ try {
   const waitFor = async (id: string, status: string, since?: string) => {
     for (let i = 0; i < 40; i++) {
       // A collection sets lastAttemptAt when it starts; lastSuccessAt says it finished.
-      const h = (await api<{ status: string; statusDetail: string | null; lastAttemptAt: string | null; lastSuccessAt: string | null }>(`/api/v1/hosts/${id}`)).body;
+      const h = (await api<{ status: string; statusDetail: string | null; lastAttemptAt: string | null; lastSuccessAt: string | null }>(`/api/v1/hosts/${id}`))
+        .body;
       const at = status === "ok" ? h.lastSuccessAt : h.lastAttemptAt;
       if (h.status === status && (!since || (at ?? "") > since)) return h;
       await sleep(1000);
     }
     return (await api<{ status: string; statusDetail: string | null }>(`/api/v1/hosts/${id}`)).body;
   };
-  for (const [name, id] of [["web", web], ["jump", jump], ["db through the jump host", db], ["key", key]] as const) {
+  for (const [name, id] of [
+    ["web", web],
+    ["jump", jump],
+    ["db through the jump host", db],
+    ["key", key],
+  ] as const) {
     const h = await waitFor(id, "ok");
     ok(h.status === "ok", `${name} collected (${h.status}${h.statusDetail ? `: ${h.statusDetail}` : ""})`);
   }
@@ -134,12 +209,24 @@ try {
   const facts = async (id: string) => (await api<{ facts: any }>(`/api/v1/hosts/${id}/facts`)).body.facts;
   const wf = await facts(web);
   ok(wf.system.hostname === "web" && wf.account.user === "openasy" && wf.account.sudo === "rules", "web: read as openasy with the read-only sudo rules only");
-  ok(wf.authorizedKeys?.some((k: { user: string }) => k.user === "dana"), "web: the sudo rules read SSH keys that may log in");
-  ok(wf.ports?.some((p: { port: number; process: string }) => p.port === 8088 && p.process === "python3"), "web: listening port 8088 belongs to python3");
-  ok(wf.containers?.some((c: { name: string }) => c.name === "e2e-web"), "web: containers through the Docker socket");
+  ok(
+    wf.authorizedKeys?.some((k: { user: string }) => k.user === "dana"),
+    "web: the sudo rules read SSH keys that may log in",
+  );
+  ok(
+    wf.ports?.some((p: { port: number; process: string }) => p.port === 8088 && p.process === "python3"),
+    "web: listening port 8088 belongs to python3",
+  );
+  ok(
+    wf.containers?.some((c: { name: string }) => c.name === "e2e-web"),
+    "web: containers through the Docker socket",
+  );
   ok(!JSON.stringify(wf).includes(setup.sudoers.slice(40, 80)), "web: container environment values are not collected");
   const df = await facts(db);
-  ok(df.system.hostname === "db" && df.authorizedKeys === null && df.unreadable.includes("SSH keys that may log in"), "db: reached through the jump host, and says what it cannot read without sudo rules");
+  ok(
+    df.system.hostname === "db" && df.authorizedKeys === null && df.unreadable.includes("SSH keys that may log in"),
+    "db: reached through the jump host, and says what it cannot read without sudo rules",
+  );
   ok((await facts(key)).system.hostname === "key", "key: read with the fixed key");
 
   // Something changes on the host.
@@ -150,8 +237,14 @@ try {
   await api(`/api/v1/hosts/${web}/collect`, {});
   await waitFor(web, "ok", before);
   const changes = (await api<{ changes: Array<{ category: string; item: string; change: string }> }>(`/api/v1/hosts/${web}/changes`)).body.changes;
-  ok(changes.some((c) => c.category === "user" && c.item === "mallory" && c.change === "added"), "web: the new account mallory is a change");
-  ok(changes.some((c) => c.category === "port" && c.item.endsWith(":4444") && c.change === "added"), "web: the new listening port 4444 is a change");
+  ok(
+    changes.some((c) => c.category === "user" && c.item === "mallory" && c.change === "added"),
+    "web: the new account mallory is a change",
+  );
+  ok(
+    changes.some((c) => c.category === "port" && c.item.endsWith(":4444") && c.change === "added"),
+    "web: the new listening port 4444 is a change",
+  );
 
   // The host is replaced: a new host key stops collection until an admin accepts it.
   docker("rm", "-f", "e2e-key");
@@ -165,10 +258,18 @@ try {
   ok((await api(`/api/v1/hosts/${key}/collect`, {})).status === 409, "key: no collection until the new key is accepted");
 
   // The sudo rules allow exactly the read-only commands and nothing else.
-  const attack = sh("docker", ["exec", "-i", "e2e-web", "sh", "-c", "cat > /tmp/a.sh && sh /tmp/a.sh"], { input: (await import("node:fs")).readFileSync(new URL("./sudoers-test.sh", import.meta.url), "utf8") });
+  const attack = sh("docker", ["exec", "-i", "e2e-web", "sh", "-c", "cat > /tmp/a.sh && sh /tmp/a.sh"], {
+    input: (await import("node:fs")).readFileSync(new URL("./sudoers-test.sh", import.meta.url), "utf8"),
+  });
   const refusedSection = attack.split("== must be refused")[1] ?? "";
   ok(refusedSection.includes("refused") && !refusedSection.includes("ALLOWED"), "web: every escape from the sudo rules is refused");
-  ok(!attack.split("== must be refused")[0]!.split("\n").some((l) => l.startsWith("refused") && !l.includes("iptables-save")), "web: every read-only command is allowed");
+  ok(
+    !attack
+      .split("== must be refused")[0]!
+      .split("\n")
+      .some((l) => l.startsWith("refused") && !l.includes("iptables-save")),
+    "web: every read-only command is allowed",
+  );
 
   // What a compromised Infrastructure can do: tell the agent to log in as root. The certificate is for openasy only.
   await api(`/api/v1/hosts/${web}`, { user: "root" }, "PATCH");
@@ -181,7 +282,10 @@ try {
   // Nothing of a connection stays behind, and no SSH private key is anywhere but sealed on the agent.
   ok(docker("exec", "e2e-agent", "sh", "-c", "ls -A /tmp | wc -l") === "0", "agent: no SSH keys left in /tmp after collections");
   ok(docker("exec", "e2e-agent", "sh", "-c", "grep -c 'PRIVATE KEY' /data/agent.state || true") === "0", "agent: its CA and keys are sealed on its volume");
-  ok(docker("exec", "e2e-infra", "sh", "-c", "cat /data/infra.db* | tr -d '\\0' | grep -a -c 'PRIVATE KEY' || true") === "0", "infra: holds no SSH private key at all");
+  ok(
+    docker("exec", "e2e-infra", "sh", "-c", "cat /data/infra.db* | tr -d '\\0' | grep -a -c 'PRIVATE KEY' || true") === "0",
+    "infra: holds no SSH private key at all",
+  );
 
   // Kubernetes through its API.
   if (process.env.KIND_CLUSTER) {
@@ -189,12 +293,18 @@ try {
     const rbac = (await api<{ kubernetesRbac: string }>("/api/v1/setup")).body.kubernetesRbac;
     sh("kubectl", ["--context", `kind-${process.env.KIND_CLUSTER}`, "apply", "-f", "-"], { input: rbac });
     sh("kubectl", ["--context", `kind-${process.env.KIND_CLUSTER}`, "apply", "-f", "-"], {
-      input: "apiVersion: apps/v1\nkind: Deployment\nmetadata: {name: e2e-web, namespace: default}\nspec:\n  selector: {matchLabels: {app: e2e-web}}\n  template:\n    metadata: {labels: {app: e2e-web}}\n    spec: {containers: [{name: web, image: nginx:1.27-alpine}]}\n",
+      input:
+        "apiVersion: apps/v1\nkind: Deployment\nmetadata: {name: e2e-web, namespace: default}\nspec:\n  selector: {matchLabels: {app: e2e-web}}\n  template:\n    metadata: {labels: {app: e2e-web}}\n    spec: {containers: [{name: web, image: nginx:1.27-alpine}]}\n",
     });
     for (let i = 0; i < 30 && !kc("-n", "openasy", "get", "secret", "openasy-infra-token", "-o", "jsonpath={.data.token}"); i++) await sleep(1000);
     const tok = Buffer.from(kc("-n", "openasy", "get", "secret", "openasy-infra-token", "-o", "jsonpath={.data.token}"), "base64").toString();
     const ca = Buffer.from(kc("config", "view", "--raw", "--minify", "-o", "jsonpath={.clusters[0].cluster.certificate-authority-data}"), "base64").toString();
-    const c = await api<{ id: string }>("/api/v1/clusters", { name: "kind", server: `https://${process.env.KIND_CLUSTER}-control-plane:6443`, caCert: ca, token: tok });
+    const c = await api<{ id: string }>("/api/v1/clusters", {
+      name: "kind",
+      server: `https://${process.env.KIND_CLUSTER}-control-plane:6443`,
+      caCert: ca,
+      token: tok,
+    });
     ok(c.status === 201, "kind: cluster added");
     let cs = "";
     for (let i = 0; i < 40 && cs !== "ok"; i++) {
@@ -204,7 +314,20 @@ try {
     ok(cs === "ok", `kind: collected (${cs})`);
     const cf = (await api<{ workloads: Array<{ name: string }>; nodes: unknown[] }>(`/api/v1/clusters/${c.body.id}/facts`)).body;
     ok(cf.workloads.some((w) => w.name === "e2e-web") && cf.nodes.length > 0, "kind: nodes and the e2e-web deployment are read");
-    ok(sh("curl", ["-s", "-o", "/dev/null", "-w", "%{http_code}", "-k", "-H", `Authorization: Bearer ${tok}`, `${kc("config", "view", "--minify", "-o", "jsonpath={.clusters[0].cluster.server}")}/api/v1/secrets`]) === "403", "kind: the token cannot read Secrets");
+    ok(
+      sh("curl", [
+        "-s",
+        "-o",
+        "/dev/null",
+        "-w",
+        "%{http_code}",
+        "-k",
+        "-H",
+        `Authorization: Bearer ${tok}`,
+        `${kc("config", "view", "--minify", "-o", "jsonpath={.clusters[0].cluster.server}")}/api/v1/secrets`,
+      ]) === "403",
+      "kind: the token cannot read Secrets",
+    );
   }
 } catch (err) {
   console.log("FAIL", err);

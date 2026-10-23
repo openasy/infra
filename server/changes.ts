@@ -44,7 +44,8 @@ const PROCESS_MIN_AGE_SEC = 600;
 
 export function hostItems(f: Facts): Item[] {
   const out: Item[] = [];
-  const add = (category: Category, key: string, value: unknown) => out.push({ category, key, value: typeof value === "string" ? value : JSON.stringify(value) });
+  const add = (category: Category, key: string, value: unknown) =>
+    out.push({ category, key, value: typeof value === "string" ? value : JSON.stringify(value) });
 
   add("system", "os", f.system.os.name);
   add("system", "kernel", f.system.kernel);
@@ -77,7 +78,14 @@ export function hostItems(f: Facts): Item[] {
   const procs = new Set(f.processes.filter((p) => p.ageSec >= PROCESS_MIN_AGE_SEC && !/^\[.*\]$/.test(p.command)).map((p) => `${p.user} ${p.command}`));
   for (const p of procs) add("process", p, "running");
   for (const c of f.containers ?? [])
-    add("container", `${c.engine}:${c.name}`, { image: c.image, imageId: c.imageId.slice(0, 19), state: c.state, restarts: c.restarts, ports: c.ports, privileged: c.privileged });
+    add("container", `${c.engine}:${c.name}`, {
+      image: c.image,
+      imageId: c.imageId.slice(0, 19),
+      state: c.state,
+      restarts: c.restarts,
+      ports: c.ports,
+      privileged: c.privileged,
+    });
   return out;
 }
 

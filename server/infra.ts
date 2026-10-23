@@ -11,7 +11,8 @@ import type { HostEntry } from "./hosts.ts";
 import type { Keyring } from "./kek.ts";
 import { log } from "./log.ts";
 
-export type ProblemCode = "invalid-body" | "not-found" | "conflict" | "not-configured" | "invalid-json" | "invalid-token" | "version-mismatch" | "internal-error";
+export type ProblemCode =
+  "invalid-body" | "not-found" | "conflict" | "not-configured" | "invalid-json" | "invalid-token" | "version-mismatch" | "internal-error";
 
 export class InfraError extends Error {
   readonly status: number;
@@ -105,7 +106,11 @@ export function fingerprint(keyLine: string): string {
   return `SHA256:${createHash("sha256").update(Buffer.from(blob, "base64")).digest("base64").replace(/=+$/, "")}`;
 }
 
-export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version: string; now?: () => number; collectCluster?: typeof collectCluster; concurrency?: number }) {
+export function createInfra(
+  db: DatabaseSync,
+  keyring: Keyring,
+  opts: { version: string; now?: () => number; collectCluster?: typeof collectCluster; concurrency?: number },
+) {
   const now = opts.now ?? Date.now;
   const iso = (ms = now()) => new Date(ms).toISOString();
   const k8s = opts.collectCluster ?? collectCluster;
@@ -143,7 +148,8 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
 
   /** A new agent and its one-time enrolment token, shown once. */
   function createAgent(b: Record<string, unknown>) {
-    if (typeof b.name !== "string" || !NAME.test(b.name)) throw new InfraError(422, "invalid-body", "name is letters, digits, dots, dashes and underscores, up to 63.");
+    if (typeof b.name !== "string" || !NAME.test(b.name))
+      throw new InfraError(422, "invalid-body", "name is letters, digits, dots, dashes and underscores, up to 63.");
     if (db.prepare("SELECT 1 FROM agents WHERE name = ?").get(b.name)) throw new InfraError(409, "conflict", `An agent named ${b.name} exists.`);
     const id = randomUUID();
     db.prepare("INSERT INTO agents (id, name, created_at) VALUES (?, ?, ?)").run(id, b.name, iso());
@@ -159,7 +165,8 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
 
   function deleteAgent(id: string) {
     requireAgent(id);
-    if (db.prepare("SELECT 1 FROM hosts WHERE agent_id = ?").get(id)) throw new InfraError(409, "conflict", "Hosts are read by this agent. Move or remove them first.");
+    if (db.prepare("SELECT 1 FROM hosts WHERE agent_id = ?").get(id))
+      throw new InfraError(409, "conflict", "Hosts are read by this agent. Move or remove them first.");
     db.prepare("DELETE FROM agents WHERE id = ?").run(id);
   }
 
@@ -167,7 +174,13 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
   function agentSetup(id: string) {
     const a = requireAgent(id);
     if (!a.setup || !a.ca_public_key) throw new InfraError(409, "conflict", "The agent has not enrolled yet. Start it with its enrolment token.");
-    return { agent: toAgent(a), caPublicKey: a.ca_public_key, caFingerprint: fingerprint(a.ca_public_key), keyPublicKey: a.key_public_key, ...(JSON.parse(a.setup) as Record<string, string>) };
+    return {
+      agent: toAgent(a),
+      caPublicKey: a.ca_public_key,
+      caFingerprint: fingerprint(a.ca_public_key),
+      keyPublicKey: a.key_public_key,
+      ...(JSON.parse(a.setup) as Record<string, string>),
+    };
   }
 
   function checkReport(b: Record<string, unknown>) {
@@ -177,7 +190,8 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
     if (!isKey(b.caPublicKey)) throw bad("caPublicKey is an OpenSSH public key.");
     if (!isKey(b.keyPublicKey)) throw bad("keyPublicKey is an OpenSSH public key.");
     const s = b.setup as Record<string, unknown> | undefined;
-    if (!s || ["sshdConfig", "sudoers", "hostSetup", "authorizedKey"].some((k) => typeof s[k] !== "string" || (s[k] as string).length > 64_000)) throw bad("setup holds sshdConfig, sudoers, hostSetup and authorizedKey.");
+    if (!s || ["sshdConfig", "sudoers", "hostSetup", "authorizedKey"].some((k) => typeof s[k] !== "string" || (s[k] as string).length > 64_000))
+      throw bad("setup holds sshdConfig, sudoers, hostSetup and authorizedKey.");
     return {
       version: b.version,
       caPublicKey: (b.caPublicKey as string).trim(),
@@ -189,7 +203,8 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
   function enroll(b: Record<string, unknown>) {
     const token = typeof b.token === "string" ? b.token : "";
     const a = db.prepare("SELECT * FROM agents WHERE enroll_token_hash = ?").get(sha256(token)) as AgentRow | undefined;
-    if (!a || !a.enroll_expires_at || a.enroll_expires_at <= iso()) throw new InfraError(401, "invalid-token", "The enrolment token is unknown, used or expired. Create a new one under Settings, Agents.");
+    if (!a || !a.enroll_expires_at || a.enroll_expires_at <= iso())
+      throw new InfraError(401, "invalid-token", "The enrolment token is unknown, used or expired. Create a new one under Settings, Agents.");
     const r = checkReport(b);
     const secret = `oia_${randomBytes(32).toString("base64url")}`;
     db.prepare(
@@ -221,18 +236,35 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
     const r = checkReport(b);
     // ADR 0019: an agent always has the same version as its product.
     if (r.version !== opts.version) {
-      db.prepare("UPDATE agents SET version = ?, last_seen_at = ?, last_error = ? WHERE id = ?").run(r.version, iso(), `infra-agent ${r.version} does not match infra ${opts.version}`, a.id);
+      db.prepare("UPDATE agents SET version = ?, last_seen_at = ?, last_error = ? WHERE id = ?").run(
+        r.version,
+        iso(),
+        `infra-agent ${r.version} does not match infra ${opts.version}`,
+        a.id,
+      );
       throw new InfraError(409, "version-mismatch", `infra-agent ${r.version} does not match infra ${opts.version}; install infra-agent ${opts.version}`);
     }
     // A changed CA means every host must trust the new one; refuse until an admin enrols the agent again.
-    if (a.ca_public_key && a.ca_public_key !== r.caPublicKey) throw new InfraError(409, "conflict", "This agent's CA changed since it enrolled. Enrol it again under Settings, Agents.");
-    db.prepare("UPDATE agents SET version = ?, key_public_key = ?, setup = ?, last_seen_at = ?, last_error = NULL WHERE id = ?").run(r.version, r.keyPublicKey, r.setup, iso(), a.id);
+    if (a.ca_public_key && a.ca_public_key !== r.caPublicKey)
+      throw new InfraError(409, "conflict", "This agent's CA changed since it enrolled. Enrol it again under Settings, Agents.");
+    db.prepare("UPDATE agents SET version = ?, key_public_key = ?, setup = ?, last_seen_at = ?, last_error = NULL WHERE id = ?").run(
+      r.version,
+      r.keyPublicKey,
+      r.setup,
+      iso(),
+      a.id,
+    );
 
     const t = now();
     const free = (h: HostRow) => !h.lease_until || Date.parse(h.lease_until) <= t;
     const hosts = (db.prepare("SELECT * FROM hosts WHERE agent_id = ?").all(a.id) as unknown as HostRow[]).filter(free);
     const keyJobs = hosts.filter((h) => h.key_requested === 1);
-    const due = hosts.filter((h) => h.key_requested === 0 && keyPinned(h) && (h.collect_requested === 1 || !h.last_attempt_at || Date.parse(h.last_attempt_at) + h.interval_minutes * 60_000 <= t));
+    const due = hosts.filter(
+      (h) =>
+        h.key_requested === 0 &&
+        keyPinned(h) &&
+        (h.collect_requested === 1 || !h.last_attempt_at || Date.parse(h.last_attempt_at) + h.interval_minutes * 60_000 <= t),
+    );
     const jobs = [...keyJobs.map((h) => ({ h, action: "host-key" as const })), ...due.map((h) => ({ h, action: "collect" as const }))].slice(0, 64);
     const leaseKey = db.prepare("UPDATE hosts SET lease_until = ? WHERE id = ?");
     const leaseCollect = db.prepare("UPDATE hosts SET lease_until = ?, last_attempt_at = ?, collect_requested = 0 WHERE id = ?");
@@ -242,7 +274,15 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
         if (jump && !JSON.parse(jump.host_keys).length) return [];
         if (action === "collect") leaseCollect.run(iso(t + JOB_LEASE_MS), iso(t), h.id);
         else leaseKey.run(iso(t + JOB_LEASE_MS), h.id);
-        return [{ id: randomUUID(), hostId: h.id, action, target: { ...endpointOf(h), auth: h.auth, containers: h.containers === 1 }, jump: jump ? endpointOf(jump) : null }];
+        return [
+          {
+            id: randomUUID(),
+            hostId: h.id,
+            action,
+            target: { ...endpointOf(h), auth: h.auth, containers: h.containers === 1 },
+            jump: jump ? endpointOf(jump) : null,
+          },
+        ];
       }),
     };
   }
@@ -256,12 +296,17 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
     if (!h || h.agent_id !== a.id) throw new InfraError(404, "not-found", "No such host for this agent.");
     db.prepare("UPDATE hosts SET lease_until = NULL WHERE id = ?").run(h.id);
     const keys = b.hostKeys;
-    const keyList = Array.isArray(keys) && keys.length > 0 && keys.length <= 8 && keys.every((k) => typeof k === "string" && HOST_KEY.test(k)) ? (keys as string[]) : undefined;
+    const keyList =
+      Array.isArray(keys) && keys.length > 0 && keys.length <= 8 && keys.every((k) => typeof k === "string" && HOST_KEY.test(k))
+        ? (keys as string[])
+        : undefined;
     if (b.ok === true && keyList && b.facts === undefined) {
       // The hosts file vouches for a key with its fingerprint (ADR 0052): that key is pinned without an admin.
       const vouched = h.file_host_key ? keyList.find((k) => fingerprint(k) === h.file_host_key) : undefined;
       if (vouched) {
-        db.prepare("UPDATE hosts SET key_requested = 0, host_keys = ?, pending_host_keys = '[]', status = 'pending', status_detail = NULL, collect_requested = 1 WHERE id = ?").run(JSON.stringify([vouched]), h.id);
+        db.prepare(
+          "UPDATE hosts SET key_requested = 0, host_keys = ?, pending_host_keys = '[]', status = 'pending', status_detail = NULL, collect_requested = 1 WHERE id = ?",
+        ).run(JSON.stringify([vouched]), h.id);
         log("info", "host key trusted from the hosts file", { host: h.name, fingerprint: h.file_host_key });
         return { status: "accepted" };
       }
@@ -298,10 +343,15 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
       return { status: "accepted" };
     }
     const e = b.error as { kind?: unknown; message?: unknown } | undefined;
-    if (b.ok !== false || !e || typeof e.kind !== "string" || !FAILURES.has(e.kind) || typeof e.message !== "string") throw new InfraError(422, "invalid-body", "Expected facts, hostKeys, or an error with kind and message.");
+    if (b.ok !== false || !e || typeof e.kind !== "string" || !FAILURES.has(e.kind) || typeof e.message !== "string")
+      throw new InfraError(422, "invalid-body", "Expected facts, hostKeys, or an error with kind and message.");
     const message = e.message.slice(0, 1000);
     if (e.kind === "host-key-changed") {
-      db.prepare("UPDATE hosts SET status = 'host-key-changed', status_detail = ?, pending_host_keys = ? WHERE id = ?").run("The host key changed. Check the host, then accept the new key.", JSON.stringify(keyList ?? []), h.id);
+      db.prepare("UPDATE hosts SET status = 'host-key-changed', status_detail = ?, pending_host_keys = ? WHERE id = ?").run(
+        "The host key changed. Check the host, then accept the new key.",
+        JSON.stringify(keyList ?? []),
+        h.id,
+      );
     } else {
       db.prepare("UPDATE hosts SET status = ?, status_detail = ? WHERE id = ?").run(e.kind === "host-key-unknown" ? "unreachable" : e.kind, message, h.id);
     }
@@ -313,10 +363,12 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
 
   function hostSummary(f: Facts | null) {
     if (!f) return null;
-    const disk = f.filesystems.filter((x) => x.sizeKb > 0).reduce<{ mount: string; pct: number } | null>((max, x) => {
-      const pct = Math.round((x.usedKb / x.sizeKb) * 100);
-      return !max || pct > max.pct ? { mount: x.mount, pct } : max;
-    }, null);
+    const disk = f.filesystems
+      .filter((x) => x.sizeKb > 0)
+      .reduce<{ mount: string; pct: number } | null>((max, x) => {
+        const pct = Math.round((x.usedKb / x.sizeKb) * 100);
+        return !max || pct > max.pct ? { mount: x.mount, pct } : max;
+      }, null);
     return {
       hostname: f.system.hostname,
       os: f.system.os.name,
@@ -366,7 +418,18 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
   }
 
   function hostInput(b: Record<string, unknown>, partial: boolean) {
-    const out: Partial<{ name: string; agentId: string; address: string; port: number; user: string; auth: HostRow["auth"]; jumpHostId: string | null; containers: boolean; intervalMinutes: number; tags: Record<string, string> }> = {};
+    const out: Partial<{
+      name: string;
+      agentId: string;
+      address: string;
+      port: number;
+      user: string;
+      auth: HostRow["auth"];
+      jumpHostId: string | null;
+      containers: boolean;
+      intervalMinutes: number;
+      tags: Record<string, string>;
+    }> = {};
     const bad = (m: string) => new InfraError(422, "invalid-body", m);
     if (b.name !== undefined || !partial) {
       if (typeof b.name !== "string" || !NAME.test(b.name)) throw bad("name is letters, digits, dots, dashes and underscores, up to 63.");
@@ -401,12 +464,19 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
       out.containers = b.containers;
     }
     if (b.intervalMinutes !== undefined) {
-      if (typeof b.intervalMinutes !== "number" || !Number.isInteger(b.intervalMinutes) || b.intervalMinutes < 1 || b.intervalMinutes > 1440) throw bad("intervalMinutes is 1 to 1440.");
+      if (typeof b.intervalMinutes !== "number" || !Number.isInteger(b.intervalMinutes) || b.intervalMinutes < 1 || b.intervalMinutes > 1440)
+        throw bad("intervalMinutes is 1 to 1440.");
       out.intervalMinutes = b.intervalMinutes;
     }
     if (b.tags !== undefined) {
       const t = b.tags;
-      if (!t || typeof t !== "object" || Array.isArray(t) || Object.entries(t).some(([k, v]) => !TAG.test(k) || typeof v !== "string" || v.length > 128) || Object.keys(t).length > 32) {
+      if (
+        !t ||
+        typeof t !== "object" ||
+        Array.isArray(t) ||
+        Object.entries(t).some(([k, v]) => !TAG.test(k) || typeof v !== "string" || v.length > 128) ||
+        Object.keys(t).length > 32
+      ) {
         throw bad('tags is an object of up to 32 name: value strings, such as {"env": "prod", "team": "payments"}.');
       }
       out.tags = t as Record<string, string>;
@@ -429,7 +499,12 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
     let agentId = v.agentId;
     if (!agentId) {
       const agents = db.prepare("SELECT id FROM agents").all() as Array<{ id: string }>;
-      if (agents.length !== 1) throw new InfraError(422, "invalid-body", agents.length ? "agentId: choose the agent that reads this host." : "Add an agent first, under Settings, Agents.");
+      if (agents.length !== 1)
+        throw new InfraError(
+          422,
+          "invalid-body",
+          agents.length ? "agentId: choose the agent that reads this host." : "Add an agent first, under Settings, Agents.",
+        );
       agentId = agents[0]!.id;
     }
     if (db.prepare("SELECT 1 FROM hosts WHERE name = ?").get(v.name!)) throw new InfraError(409, "conflict", `A host named ${v.name} exists.`);
@@ -437,7 +512,20 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
     const id = randomUUID();
     db.prepare(
       "INSERT INTO hosts (id, name, agent_id, address, port, ssh_user, auth, jump_host_id, containers, interval_minutes, tags, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    ).run(id, v.name!, agentId, v.address!, v.port ?? 22, v.user ?? "openasy", v.auth ?? "certificate", v.jumpHostId ?? null, v.containers ? 1 : 0, v.intervalMinutes ?? 5, JSON.stringify(v.tags ?? {}), iso());
+    ).run(
+      id,
+      v.name!,
+      agentId,
+      v.address!,
+      v.port ?? 22,
+      v.user ?? "openasy",
+      v.auth ?? "certificate",
+      v.jumpHostId ?? null,
+      v.containers ? 1 : 0,
+      v.intervalMinutes ?? 5,
+      JSON.stringify(v.tags ?? {}),
+      iso(),
+    );
     return toHost(requireHost(id));
   }
 
@@ -449,12 +537,15 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
   function updateHost(id: string, b: Record<string, unknown>) {
     const h = fromFile(requireHost(id), "Change it there.");
     const v = hostInput(b, true);
-    if (v.name && v.name !== h.name && db.prepare("SELECT 1 FROM hosts WHERE name = ?").get(v.name)) throw new InfraError(409, "conflict", `A host named ${v.name} exists.`);
+    if (v.name && v.name !== h.name && db.prepare("SELECT 1 FROM hosts WHERE name = ?").get(v.name))
+      throw new InfraError(409, "conflict", `A host named ${v.name} exists.`);
     const agentId = v.agentId ?? h.agent_id;
     if (v.jumpHostId !== undefined || v.agentId !== undefined) checkJump(v.jumpHostId === undefined ? h.jump_host_id : v.jumpHostId, agentId, id);
     // A new address, or another agent, is a new trust decision: the key must be checked again.
     const moved = (v.address !== undefined && v.address !== h.address) || (v.port !== undefined && v.port !== h.port) || agentId !== h.agent_id;
-    db.prepare("UPDATE hosts SET name = ?, agent_id = ?, address = ?, port = ?, ssh_user = ?, auth = ?, jump_host_id = ?, containers = ?, interval_minutes = ?, tags = ? WHERE id = ?").run(
+    db.prepare(
+      "UPDATE hosts SET name = ?, agent_id = ?, address = ?, port = ?, ssh_user = ?, auth = ?, jump_host_id = ?, containers = ?, interval_minutes = ?, tags = ? WHERE id = ?",
+    ).run(
       v.name ?? h.name,
       agentId,
       v.address ?? h.address,
@@ -467,7 +558,10 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
       JSON.stringify(v.tags ?? JSON.parse(h.tags)),
       id,
     );
-    if (moved) db.prepare("UPDATE hosts SET host_keys = '[]', pending_host_keys = '[]', status = 'new', status_detail = NULL, key_requested = 1, lease_until = NULL WHERE id = ?").run(id);
+    if (moved)
+      db.prepare(
+        "UPDATE hosts SET host_keys = '[]', pending_host_keys = '[]', status = 'new', status_detail = NULL, key_requested = 1, lease_until = NULL WHERE id = ?",
+      ).run(id);
     return toHost(requireHost(id));
   }
 
@@ -482,7 +576,9 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
     if (h.file_host_key) fromFile(h, "Its key is the one hostKey names there; change hostKey to trust another.");
     const key = (JSON.parse(h.pending_host_keys) as string[]).find((k) => fingerprint(k) === fp);
     if (typeof fp !== "string" || !key) throw new InfraError(422, "invalid-body", "fingerprint must be one of the pending host keys, as SHA256:...");
-    db.prepare("UPDATE hosts SET host_keys = ?, pending_host_keys = '[]', status = 'pending', status_detail = NULL, collect_requested = 1, lease_until = NULL WHERE id = ?").run(JSON.stringify([key]), id);
+    db.prepare(
+      "UPDATE hosts SET host_keys = ?, pending_host_keys = '[]', status = 'pending', status_detail = NULL, collect_requested = 1, lease_until = NULL WHERE id = ?",
+    ).run(JSON.stringify([key]), id);
     return toHost(requireHost(id));
   }
 
@@ -492,7 +588,8 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
   }
 
   function removeHost(id: string) {
-    if (db.prepare("SELECT 1 FROM hosts WHERE jump_host_id = ?").get(id)) throw new InfraError(409, "conflict", "Other hosts are reached through this one. Change their jump host first.");
+    if (db.prepare("SELECT 1 FROM hosts WHERE jump_host_id = ?").get(id))
+      throw new InfraError(409, "conflict", "Other hosts are reached through this one. Change their jump host first.");
     db.exec("BEGIN");
     try {
       db.prepare("DELETE FROM snapshots WHERE target_kind = 'host' AND target_id = ?").run(id);
@@ -521,7 +618,11 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
         return a?.id;
       }
       if (agents.length === 1) return agents[0]!.id;
-      warnings.push(agents.length ? `${e.name}: name the agent that reaches it with agent:, as there are ${agents.length}.` : `${e.name}: it is added once an agent is, under Settings, Agents.`);
+      warnings.push(
+        agents.length
+          ? `${e.name}: name the agent that reaches it with agent:, as there are ${agents.length}.`
+          : `${e.name}: it is added once an agent is, under Settings, Agents.`,
+      );
       return undefined;
     };
     const planned = new Map<string, { e: HostEntry; agentId: string }>();
@@ -540,7 +641,8 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
       if (!p.e.jump) continue;
       const j = planned.get(p.e.jump);
       if (!j) warnings.push(`${name}: its jump host ${p.e.jump} is not added, so neither is it.`);
-      else if (j.agentId !== p.agentId) warnings.push(`${name}: its jump host ${p.e.jump} is read by another agent; a jump host must be read by the same agent.`);
+      else if (j.agentId !== p.agentId)
+        warnings.push(`${name}: its jump host ${p.e.jump} is read by another agent; a jump host must be read by the same agent.`);
       else continue;
       planned.delete(name);
     }
@@ -561,11 +663,23 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
       const moved = e.address !== h.address || e.port !== h.port || agentId !== h.agent_id;
       const vouchesOther = !!e.hostKey && e.hostKey !== h.file_host_key && pinned.length > 0 && !pinned.some((k) => fingerprint(k) === e.hostKey);
       db.prepare("UPDATE hosts SET agent_id = ?, address = ?, port = ?, ssh_user = ?, auth = ?, containers = ?, tags = ?, file_host_key = ? WHERE id = ?").run(
-        agentId, e.address, e.port, e.user, e.auth, e.containers ? 1 : 0, JSON.stringify(e.tags), e.hostKey, h.id,
+        agentId,
+        e.address,
+        e.port,
+        e.user,
+        e.auth,
+        e.containers ? 1 : 0,
+        JSON.stringify(e.tags),
+        e.hostKey,
+        h.id,
       );
-      if (moved || vouchesOther) db.prepare("UPDATE hosts SET host_keys = '[]', pending_host_keys = '[]', status = 'new', status_detail = NULL, key_requested = 1, lease_until = NULL WHERE id = ?").run(h.id);
+      if (moved || vouchesOther)
+        db.prepare(
+          "UPDATE hosts SET host_keys = '[]', pending_host_keys = '[]', status = 'new', status_detail = NULL, key_requested = 1, lease_until = NULL WHERE id = ?",
+        ).run(h.id);
       // A hostKey given now for a host whose key is not pinned yet: ask for the key again, to trust it if it matches.
-      else if (e.hostKey && e.hostKey !== h.file_host_key && !pinned.length) db.prepare("UPDATE hosts SET key_requested = 1, lease_until = NULL WHERE id = ?").run(h.id);
+      else if (e.hostKey && e.hostKey !== h.file_host_key && !pinned.length)
+        db.prepare("UPDATE hosts SET key_requested = 1, lease_until = NULL WHERE id = ?").run(h.id);
     }
     for (const [name, { e }] of planned) db.prepare("UPDATE hosts SET jump_host_id = ? WHERE id = ?").run(e.jump ? ids.get(e.jump)! : null, ids.get(name)!);
 
@@ -585,7 +699,8 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
   /** Stores the collection when it differs from the last stored one, and what changed. */
   function record(kind: Kind, id: string, facts: unknown, items: Item[], at: string): Change[] {
     const hash = itemsHash(items);
-    const last = db.prepare("SELECT items_hash, facts FROM snapshots WHERE target_kind = ? AND target_id = ? ORDER BY id DESC LIMIT 1").get(kind, id) as { items_hash: string; facts: Uint8Array } | undefined;
+    const last = db.prepare("SELECT items_hash, facts FROM snapshots WHERE target_kind = ? AND target_id = ? ORDER BY id DESC LIMIT 1").get(kind, id) as
+      { items_hash: string; facts: Uint8Array } | undefined;
     if (last?.items_hash === hash) return [];
     const changes = last ? diff(kind === "host" ? hostItems(unpack<Facts>(last.facts)) : clusterItems(unpack<ClusterFacts>(last.facts)), items) : [];
     db.exec("BEGIN");
@@ -655,7 +770,8 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
       out.server = u.origin;
     }
     if (b.caCert !== undefined) {
-      if (b.caCert !== null && (typeof b.caCert !== "string" || !b.caCert.includes("BEGIN CERTIFICATE") || b.caCert.length > 16_384)) throw bad("caCert is the cluster CA in PEM, or null to use the system's.");
+      if (b.caCert !== null && (typeof b.caCert !== "string" || !b.caCert.includes("BEGIN CERTIFICATE") || b.caCert.length > 16_384))
+        throw bad("caCert is the cluster CA in PEM, or null to use the system's.");
       out.caCert = b.caCert;
     }
     if (b.token !== undefined || !partial) {
@@ -663,12 +779,14 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
       out.token = b.token;
     }
     if (b.intervalMinutes !== undefined) {
-      if (typeof b.intervalMinutes !== "number" || !Number.isInteger(b.intervalMinutes) || b.intervalMinutes < 1 || b.intervalMinutes > 1440) throw bad("intervalMinutes is 1 to 1440.");
+      if (typeof b.intervalMinutes !== "number" || !Number.isInteger(b.intervalMinutes) || b.intervalMinutes < 1 || b.intervalMinutes > 1440)
+        throw bad("intervalMinutes is 1 to 1440.");
       out.intervalMinutes = b.intervalMinutes;
     }
     if (b.tags !== undefined) {
       const t = b.tags;
-      if (!t || typeof t !== "object" || Array.isArray(t) || Object.entries(t).some(([k, v]) => !TAG.test(k) || typeof v !== "string")) throw bad("tags is an object of name: value strings.");
+      if (!t || typeof t !== "object" || Array.isArray(t) || Object.entries(t).some(([k, v]) => !TAG.test(k) || typeof v !== "string"))
+        throw bad("tags is an object of name: value strings.");
       out.tags = t as Record<string, string>;
     }
     return out;
@@ -678,24 +796,20 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
     const v = clusterInput(b, false);
     if (db.prepare("SELECT 1 FROM clusters WHERE name = ?").get(v.name!)) throw new InfraError(409, "conflict", `A cluster named ${v.name} exists.`);
     const id = randomUUID();
-    db.prepare("INSERT INTO clusters (id, name, server, ca_cert, token_sealed, interval_minutes, tags, collect_requested, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)").run(
-      id,
-      v.name!,
-      v.server!,
-      v.caCert ?? null,
-      keyring.seal(v.token!),
-      v.intervalMinutes ?? 5,
-      JSON.stringify(v.tags ?? {}),
-      iso(),
-    );
+    db.prepare(
+      "INSERT INTO clusters (id, name, server, ca_cert, token_sealed, interval_minutes, tags, collect_requested, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)",
+    ).run(id, v.name!, v.server!, v.caCert ?? null, keyring.seal(v.token!), v.intervalMinutes ?? 5, JSON.stringify(v.tags ?? {}), iso());
     return toCluster(requireCluster(id));
   }
 
   function updateCluster(id: string, b: Record<string, unknown>) {
     const c = requireCluster(id);
     const v = clusterInput(b, true);
-    if (v.name && v.name !== c.name && db.prepare("SELECT 1 FROM clusters WHERE name = ?").get(v.name)) throw new InfraError(409, "conflict", `A cluster named ${v.name} exists.`);
-    db.prepare("UPDATE clusters SET name = ?, server = ?, ca_cert = ?, token_sealed = ?, interval_minutes = ?, tags = ?, collect_requested = 1 WHERE id = ?").run(
+    if (v.name && v.name !== c.name && db.prepare("SELECT 1 FROM clusters WHERE name = ?").get(v.name))
+      throw new InfraError(409, "conflict", `A cluster named ${v.name} exists.`);
+    db.prepare(
+      "UPDATE clusters SET name = ?, server = ?, ca_cert = ?, token_sealed = ?, interval_minutes = ?, tags = ?, collect_requested = 1 WHERE id = ?",
+    ).run(
       v.name ?? c.name,
       v.server ?? c.server,
       v.caCert === undefined ? c.ca_cert : v.caCert,
@@ -766,7 +880,11 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
   function hostFacts(id: string, at?: string): { facts: Facts; collectedAt: string } | null {
     const h = requireHost(id);
     if (at) {
-      const row = db.prepare("SELECT facts, collected_at FROM snapshots WHERE target_kind = 'host' AND target_id = ? AND collected_at <= ? ORDER BY collected_at DESC, id DESC LIMIT 1").get(id, at) as { facts: Uint8Array; collected_at: string } | undefined;
+      const row = db
+        .prepare(
+          "SELECT facts, collected_at FROM snapshots WHERE target_kind = 'host' AND target_id = ? AND collected_at <= ? ORDER BY collected_at DESC, id DESC LIMIT 1",
+        )
+        .get(id, at) as { facts: Uint8Array; collected_at: string } | undefined;
       return row ? { facts: unpack<Facts>(row.facts), collectedAt: row.collected_at } : null;
     }
     if (!h.latest_facts) return null;
@@ -786,7 +904,9 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
     if (filter.category) (where.push("category = ?"), args.push(filter.category));
     if (filter.since) (where.push("at >= ?"), args.push(filter.since));
     if (filter.cursor) (where.push("id < ?"), args.push(filter.cursor));
-    const rows = db.prepare(`SELECT * FROM changes ${where.length ? `WHERE ${where.join(" AND ")}` : ""} ORDER BY id DESC LIMIT ?`).all(...args, filter.limit + 1) as Array<{
+    const rows = db
+      .prepare(`SELECT * FROM changes ${where.length ? `WHERE ${where.join(" AND ")}` : ""} ORDER BY id DESC LIMIT ?`)
+      .all(...args, filter.limit + 1) as Array<{
       id: number;
       target_kind: Kind;
       target_id: string;
@@ -800,18 +920,35 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
     const names = new Map<string, string>();
     const nameOf = (k: Kind, id: string) => {
       const key = `${k}:${id}`;
-      if (!names.has(key)) names.set(key, (db.prepare(`SELECT name FROM ${k === "host" ? "hosts" : "clusters"} WHERE id = ?`).get(id) as { name: string } | undefined)?.name ?? id);
+      if (!names.has(key))
+        names.set(
+          key,
+          (db.prepare(`SELECT name FROM ${k === "host" ? "hosts" : "clusters"} WHERE id = ?`).get(id) as { name: string } | undefined)?.name ?? id,
+        );
       return names.get(key)!;
     };
     const page = rows.slice(0, filter.limit);
     return {
-      changes: page.map((r) => ({ id: r.id, target: { kind: r.target_kind, id: r.target_id, name: nameOf(r.target_kind, r.target_id) }, at: r.at, category: r.category, item: r.item, change: r.kind, before: r.before, after: r.after })),
+      changes: page.map((r) => ({
+        id: r.id,
+        target: { kind: r.target_kind, id: r.target_id, name: nameOf(r.target_kind, r.target_id) },
+        at: r.at,
+        category: r.category,
+        item: r.item,
+        change: r.kind,
+        before: r.before,
+        after: r.after,
+      })),
       ...(rows.length > filter.limit && { nextCursor: String(page.at(-1)!.id) }),
     };
   }
 
   function containers() {
-    const rows = db.prepare("SELECT id, name, latest_facts FROM hosts WHERE latest_facts IS NOT NULL ORDER BY name").all() as Array<{ id: string; name: string; latest_facts: Uint8Array }>;
+    const rows = db.prepare("SELECT id, name, latest_facts FROM hosts WHERE latest_facts IS NOT NULL ORDER BY name").all() as Array<{
+      id: string;
+      name: string;
+      latest_facts: Uint8Array;
+    }>;
     return rows.flatMap((r) => (unpack<Facts>(r.latest_facts).containers ?? []).map((c) => ({ host: { id: r.id, name: r.name }, ...c })));
   }
 
@@ -819,7 +956,10 @@ export function createInfra(db: DatabaseSync, keyring: Keyring, opts: { version:
     const count = (rows: Array<{ status: string; n: number }>) => Object.fromEntries(rows.map((r) => [r.status, r.n])) as Record<string, number>;
     const agents = (db.prepare("SELECT * FROM agents").all() as unknown as AgentRow[]).map(toAgent);
     return {
-      agents: Object.fromEntries([...new Set(agents.map((a) => a.status))].map((s) => [s, agents.filter((a) => a.status === s).length])) as Record<string, number>,
+      agents: Object.fromEntries([...new Set(agents.map((a) => a.status))].map((s) => [s, agents.filter((a) => a.status === s).length])) as Record<
+        string,
+        number
+      >,
       hosts: count(db.prepare("SELECT status, COUNT(*) AS n FROM hosts GROUP BY status").all() as Array<{ status: string; n: number }>),
       clusters: count(db.prepare("SELECT status, COUNT(*) AS n FROM clusters GROUP BY status").all() as Array<{ status: string; n: number }>),
       containers: containers().length,

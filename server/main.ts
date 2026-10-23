@@ -22,7 +22,9 @@ const secretsKeyFile = process.env.INFRA_SECRETS_KEY_FILE ?? "/run/secrets/opena
 // Cluster tokens and sign-in secrets are encrypted with it (ADR 0021): Infrastructure does not start without it.
 const kek = readSecretsKey(secretsKeyFile);
 if (!kek) {
-  log("error", "no key-encryption key: mount 32 random bytes (openssl rand -hex 32) and set INFRA_SECRETS_KEY_FILE if not at the default", { file: secretsKeyFile });
+  log("error", "no key-encryption key: mount 32 random bytes (openssl rand -hex 32) and set INFRA_SECRETS_KEY_FILE if not at the default", {
+    file: secretsKeyFile,
+  });
   process.exit(1);
 }
 if (!Number.isFinite(retentionDays) || retentionDays < 1) throw new Error("INFRA_RETENTION_DAYS must be a number of days");
@@ -77,7 +79,9 @@ metricsServer?.listen(metricsPort, () => log("info", "metrics on their own port"
 
 server.listen(port, () => log("info", "infra started", { version, port, db: dbPath, headless }));
 if (!publicUrl.startsWith("https://") && !/^http:\/\/(localhost|127\.0\.0\.1)(:|$)/.test(publicUrl)) {
-  log("warn", "INFRA_PUBLIC_URL is not https: browsers will not keep secure cookies or allow passkeys. Put Infrastructure behind TLS (ADR 0026)", { url: publicUrl });
+  log("warn", "INFRA_PUBLIC_URL is not https: browsers will not keep secure cookies or allow passkeys. Put Infrastructure behind TLS (ADR 0026)", {
+    url: publicUrl,
+  });
 }
 const setup = auth.setupLink();
 // No default password (ADR 0013): the first person to open this link becomes the owner.
