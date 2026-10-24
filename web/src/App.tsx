@@ -19,6 +19,7 @@ import {
   useThemePreference,
 } from "@openasy/ui";
 import { AccountSettings, AuthGate, MembersSettings, SignInSettings, TokensSettings, useAuth, useInstallBrand } from "@openasy/auth/react";
+import colophon from "virtual:openasy-colophon";
 import { Bot, Boxes, GitCompare, KeyRound, LayoutDashboard, LogIn, LogOut, Server, Settings2, UserRound, Users, Network } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Agent, AgentSetup, Change, Container, Host, ProductLink, Setup, Summary } from "./api.ts";
@@ -29,7 +30,7 @@ import { HostsPage } from "./hosts.tsx";
 import { ChangeList, Code, List, Status, useApi, useData, type Call } from "./shared.tsx";
 import { useT } from "./i18n.ts";
 
-export const PAGES = ["overview", "hosts", "containers", "clusters", "changes", "setup", "agents", "account", "members", "signin", "tokens"] as const;
+export const PAGES = ["overview", "hosts", "containers", "clusters", "changes", "setup", "agents", "account", "members", "signin", "tokens", "about"] as const;
 type Page = (typeof PAGES)[number];
 type Route = { page: Page } | { page: "host"; id: string } | { page: "cluster"; id: string };
 
@@ -269,6 +270,7 @@ function Product() {
   return (
     <AppShell
       product="infrastructure"
+      about={colophon}
       nav={nav}
       activeNav={active}
       onNavigate={(id) => navigate(`/${id}`)}
