@@ -3,7 +3,7 @@
 // cluster to read (skipped when unset).
 import { execFileSync } from "node:child_process";
 import { createHmac, randomBytes } from "node:crypto";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -50,6 +50,13 @@ try {
   const dir = mkdtempSync(join(tmpdir(), "e2e-infra-"));
   writeFileSync(join(dir, "kek"), randomBytes(32).toString("hex"));
   writeFileSync(join(dir, "agent-kek"), randomBytes(32).toString("hex"));
+  // The hosts come from the install's hosts file only (ADR 0052): a folder the product reads, as compose mounts it.
+  const inventory = join(dir, "inventory");
+  mkdirSync(inventory);
+  chmodSync(inventory, 0o755);
+  const hostsFile = join(inventory, "hosts.yaml");
+  const writeHosts = (hosts: Array<Record<string, unknown>>) => (writeFileSync(hostsFile, JSON.stringify({ hosts })), chmodSync(hostsFile, 0o644));
+  writeHosts([]);
 
   // Like compose: read-only root, tmpfs for the per-connection keys, the KEK as a mounted file.
   docker(
@@ -70,6 +77,10 @@ try {
     "no-new-privileges",
     "-v",
     `${join(dir, "kek")}:/run/secrets/openasy-kek:ro`,
+    "-v",
+    `${inventory}:/config/inventory:ro`,
+    "-e",
+    "OPENASY_HOSTS=/config/inventory/hosts.yaml",
     "-e",
     "INFRA_PUBLIC_URL=http://localhost:18095",
     IMAGE,
@@ -168,22 +179,37 @@ try {
   await sleep(2500);
 
   const keyOf = (c: string) => docker("exec", c, "ssh-keygen", "-lf", "/etc/ssh/ssh_host_ed25519_key.pub").split(" ")[1];
-  const add = async (body: Record<string, unknown>, container: string) => {
-    const r = await api<{ id: string }>("/api/v1/hosts", body);
-    // The agent asks the host for its key on its next round.
-    let pending: Array<{ fingerprint: string }> = [];
-    for (let i = 0; i < 30 && !pending.length; i++) {
+  // Every host in the file at once; Infrastructure reads it within a minute of a change.
+  const entries: Array<Record<string, unknown>> = [
+    { name: "web", address: "e2e-web", containers: true },
+    { name: "jump", address: "e2e-jump" },
+    { name: "db", address: "e2e-db", jump: "jump" },
+    { name: "key", address: "e2e-key", auth: "key" },
+  ];
+  writeHosts(entries);
+  type Listed = { id: string; name: string; user: string; source: string; pendingHostKeys: Array<{ fingerprint: string }> };
+  const listed = async (name: string, until: (h: Listed) => boolean = () => true) => {
+    for (let i = 0; i < 90; i++) {
+      const h = (await api<{ hosts: Listed[] }>("/api/v1/hosts")).body.hosts.find((x) => x.name === name);
+      if (h && until(h)) return h;
       await sleep(1000);
-      pending = (await api<{ pendingHostKeys: Array<{ fingerprint: string }> }>(`/api/v1/hosts/${r.body.id}`)).body.pendingHostKeys;
     }
-    ok(r.status === 201 && pending[0]?.fingerprint === keyOf(container), `${body.name}: the pending key is the one ssh-keygen prints on the host`);
-    await api(`/api/v1/hosts/${r.body.id}/host-key/accept`, { fingerprint: pending[0]?.fingerprint });
-    return r.body.id;
+    return undefined;
   };
-  const web = await add({ name: "web", address: "e2e-web", containers: true }, "e2e-web");
-  const jump = await add({ name: "jump", address: "e2e-jump" }, "e2e-jump");
-  const db = await add({ name: "db", address: "e2e-db", jumpHostId: jump }, "e2e-db");
-  const key = await add({ name: "key", address: "e2e-key", auth: "key" }, "e2e-key");
+  const accept = async (name: string, container: string) => {
+    // The agent asks the host for its key on its next round; a host behind a jump host once that one is trusted.
+    const h = await listed(name, (x) => x.pendingHostKeys.length > 0);
+    ok(
+      h?.source === "file" && h.pendingHostKeys[0]?.fingerprint === keyOf(container),
+      `${name}: from the file, and the pending key is the one ssh-keygen prints on the host`,
+    );
+    await api(`/api/v1/hosts/${h?.id}/host-key/accept`, { fingerprint: h?.pendingHostKeys[0]?.fingerprint });
+    return h?.id ?? "";
+  };
+  const web = await accept("web", "e2e-web");
+  const jump = await accept("jump", "e2e-jump");
+  const db = await accept("db", "e2e-db");
+  const key = await accept("key", "e2e-key");
 
   const waitFor = async (id: string, status: string, since?: string) => {
     for (let i = 0; i < 40; i++) {
@@ -272,12 +298,14 @@ try {
   );
 
   // What a compromised Infrastructure can do: tell the agent to log in as root. The certificate is for openasy only.
-  await api(`/api/v1/hosts/${web}`, { user: "root" }, "PATCH");
+  writeHosts(entries.map((e) => (e.name === "web" ? { ...e, user: "root" } : e)));
+  await listed("web", (h) => h.user === "root");
   const asRoot = new Date().toISOString();
   await api(`/api/v1/hosts/${web}/collect`, {});
   const r = await waitFor(web, "auth-failed", asRoot);
   ok(r.status === "auth-failed", "web: told to log in as root, the agent's certificate is refused");
-  await api(`/api/v1/hosts/${web}`, { user: "openasy" }, "PATCH");
+  writeHosts(entries);
+  await listed("web", (h) => h.user === "openasy");
 
   // Nothing of a connection stays behind, and no SSH private key is anywhere but sealed on the agent.
   ok(docker("exec", "e2e-agent", "sh", "-c", "ls -A /tmp | wc -l") === "0", "agent: no SSH keys left in /tmp after collections");
