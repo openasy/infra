@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { OPENAPI } from "../scripts/openapi.ts";
+import { parseHosts } from "./hosts.ts";
 import { fingerprint } from "./infra.ts";
 import { CA_KEY, facts, HOST_KEY, OTHER_KEY, REPORT, startApp } from "./test-app.ts";
 
@@ -108,15 +109,23 @@ describe("agents", () => {
 
 describe("hosts", () => {
   let web: Host;
+  // Hosts come from the hosts file only (ADR 0052): the tests keep one and apply it as the product does.
+  const file = new Map<string, Record<string, unknown>>();
+  const setHost = (entry: Record<string, unknown> & { name: string }) => (file.set(entry.name, entry), apply());
+  const dropHost = (name: string) => (file.delete(name), apply());
+  const apply = () => app.infra.syncFile(parseHosts(JSON.stringify({ hosts: [...file.values()] })));
+  const named = async (name: string) =>
+    ((await call("viewer", "GET", "/api/v1/hosts")).body as { hosts: Array<Host & { name: string }> }).hosts.find((h) => h.name === name)!;
 
-  it("are added and wait for their key to be checked", async () => {
+  it("come from the file and wait for their key to be checked", async () => {
     agent.hosts.set("10.0.0.5", { key: HOST_KEY, facts: facts("debian-sudo") });
     expect((await call("none", "GET", "/api/v1/hosts")).status).toBe(401);
-    expect((await call("editor", "POST", "/api/v1/hosts", { body: { name: "web-1", address: "10.0.0.5" } })).status).toBe(403);
-    const r = await call("admin", "POST", "/api/v1/hosts", { body: { name: "web-1", address: "10.0.0.5", tags: { env: "prod" } } });
-    expect(r.status).toBe(201);
-    web = r.body as Host;
-    expect(web).toMatchObject({ status: "new", agent: { name: "dc-main" } });
+    // No route adds or changes one.
+    expect((await app.admin("/api/v1/hosts", { method: "POST", body: JSON.stringify({ name: "web-1", address: "10.0.0.5" }) })).status).toBe(404);
+    expect(setHost({ name: "web-1", address: "10.0.0.5", tags: { env: "prod" } })).toEqual([]);
+    web = await named("web-1");
+    expect(web).toMatchObject({ status: "new", source: "file", agent: { name: "dc-main" } });
+    expect((await app.admin(hostPath(web.id), { method: "PATCH", body: JSON.stringify({ port: 2200 }) })).status).toBe(404);
     expect((await call("editor", "POST", "/api/v1/hosts/{id}/collect", { concrete: hostPath(web.id, "/collect") })).status).toBe(409);
     // The agent asks the host for its key; nothing is collected before an admin accepts it.
     expect((await agent.round()).map((j) => j.action)).toEqual(["host-key"]);
@@ -125,21 +134,19 @@ describe("hosts", () => {
     expect(await agent.round()).toEqual([]);
   });
 
-  it("refuse bad input, including values ssh could read as options", async () => {
-    for (const body of [
+  it("refuse a file with bad input, including values ssh could read as options", () => {
+    for (const entry of [
       { name: "x", address: "-oProxyCommand=sh" },
       { name: "x", address: "10.0.0.6", user: "-oX" },
       { name: "x y", address: "a" },
       { name: "x", address: "a", port: 0 },
       { name: "x", address: "a", tags: { "": "x" } },
-      { name: "x", address: "a", agentId: "nope" },
     ]) {
-      expect((await call("admin", "POST", "/api/v1/hosts", { body })).status, JSON.stringify(body)).toBe(422);
+      expect(() => parseHosts(JSON.stringify({ hosts: [entry] })), JSON.stringify(entry)).toThrow();
     }
-    expect((await call("admin", "POST", "/api/v1/hosts", { body: { name: "web-1", address: "10.0.0.7" } })).status).toBe(409);
-    expect((await fetch(`${app.base}/api/v1/hosts`, { method: "POST", headers: { authorization: `Bearer ${app.tokens.admin}` }, body: "nope" })).status).toBe(
-      400,
-    );
+    expect(app.infra.syncFile(parseHosts(JSON.stringify({ hosts: [...file.values(), { name: "x", address: "10.0.0.6", agent: "nope" }] })))).toEqual([
+      "x: no agent is named nope; it is added once one is.",
+    ]);
   });
 
   it("are collected once the key is accepted", async () => {
@@ -240,22 +247,27 @@ describe("hosts", () => {
     expect((await other.post("/api/v1/agent/results", { jobId: "x", hostId: web.id, ok: true, facts: facts("debian-sudo") })).status).toBe(404);
     expect((await agent.post("/api/v1/agent/results", { jobId: "x", hostId: web.id, ok: true, facts: { system: {} } })).status).toBe(422);
     expect((await agent.post("/api/v1/agent/results", { jobId: "x", hostId: web.id, ok: false, error: { kind: "rm -rf", message: "x" } })).status).toBe(422);
+    // With two agents, every entry says which one reads it; web-1 is named so it stays.
+    file.set("web-1", { ...file.get("web-1")!, agent: "dc-main" });
+    expect(setHost({ name: "which", address: "10.9.0.2" })).toEqual(["which: name the agent that reaches it with agent:, as there are 2."]);
     // A jump host must be read by the same agent.
-    expect(
-      (await call("admin", "POST", "/api/v1/hosts", { body: { name: "elsewhere", address: "10.9.0.1", agentId: other.id, jumpHostId: web.id } })).status,
-    ).toBe(422);
-    // With two agents, the host must say which one reads it.
-    expect((await call("admin", "POST", "/api/v1/hosts", { body: { name: "which", address: "10.9.0.2" } })).status).toBe(422);
+    expect(setHost({ name: "elsewhere", address: "10.9.0.1", agent: "dc-other", jump: "web-1" })).toContain(
+      "elsewhere: its jump host web-1 is read by another agent; a jump host must be read by the same agent.",
+    );
+    file.delete("which");
+    file.delete("elsewhere");
     // Facts for a host whose key is not accepted are not stored.
-    const pending = (await call("admin", "POST", "/api/v1/hosts", { body: { name: "pending", address: "10.9.0.3", agentId: other.id } })).body as Host;
+    setHost({ name: "pending", address: "10.9.0.3", agent: "dc-other" });
+    const pending = await named("pending");
     expect((await other.post("/api/v1/agent/results", { jobId: "x", hostId: pending.id, ok: true, facts: facts("debian-sudo") })).status).toBe(409);
-    await call("admin", "DELETE", "/api/v1/hosts/{id}", { concrete: hostPath(pending.id) });
+    dropHost("pending");
     expect((await call("admin", "DELETE", "/api/v1/agents/{id}", { concrete: `/api/v1/agents/${other.id}` })).status).toBe(204);
   });
 
   it("read containers only when switched on, without environment values", async () => {
     agent.hosts.set("10.0.0.8", { key: HOST_KEY, facts: facts("debian-unprivileged-containers") });
-    const h = (await call("admin", "POST", "/api/v1/hosts", { body: { name: "docker-1", address: "10.0.0.8", containers: true, auth: "key" } })).body as Host;
+    setHost({ name: "docker-1", address: "10.0.0.8", containers: true, auth: "key", keyFile: "docker-1.key" });
+    const h = await named("docker-1");
     await agent.round();
     await call("admin", "POST", "/api/v1/hosts/{id}/host-key/accept", {
       concrete: hostPath(h.id, "/host-key/accept"),
@@ -271,21 +283,38 @@ describe("hosts", () => {
 
   it("reach hosts through a jump host of the same agent", async () => {
     agent.hosts.set("10.1.0.9", { key: HOST_KEY, facts: facts("alpine-unprivileged") });
-    const r = await call("admin", "POST", "/api/v1/hosts", { body: { name: "db-internal", address: "10.1.0.9", jumpHostId: web.id } });
-    expect(r.status).toBe(201);
-    const inner = r.body as Host;
+    expect(setHost({ name: "db-internal", address: "10.1.0.9", jump: "web-1" })).toEqual([]);
+    const inner = await named("db-internal");
     const jobs = (await agent.round()) as unknown as Array<{ jump: { address: string; hostKeys: string[] } | null }>;
     expect(jobs[0]!.jump).toMatchObject({ address: "10.0.0.5", hostKeys: [OTHER_KEY] });
-    expect((await call("admin", "POST", "/api/v1/hosts", { body: { name: "deeper", address: "10.2.0.1", jumpHostId: inner.id } })).status).toBe(422);
+    expect(() => parseHosts(JSON.stringify({ hosts: [...file.values(), { name: "deeper", address: "10.2.0.1", jump: "db-internal" }] }))).toThrow(
+      /a jump host must be reachable directly/,
+    );
     expect((await call("admin", "DELETE", "/api/v1/hosts/{id}", { concrete: hostPath(web.id) })).status).toBe(409);
     expect((await call("admin", "DELETE", "/api/v1/agents/{id}", { concrete: `/api/v1/agents/${agent.id}` })).status).toBe(409);
     // A new address is a new machine: its key must be checked again.
-    const moved = (await call("admin", "PATCH", "/api/v1/hosts/{id}", { concrete: hostPath(inner.id), body: { address: "10.1.0.10", intervalMinutes: 15 } }))
-      .body as Host;
-    expect(moved.status).toBe("new");
-    expect((await call("admin", "DELETE", "/api/v1/hosts/{id}", { concrete: hostPath(inner.id) })).status).toBe(204);
+    setHost({ name: "db-internal", address: "10.1.0.10", jump: "web-1" });
+    expect((await named("db-internal")).status).toBe("new");
+    dropHost("db-internal");
     expect((await call("viewer", "GET", "/api/v1/hosts/{id}", { concrete: hostPath(inner.id) })).status).toBe(404);
     expect((await call("viewer", "GET", "/api/v1/hosts/{id}/facts", { concrete: hostPath(inner.id, "/facts") })).status).toBe(404);
+  });
+
+  it("delete a host added here before the file, and take one over by its name", async () => {
+    const legacy = (name: string, address: string) =>
+      app.db
+        .prepare(
+          "INSERT INTO hosts (id, name, agent_id, address, port, ssh_user, auth, containers, interval_minutes, tags, created_at) VALUES (?, ?, ?, ?, 22, 'openasy', 'certificate', 0, 5, '{}', ?)",
+        )
+        .run(`ui-${name}`, name, agent.id, address, new Date().toISOString());
+    legacy("old-1", "10.3.0.1");
+    expect((await call("admin", "DELETE", "/api/v1/hosts/{id}", { concrete: hostPath("ui-old-1") })).status).toBe(204);
+    expect((await call("admin", "DELETE", "/api/v1/hosts/{id}", { concrete: hostPath("ui-old-1") })).status).toBe(404);
+    legacy("old-2", "10.3.0.2");
+    expect(((await call("viewer", "GET", "/api/v1/hosts/{id}", { concrete: hostPath("ui-old-2") })).body as { source: string }).source).toBe("ui");
+    expect(setHost({ name: "old-2", address: "10.3.0.2", agent: "dc-main" })).toEqual([]);
+    expect((await call("viewer", "GET", "/api/v1/hosts/{id}", { concrete: hostPath("ui-old-2") })).body).toMatchObject({ source: "file", address: "10.3.0.2" });
+    dropHost("old-2");
   });
 });
 

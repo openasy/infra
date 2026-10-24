@@ -105,27 +105,6 @@ const schemas: Record<string, S> = {
     createdAt: dt,
     summary: ref("HostSummary"),
   }),
-  HostInput: {
-    type: "object",
-    required: ["name", "address"],
-    properties: {
-      name: { type: "string", pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$" },
-      agentId: { type: "string", description: "The agent that reads this host. Optional when there is only one." },
-      address: { type: "string", description: "Host name or IP address." },
-      port: { type: "integer", default: 22 },
-      user: { type: "string", default: "openasy" },
-      auth: {
-        type: "string",
-        enum: ["certificate", "key"],
-        default: "certificate",
-        description: "certificate: a 5-minute certificate from Infrastructure's CA for each collection. key: one fixed key in authorized_keys.",
-      },
-      jumpHostId: { ...nul(str), description: "Reach the host through this one (ProxyJump)." },
-      containers: { type: "boolean", default: false },
-      intervalMinutes: { type: "integer", minimum: 1, maximum: 1440, default: 5 },
-      tags: map,
-    },
-  },
   Facts: {
     type: "object",
     description: "Everything read from the host in one collection. Values that look like secrets are masked; container environment variables are names only.",
@@ -351,7 +330,7 @@ const spec = {
   openapi: "3.1.1",
   info: {
     title: "OpenAsy Infrastructure API",
-    version: "0.5.0",
+    version: "0.6.0",
     summary: "Hosts, containers and Kubernetes, read without installing anything, with every change kept.",
     description:
       "Every screen of Infrastructure uses this API, and so can your scripts (ADR 0014). Within `/api/v1` changes are additive only (ADR 0024). Errors use Problem Details (RFC 9457).\n\nHosts are read over SSH as an unprivileged `openasy` account with 5-minute certificates, and clusters through their API with a read-only token (ADR 0031). Each operation names the role it needs (`x-openasy-role`). Sign-in, members and API tokens are under `/api/v1/auth`, provided by [@openasy/auth](https://github.com/openasy/auth#routes).",
@@ -483,15 +462,13 @@ const spec = {
       }),
     },
     "/api/v1/hosts": {
-      get: op({ id: "listHosts", tag: "Hosts", summary: "List hosts", role: "viewer", responses: { "200": ok(obj({ hosts: arr(ref("Host")) })), ...R("v") } }),
-      post: op({
-        id: "createHost",
+      get: op({
+        id: "listHosts",
         tag: "Hosts",
-        summary: "Add a host",
-        description: "Infrastructure asks the host for its key right away. Check the fingerprint on the host and accept it before the first collection.",
-        role: "admin",
-        body: ref("HostInput"),
-        responses: { "201": ok(ref("Host"), "Added"), ...R("a"), ...P(400, 409, 422) },
+        summary: "List hosts",
+        description: "The hosts come from the hosts file (OPENASY_HOSTS, ADR 0052); no route adds or changes one.",
+        role: "viewer",
+        responses: { "200": ok(obj({ hosts: arr(ref("Host")) })), ...R("v") },
       }),
     },
     "/api/v1/hosts/{id}": {
@@ -503,20 +480,11 @@ const spec = {
         params: [id],
         responses: { "200": ok(ref("Host")), ...R("v"), ...P(404) },
       }),
-      patch: op({
-        id: "updateHost",
-        tag: "Hosts",
-        summary: "Change a host",
-        description: "A new address or port unpins the host key.",
-        role: "admin",
-        params: [id],
-        body: { type: "object", properties: (schemas.HostInput as { properties: S }).properties },
-        responses: { "200": ok(ref("Host")), ...R("a"), ...P(400, 404, 409, 422) },
-      }),
       delete: op({
         id: "deleteHost",
         tag: "Hosts",
         summary: "Remove a host and its history",
+        description: "Only a host added in Infrastructure before the hosts file was the way in; one from the file answers 409 and is removed in the file.",
         role: "admin",
         params: [id],
         responses: { "204": { description: "Removed" }, ...R("a"), ...P(404, 409) },

@@ -156,20 +156,25 @@ describe("hosts from the file", () => {
 
   it("are changed in the file only", async () => {
     const web = await host("web-1");
-    expect((await app.admin(`/api/v1/hosts/${web.id}`, { method: "PATCH", body: JSON.stringify({ port: 2200 }) })).status).toBe(409);
+    expect((await app.admin(`/api/v1/hosts/${web.id}`, { method: "PATCH", body: JSON.stringify({ port: 2200 }) })).status).toBe(404);
     expect((await app.admin(`/api/v1/hosts/${web.id}`, { method: "DELETE" })).status).toBe(409);
     expect((await app.admin(`/api/v1/hosts/${web.id}/host-key`, { method: "POST" })).status).toBe(200);
   });
 
-  it("follow the file: a new address is checked again, a removed host goes, and a name taken here is left alone", async () => {
-    await app.admin("/api/v1/hosts", { method: "POST", body: JSON.stringify({ name: "mail-1", address: "10.0.0.9" }) });
+  it("follow the file: a new address is checked again, a removed host goes, and one added here before is taken over", async () => {
+    app.db
+      .prepare(
+        "INSERT INTO hosts (id, name, agent_id, address, port, ssh_user, auth, containers, interval_minutes, tags, created_at) VALUES ('ui-mail', 'mail-1', ?, '10.0.0.9', 22, 'openasy', 'certificate', 0, 5, '{}', ?)",
+      )
+      .run(agent.id, new Date().toISOString());
     const warnings = app.infra.syncFile(
       parseHosts(
         "hosts:\n  - { name: web-1, address: 10.0.0.15, agent: dc1, hostKey: 'SHA256:PDOhaQiW49e9hQXf81r2bgjWlUS0+xzcwzCeUeVWhZo' }\n  - { name: mail-1, address: 10.0.0.9, agent: dc1 }\n",
       ),
     );
-    expect(warnings).toEqual(["mail-1: a host with this name was added in Infrastructure; remove it there to let the file manage it."]);
-    expect((await hosts()).map((h) => `${h.name} ${h.source}`)).toEqual(["mail-1 ui", "web-1 file"]);
+    expect(warnings).toEqual([]);
+    expect((await hosts()).map((h) => `${h.name} ${h.source}`)).toEqual(["mail-1 file", "web-1 file"]);
+    expect(await host("mail-1")).toMatchObject({ id: "ui-mail" });
     expect(await host("web-1")).toMatchObject({ address: "10.0.0.15", jumpHost: null, status: "new", hostKeys: [] });
   });
 

@@ -2,7 +2,7 @@
   "openapi": "3.1.1",
   "info": {
     "title": "OpenAsy Infrastructure API",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "summary": "Hosts, containers and Kubernetes, read without installing anything, with every change kept.",
     "description": "Every screen of Infrastructure uses this API, and so can your scripts (ADR 0014). Within `/api/v1` changes are additive only (ADR 0024). Errors use Problem Details (RFC 9457).\n\nHosts are read over SSH as an unprivileged `openasy` account with 5-minute certificates, and clusters through their API with a read-only token (ADR 0031). Each operation names the role it needs (`x-openasy-role`). Sign-in, members and API tokens are under `/api/v1/auth`, provided by [@openasy/auth](https://github.com/openasy/auth#routes).",
     "license": {
@@ -708,7 +708,7 @@
           "Hosts"
         ],
         "summary": "List hosts",
-        "description": "Needs the viewer role.",
+        "description": "The hosts come from the hosts file (OPENASY_HOSTS, ADR 0052); no route adds or changes one.\n\nNeeds the viewer role.",
         "security": [
           {
             "session": []
@@ -744,60 +744,6 @@
             "$ref": "#/components/responses/Problem"
           },
           "403": {
-            "$ref": "#/components/responses/Problem"
-          }
-        }
-      },
-      "post": {
-        "operationId": "createHost",
-        "tags": [
-          "Hosts"
-        ],
-        "summary": "Add a host",
-        "description": "Infrastructure asks the host for its key right away. Check the fingerprint on the host and accept it before the first collection.\n\nNeeds the admin role.",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "apiToken": []
-          }
-        ],
-        "x-openasy-role": "admin",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/HostInput"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Added",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Host"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "401": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "403": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "409": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "422": {
             "$ref": "#/components/responses/Problem"
           }
         }
@@ -852,138 +798,13 @@
           }
         }
       },
-      "patch": {
-        "operationId": "updateHost",
-        "tags": [
-          "Hosts"
-        ],
-        "summary": "Change a host",
-        "description": "A new address or port unpins the host key.\n\nNeeds the admin role.",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "apiToken": []
-          }
-        ],
-        "x-openasy-role": "admin",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
-                  },
-                  "agentId": {
-                    "type": "string",
-                    "description": "The agent that reads this host. Optional when there is only one."
-                  },
-                  "address": {
-                    "type": "string",
-                    "description": "Host name or IP address."
-                  },
-                  "port": {
-                    "type": "integer",
-                    "default": 22
-                  },
-                  "user": {
-                    "type": "string",
-                    "default": "openasy"
-                  },
-                  "auth": {
-                    "type": "string",
-                    "enum": [
-                      "certificate",
-                      "key"
-                    ],
-                    "default": "certificate",
-                    "description": "certificate: a 5-minute certificate from Infrastructure's CA for each collection. key: one fixed key in authorized_keys."
-                  },
-                  "jumpHostId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ],
-                    "description": "Reach the host through this one (ProxyJump)."
-                  },
-                  "containers": {
-                    "type": "boolean",
-                    "default": false
-                  },
-                  "intervalMinutes": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 1440,
-                    "default": 5
-                  },
-                  "tags": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Host"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "401": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "403": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "404": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "409": {
-            "$ref": "#/components/responses/Problem"
-          },
-          "422": {
-            "$ref": "#/components/responses/Problem"
-          }
-        }
-      },
       "delete": {
         "operationId": "deleteHost",
         "tags": [
           "Hosts"
         ],
         "summary": "Remove a host and its history",
-        "description": "Needs the admin role.",
+        "description": "Only a host added in Infrastructure before the hosts file was the way in; one from the file answers 409 and is removed in the file.\n\nNeeds the admin role.",
         "security": [
           {
             "session": []
@@ -2493,71 +2314,6 @@
           },
           "summary": {
             "$ref": "#/components/schemas/HostSummary"
-          }
-        }
-      },
-      "HostInput": {
-        "type": "object",
-        "required": [
-          "name",
-          "address"
-        ],
-        "properties": {
-          "name": {
-            "type": "string",
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$"
-          },
-          "agentId": {
-            "type": "string",
-            "description": "The agent that reads this host. Optional when there is only one."
-          },
-          "address": {
-            "type": "string",
-            "description": "Host name or IP address."
-          },
-          "port": {
-            "type": "integer",
-            "default": 22
-          },
-          "user": {
-            "type": "string",
-            "default": "openasy"
-          },
-          "auth": {
-            "type": "string",
-            "enum": [
-              "certificate",
-              "key"
-            ],
-            "default": "certificate",
-            "description": "certificate: a 5-minute certificate from Infrastructure's CA for each collection. key: one fixed key in authorized_keys."
-          },
-          "jumpHostId": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Reach the host through this one (ProxyJump)."
-          },
-          "containers": {
-            "type": "boolean",
-            "default": false
-          },
-          "intervalMinutes": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 1440,
-            "default": 5
-          },
-          "tags": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            }
           }
         }
       },

@@ -1,7 +1,7 @@
-import { Badge, Button, Callout, Dialog, EmptyState, navigate, PageHeader, Panel, SelectField, Switch, TextField, type Column, useAgo } from "@openasy/ui";
+import { Badge, Button, Callout, EmptyState, navigate, PageHeader, Panel, type Column, useAgo } from "@openasy/ui";
 import { useAuth } from "@openasy/auth/react";
-import { Plus, ShieldCheck } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { ShieldCheck } from "lucide-react";
+import { useState } from "react";
 import type { Agent, Host, Summary } from "./api.ts";
 import { duration, List, Status, Usage, useData, type Call } from "./shared.tsx";
 import { useT } from "./i18n.ts";
@@ -10,11 +10,11 @@ export function HostsPage({ call }: { call: Call }) {
   const ago = useAgo();
   const t = useT();
   const { can } = useAuth();
-  const { data, reload } = useData<{ hosts: Host[] }>(call, "/api/v1/hosts");
+  const { data } = useData<{ hosts: Host[] }>(call, "/api/v1/hosts");
   const agents = useData<{ agents: Agent[] }>(call, "/api/v1/agents", 0);
   const file = useData<Summary>(call, "/api/v1/summary").data?.hostsFile;
-  const [adding, setAdding] = useState(false);
   const hosts = data?.hosts;
+  const added = (hosts ?? []).filter((h) => h.source === "ui");
   const columns: Column<Host>[] = [
     {
       id: "name",
@@ -64,17 +64,7 @@ export function HostsPage({ call }: { call: Call }) {
   ];
   return (
     <>
-      <PageHeader
-        title={t("hostsPage.hosts")}
-        description={t("hostsPage.readOverSshAsThe")}
-        actions={
-          can("admin") && (
-            <Button variant="primary" icon={<Plus />} onClick={() => setAdding(true)}>
-              {t("hostsPage.addHost")}
-            </Button>
-          )
-        }
-      />
+      <PageHeader title={t("hostsPage.hosts")} description={t("hostsPage.readOverSshAsThe")} />
       {agents.data?.agents.length === 0 && (
         <Callout
           tone="info"
@@ -100,21 +90,17 @@ export function HostsPage({ call }: { call: Call }) {
           {file.warnings.join(" ")}
         </Callout>
       )}
-      {adding && (
-        <AddHost
-          call={call}
-          hosts={hosts ?? []}
-          agents={agents.data?.agents ?? []}
-          onDone={(h) => (setAdding(false), reload(), h && navigate(`/hosts/${h.id}`))}
-        />
+      {!!added.length && (
+        <Callout tone="info" title={t("hostsPage.addedHereBefore", { count: added.length })}>
+          {t("hostsPage.copyTheseIntoTheHostsFile")}
+          <pre className="mt-2 mb-0 overflow-x-auto rounded-md bg-subtle p-3 font-mono text-xs">{toYaml(added)}</pre>
+        </Callout>
       )}
       {hosts?.length === 0 ? (
-        <EmptyState
-          title={t("hostsPage.noHostsYet")}
-          action={can("admin") && <Button onClick={() => setAdding(true)}>{t("hostsPage.addTheFirstHost")}</Button>}
-        >
+        <EmptyState title={t("hostsPage.noHostsYet")}>
           {t("hostsPage.prepareAHostWithThe")} <a href="/setup">{t("hostsPage.setup")}</a>
-          {t("hostsPage.thenAddItHere")}
+          {t("hostsPage.thenListItInTheHostsFile")}
+          <pre className="mt-3 mb-0 text-left font-mono text-xs">{EXAMPLE}</pre>
         </EmptyState>
       ) : (
         <Panel flush>
@@ -125,85 +111,35 @@ export function HostsPage({ call }: { call: Call }) {
   );
 }
 
-function AddHost({ call, hosts, agents, onDone }: { call: Call; hosts: Host[]; agents: Agent[]; onDone: (h?: Host) => void }) {
-  const t = useT();
-  const [agentId, setAgentId] = useState(agents[0]?.id ?? "");
-  const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
-  const [port, setPort] = useState("22");
-  const [auth, setAuth] = useState<"certificate" | "key">("certificate");
-  const [jump, setJump] = useState("");
-  const [containers, setContainers] = useState(false);
-  const [error, setError] = useState<string>();
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    try {
-      const h = await call<Host>("/api/v1/hosts", {
-        method: "POST",
-        body: JSON.stringify({ name, agentId, address, port: Number(port), auth, containers, jumpHostId: jump || null }),
-      });
-      onDone(h);
-    } catch (err) {
-      setError((err as Error).message);
-    }
+// What to write in the hosts file (ADR 0052), shown where there is nothing yet.
+const EXAMPLE = `hosts:
+  - name: web-1
+    address: 10.0.0.5
+    agent: dc1
+  - name: db-1
+    address: 10.0.0.6
+    jump: web-1`;
+
+/** The entries of the hosts file for hosts added here before it was the way in. */
+function toYaml(hosts: Host[]): string {
+  const entry = (h: Host) => {
+    const lines = [`  - name: ${h.name}`, `    address: ${h.address}`, `    agent: ${h.agent.name}`];
+    if (h.port !== 22) lines.push(`    port: ${h.port}`);
+    if (h.user !== "openasy") lines.push(`    user: ${h.user}`);
+    if (h.auth === "key") lines.push("    auth: key");
+    if (h.jumpHost) lines.push(`    jump: ${h.jumpHost.name}`);
+    if (h.containers) lines.push("    containers: true");
+    if (Object.keys(h.tags).length)
+      lines.push(
+        `    tags: { ${Object.entries(h.tags)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(", ")} }`,
+      );
+    return lines.join("\n");
   };
-  const jumps = hosts.filter((h) => !h.jumpHost && h.hostKeys.length && h.agent.id === agentId);
-  return (
-    <Dialog
-      open
-      onOpenChange={(open) => !open && onDone()}
-      size="lg"
-      title={t("addHost.addAHost")}
-      description={t("addHost.theAgentAsksTheHost")}
-      onSubmit={submit}
-      footer={
-        <>
-          <Button type="button" onClick={() => onDone()}>
-            {t("addHost.cancel")}
-          </Button>
-          <Button type="submit" variant="primary" disabled={!name || !address || !agentId}>
-            {t("addHost.addHost")}
-          </Button>
-        </>
-      }
-    >
-      {error && (
-        <Callout tone="danger" title={t("addHost.notAdded")}>
-          {error}
-        </Callout>
-      )}
-      <div className="grid grid-cols-2 gap-2">
-        <TextField label={t("addHost.name")} value={name} onChange={(e) => setName(e.target.value)} placeholder="web-1" />
-        <SelectField
-          label={t("addHost.readBy")}
-          value={agentId}
-          onChange={(e) => setAgentId(e.target.value)}
-          options={agents.map((a) => ({ value: a.id, label: a.name }))}
-        />
-        <TextField label={t("addHost.address")} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="10.0.0.5" />
-        <TextField label={t("addHost.sshPort")} value={port} onChange={(e) => setPort(e.target.value)} inputMode="numeric" />
-        <SelectField
-          label={t("addHost.login")}
-          value={auth}
-          onChange={(e) => setAuth(e.target.value as "certificate" | "key")}
-          options={[
-            { value: "certificate", label: t("addHost.certificateFromInfrastructureSCa") },
-            { value: "key", label: t("addHost.fixedKeyInAuthorizedKeys") },
-          ]}
-        />
-        <SelectField
-          label={t("addHost.reachItThrough")}
-          value={jump}
-          onChange={(e) => setJump(e.target.value)}
-          options={[{ value: "", label: t("addHost.directly") }, ...jumps.map((h) => ({ value: h.id, label: t("addHost.jumpHost", { name: h.name }) }))]}
-        />
-      </div>
-      <Switch checked={containers} onCheckedChange={setContainers} label={t("addHost.readContainers")} description={t("addHost.throughDockerOrPodmanOn")} />
-    </Dialog>
-  );
+  return ["hosts:", ...hosts.map(entry)].join("\n");
 }
 
-/** Shown until an admin checks the key the host presents against the host itself (ADR 0031). */
 export function HostKeyCheck({ host, call, onDone }: { host: Host; call: Call; onDone: () => void }) {
   const t = useT();
   const { can } = useAuth();

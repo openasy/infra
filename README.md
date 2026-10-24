@@ -102,7 +102,7 @@ sshd -t && systemctl reload ssh
 - **The agent's CA is trusted for the `openasy` account only.** `AuthorizedPrincipalsFile` makes sshd accept its
   certificates only for the principals listed per account, so the CA can never log in as root or anyone else.
 - **Certificates last 5 minutes** and allow no TTY, forwarding or agent. The agent signs one for each collection.
-- **Host keys are pinned.** When you add a host, the agent reports the fingerprint it presents; compare it with
+- **Host keys are pinned.** When a host is added, the agent reports the fingerprint it presents; compare it with
   `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the host before accepting. If the key changes later,
   collection stops until an admin accepts the new one.
 - **Details that need root are optional.** Setup also prints a sudoers file that allows a fixed list of read-only
@@ -114,8 +114,8 @@ sshd -t && systemctl reload ssh
 - **Hosts that cannot change `sshd_config`** take one fixed key in `~openasy/.ssh/authorized_keys`, prefixed with
   `restrict`: the agent's own key, which Setup prints, or a key of yours (see `keyFile` below). A fixed key lasts
   until it is removed.
-- **Other networks** are reached through a jump host: add it as a host, set `AllowTcpForwarding yes` for `openasy`
-  on it only, and choose it when adding hosts behind it.
+- **Other networks** are reached through a jump host: list it in the hosts file, set `AllowTcpForwarding yes` for
+  `openasy` on it only, and name it with `jump:` on the hosts behind it.
 
 What this means if something is compromised (ADR 0031): a compromised infra can make agents collect, nothing else. A
 compromised agent can run commands as the unprivileged `openasy` account on the hosts that trust its CA, and the
@@ -125,7 +125,8 @@ remove the CA or key from the hosts. Run one agent per network so each CA is tru
 
 ### From a file
 
-Hosts can also come from a file the install keeps, the same file Logs reads (ADR 0052). Mount it and set
+Hosts come from a file the install keeps, the same file Logs reads, and from nowhere else (ADR 0052): there is no form
+and no API route that adds or changes one. Mount it and set
 `OPENASY_HOSTS`; Infrastructure reads it at start and again within a minute of a change.
 
 ```yaml
@@ -157,8 +158,10 @@ hosts:
   later waits for an admin, as for any host. It is quicker, but whoever answers at the address first is trusted.
   Without hostKey, the key is checked and accepted here as for any host. Whoever can change the file can already change
   the install.
-- A host from the file shows **From file** and is changed there: the API answers 409 to a change or delete, while
-  fetching its key again and collecting still work. Hosts added in the UI stay as they are.
+- A host is changed and removed in the file: the API answers 409 to a delete, while fetching its key again,
+  accepting one and collecting still work. Hosts added in the UI before 0.6.0 keep being read, and the Hosts page shows
+  the lines to copy into the file; once an entry has the same name, it takes the host over with its history and
+  trusted key.
 - A host that cannot be added yet, because its agent is not enrolled or there are several agents and it names none,
   is a warning, and it is added once it can be. A host removed from the file is removed with its history.
 - A file with a mistake is not applied at all: the hosts from its last good version stay, and the Hosts page and the
@@ -177,7 +180,7 @@ The token is stored encrypted and never returned by the API.
 
 ## Roles
 
-Viewers see everything; editors also start collections; admins also add and remove agents, hosts and clusters, accept
+Viewers see everything; editors also start collections; admins also add and remove agents and clusters, remove hosts added before the file, accept
 host keys, and manage members and API tokens (ADR 0003).
 
 ## Upgrade

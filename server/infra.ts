@@ -87,9 +87,6 @@ interface ClusterRow {
 }
 
 const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$/;
-// Never starts with "-": a value that ssh could read as an option. The agent checks it again.
-const ADDRESS = /^[A-Za-z0-9][A-Za-z0-9.:-]{0,252}$|^\[[0-9a-fA-F:]+\]$/;
-const USER = /^[a-z_][a-z0-9_-]{0,31}$/;
 const TAG = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,62}$/;
 const HOST_KEY = /^(ssh-ed25519|ecdsa-sha2-nistp(256|384|521)|ssh-rsa|sk-ssh-ed25519@openssh\.com) [A-Za-z0-9+/]+={0,2}$/;
 const JOB_LEASE_MS = 10 * 60_000;
@@ -428,153 +425,10 @@ export function createInfra(
     };
   }
 
-  function hostInput(b: Record<string, unknown>, partial: boolean) {
-    const out: Partial<{
-      name: string;
-      agentId: string;
-      address: string;
-      port: number;
-      user: string;
-      auth: HostRow["auth"];
-      jumpHostId: string | null;
-      containers: boolean;
-      intervalMinutes: number;
-      tags: Record<string, string>;
-    }> = {};
-    const bad = (m: string) => new InfraError(422, "invalid-body", m);
-    if (b.name !== undefined || !partial) {
-      if (typeof b.name !== "string" || !NAME.test(b.name)) throw bad("name is letters, digits, dots, dashes and underscores, up to 63.");
-      out.name = b.name;
-    }
-    if (b.agentId !== undefined) {
-      if (typeof b.agentId !== "string" || !agentRow(b.agentId)) throw bad("agentId is the id of an agent.");
-      out.agentId = b.agentId;
-    }
-    if (b.address !== undefined || !partial) {
-      if (typeof b.address !== "string" || !ADDRESS.test(b.address)) throw bad("address is a host name or IP address.");
-      out.address = b.address;
-    }
-    if (b.port !== undefined) {
-      if (typeof b.port !== "number" || !Number.isInteger(b.port) || b.port < 1 || b.port > 65535) throw bad("port is 1 to 65535.");
-      out.port = b.port;
-    }
-    if (b.user !== undefined) {
-      if (typeof b.user !== "string" || !USER.test(b.user)) throw bad("user is a Unix account name.");
-      out.user = b.user;
-    }
-    if (b.auth !== undefined) {
-      if (b.auth !== "certificate" && b.auth !== "key") throw bad("auth is certificate or key.");
-      out.auth = b.auth;
-    }
-    if (b.jumpHostId !== undefined) {
-      if (b.jumpHostId !== null && typeof b.jumpHostId !== "string") throw bad("jumpHostId is a host id or null.");
-      out.jumpHostId = b.jumpHostId;
-    }
-    if (b.containers !== undefined) {
-      if (typeof b.containers !== "boolean") throw bad("containers is true or false.");
-      out.containers = b.containers;
-    }
-    if (b.intervalMinutes !== undefined) {
-      if (typeof b.intervalMinutes !== "number" || !Number.isInteger(b.intervalMinutes) || b.intervalMinutes < 1 || b.intervalMinutes > 1440)
-        throw bad("intervalMinutes is 1 to 1440.");
-      out.intervalMinutes = b.intervalMinutes;
-    }
-    if (b.tags !== undefined) {
-      const t = b.tags;
-      if (
-        !t ||
-        typeof t !== "object" ||
-        Array.isArray(t) ||
-        Object.entries(t).some(([k, v]) => !TAG.test(k) || typeof v !== "string" || v.length > 128) ||
-        Object.keys(t).length > 32
-      ) {
-        throw bad('tags is an object of up to 32 name: value strings, such as {"env": "prod", "team": "payments"}.');
-      }
-      out.tags = t as Record<string, string>;
-    }
-    return out;
-  }
-
-  function checkJump(jumpId: string | null | undefined, agentId: string, selfId?: string) {
-    if (!jumpId) return;
-    const j = hostRow(jumpId);
-    if (!j) throw new InfraError(422, "invalid-body", "The jump host does not exist.");
-    if (j.id === selfId) throw new InfraError(422, "invalid-body", "A host cannot be its own jump host.");
-    if (j.jump_host_id) throw new InfraError(422, "invalid-body", "A jump host must be reachable directly, not through another jump host.");
-    if (j.agent_id !== agentId) throw new InfraError(422, "invalid-body", "A jump host must be read by the same agent.");
-    if (!JSON.parse(j.host_keys).length) throw new InfraError(409, "conflict", "Accept the jump host's key first.");
-  }
-
-  function createHost(b: Record<string, unknown>) {
-    const v = hostInput(b, false);
-    let agentId = v.agentId;
-    if (!agentId) {
-      const agents = db.prepare("SELECT id FROM agents").all() as Array<{ id: string }>;
-      if (agents.length !== 1)
-        throw new InfraError(
-          422,
-          "invalid-body",
-          agents.length ? "agentId: choose the agent that reads this host." : "Add an agent first, under Settings, Agents.",
-        );
-      agentId = agents[0]!.id;
-    }
-    if (db.prepare("SELECT 1 FROM hosts WHERE name = ?").get(v.name!)) throw new InfraError(409, "conflict", `A host named ${v.name} exists.`);
-    checkJump(v.jumpHostId, agentId);
-    const id = randomUUID();
-    db.prepare(
-      "INSERT INTO hosts (id, name, agent_id, address, port, ssh_user, auth, jump_host_id, containers, interval_minutes, tags, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    ).run(
-      id,
-      v.name!,
-      agentId,
-      v.address!,
-      v.port ?? 22,
-      v.user ?? "openasy",
-      v.auth ?? "certificate",
-      v.jumpHostId ?? null,
-      v.containers ? 1 : 0,
-      v.intervalMinutes ?? 5,
-      JSON.stringify(v.tags ?? {}),
-      iso(),
-    );
-    return toHost(requireHost(id));
-  }
-
   const fromFile = (h: HostRow, what: string) => {
     if (h.source === "file") throw new InfraError(409, "conflict", `This host comes from the hosts file (OPENASY_HOSTS). ${what}`);
     return h;
   };
-
-  function updateHost(id: string, b: Record<string, unknown>) {
-    const h = fromFile(requireHost(id), "Change it there.");
-    const v = hostInput(b, true);
-    if (v.name && v.name !== h.name && db.prepare("SELECT 1 FROM hosts WHERE name = ?").get(v.name))
-      throw new InfraError(409, "conflict", `A host named ${v.name} exists.`);
-    const agentId = v.agentId ?? h.agent_id;
-    if (v.jumpHostId !== undefined || v.agentId !== undefined) checkJump(v.jumpHostId === undefined ? h.jump_host_id : v.jumpHostId, agentId, id);
-    // A new address, or another agent, is a new trust decision: the key must be checked again.
-    const moved = (v.address !== undefined && v.address !== h.address) || (v.port !== undefined && v.port !== h.port) || agentId !== h.agent_id;
-    db.prepare(
-      "UPDATE hosts SET name = ?, agent_id = ?, address = ?, port = ?, ssh_user = ?, auth = ?, jump_host_id = ?, containers = ?, interval_minutes = ?, tags = ? WHERE id = ?",
-    ).run(
-      v.name ?? h.name,
-      agentId,
-      v.address ?? h.address,
-      v.port ?? h.port,
-      v.user ?? h.ssh_user,
-      v.auth ?? h.auth,
-      v.jumpHostId === undefined ? h.jump_host_id : v.jumpHostId,
-      v.containers === undefined ? h.containers : v.containers ? 1 : 0,
-      v.intervalMinutes ?? h.interval_minutes,
-      JSON.stringify(v.tags ?? JSON.parse(h.tags)),
-      id,
-    );
-    if (moved)
-      db.prepare(
-        "UPDATE hosts SET host_keys = '[]', pending_host_keys = '[]', status = 'new', status_detail = NULL, key_requested = 1, lease_until = NULL WHERE id = ?",
-      ).run(id);
-    return toHost(requireHost(id));
-  }
 
   function requestHostKey(id: string) {
     requireHost(id);
@@ -614,8 +468,8 @@ export function createInfra(
   }
 
   /**
-   * Makes the hosts from the hosts file match it (ADR 0052): adds, changes and removes them, and leaves hosts added
-   * here alone. An entry that cannot be added yet, such as one whose agent is not enrolled, is a warning, and a host it
+   * Makes the hosts match the hosts file (ADR 0052): adds, changes and removes them. A host added here before, with
+   * the name of an entry, becomes the file's and keeps its history. An entry that cannot be added yet, such as one whose agent is not enrolled, is a warning, and a host it
    * made before is kept rather than removed with its history. A new address, port or agent, or another hostKey than
    * the pinned key, is a new trust decision, as in the UI. Returns what to fix.
    */
@@ -640,11 +494,6 @@ export function createInfra(
     for (const e of entries) {
       const agentId = agentOf(e);
       if (!agentId) continue;
-      const same = db.prepare("SELECT source FROM hosts WHERE name = ?").get(e.name) as { source: string } | undefined;
-      if (same?.source === "ui") {
-        warnings.push(`${e.name}: a host with this name was added in Infrastructure; remove it there to let the file manage it.`);
-        continue;
-      }
       planned.set(e.name, { e, agentId });
     }
     // A jump host must be added too, and read by the same agent; the parser already made sure it is reached directly.
@@ -670,6 +519,7 @@ export function createInfra(
         continue;
       }
       ids.set(name, h.id);
+      if (h.source === "ui") db.prepare("UPDATE hosts SET source = 'file' WHERE id = ?").run(h.id);
       const pinned = JSON.parse(h.host_keys) as string[];
       const moved = e.address !== h.address || e.port !== h.port || agentId !== h.agent_id;
       const vouchesOther =
@@ -992,8 +842,6 @@ export function createInfra(
     kubernetesRbac: () => RBAC,
     listHosts: () => (db.prepare("SELECT * FROM hosts ORDER BY name").all() as unknown as HostRow[]).map(toHost),
     host: (id: string) => toHost(requireHost(id)),
-    createHost,
-    updateHost,
     deleteHost,
     syncFile,
     requestHostKey,

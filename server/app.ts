@@ -207,9 +207,7 @@ export function createApp({ db, infra, version, auth, webDir, docsDir, openapi, 
 
     // Hosts over SSH.
     { method: "GET", path: "/api/v1/hosts", auth: "viewer", handle: () => ({ hosts: infra.listHosts() }) },
-    { method: "POST", path: "/api/v1/hosts", auth: "admin", handle: async ({ res, body }) => created(res, await infra.createHost(await body())) },
     { method: "GET", path: "/api/v1/hosts/:id", auth: "viewer", handle: ({ params }) => infra.host(params[0]!) },
-    { method: "PATCH", path: "/api/v1/hosts/:id", auth: "admin", handle: async ({ params, body }) => infra.updateHost(params[0]!, await body()) },
     { method: "DELETE", path: "/api/v1/hosts/:id", auth: "admin", handle: ({ res, params }) => (infra.deleteHost(params[0]!), noContent(res)) },
     {
       method: "GET",
