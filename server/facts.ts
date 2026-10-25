@@ -95,7 +95,16 @@ export interface Facts {
   modules: string[];
   sysctl: Record<string, string>;
   firewall: { tool: "nftables" | "iptables"; rules: string } | null;
-  packages: Array<{ manager: "dpkg" | "rpm" | "apk"; name: string; version: string; arch: string | null }>;
+  /** source is the package it was built from (deb source, src.rpm, apk origin); epoch is rpm's. An older agent sends neither. */
+  packages: Array<{
+    manager: "dpkg" | "rpm" | "apk";
+    name: string;
+    version: string;
+    arch: string | null;
+    source?: string | null;
+    sourceVersion?: string | null;
+    epoch?: number | null;
+  }>;
   containers: Container[] | null;
   /** What could not be read without the sudo rules (or the container switch): shown as "not readable". */
   unreadable: string[];

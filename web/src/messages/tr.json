@@ -354,7 +354,10 @@
     "containers": "Kapsayıcılar",
     "network": "Ağ",
     "storage": "Depolama",
-    "changes": "Değişiklikler"
+    "changes": "Değişiklikler",
+    "packagesInVulnerabilities": "Paketler Vulnerabilities'e gönderildi",
+    "packagesNotSent": "Paketler Vulnerabilities'e ulaşmadı",
+    "triedAgain": "Infrastructure birkaç dakikada bir yeniden dener."
   },
   "hostsPage": {
     "host": "Sunucu",
@@ -372,6 +375,8 @@
     "addAnAgentFirst": "Önce bir ajan ekleyin",
     "agents": "Ajanlar",
     "anAgentReadsTheHosts": "Bir ajan sunucuları SSH üzerinden okur. Onu bir kez, Infrastructure'ın yanına ya da sunucuların ağına kurun.",
+    "noHostNamed": "{{name}} adında bir sunucu yok",
+    "noHostNamedText": "Infrastructure, hosts dosyasındaki ve burada eklenen sunucuları okur. Sunucunun dosyada olduğunu ve bir ajanın onu okuduğunu kontrol edin.",
     "theHostsFromItsLast": "{{error}}Dosya düzeltilene kadar son sağlam sürümündeki sunucular kalır ({{path}}).",
     "theHostsFileIsNot": "Sunucu listesi uygulanmadı",
     "theHostsFileHasSomething": "Sunucu listesinde düzeltilecek bir şey var",

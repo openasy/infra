@@ -2153,7 +2153,8 @@
           "lastAttemptAt",
           "lastSuccessAt",
           "createdAt",
-          "summary"
+          "summary",
+          "vulnerabilities"
         ],
         "properties": {
           "id": {
@@ -2314,6 +2315,57 @@
           },
           "summary": {
             "$ref": "#/components/schemas/HostSummary"
+          },
+          "vulnerabilities": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "sentAt",
+                  "error",
+                  "assetId"
+                ],
+                "properties": {
+                  "sentAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "error": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Why the last send failed; it is tried again every few minutes."
+                  },
+                  "assetId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The host in Vulnerabilities."
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Its packages, sent to Vulnerabilities as a CycloneDX SBOM when they change and once a day (INFRA_VULNS_URL, ADR 0031). Null when Infrastructure does not send them."
           }
         }
       },
@@ -2595,6 +2647,39 @@
                       "type": "null"
                     }
                   ]
+                },
+                "source": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The package it was built from: the deb source, the src.rpm or the apk origin."
+                },
+                "sourceVersion": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The deb source's version, when it differs."
+                },
+                "epoch": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "rpm's epoch."
                 }
               }
             }

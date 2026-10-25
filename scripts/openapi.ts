@@ -104,6 +104,17 @@ const schemas: Record<string, S> = {
     lastSuccessAt: nul(dt),
     createdAt: dt,
     summary: ref("HostSummary"),
+    vulnerabilities: {
+      ...nul(
+        obj({
+          sentAt: nul(dt),
+          error: { ...nul(str), description: "Why the last send failed; it is tried again every few minutes." },
+          assetId: { ...nul(str), description: "The host in Vulnerabilities." },
+        }),
+      ),
+      description:
+        "Its packages, sent to Vulnerabilities as a CycloneDX SBOM when they change and once a day (INFRA_VULNS_URL, ADR 0031). Null when Infrastructure does not send them.",
+    },
   }),
   Facts: {
     type: "object",
@@ -134,7 +145,20 @@ const schemas: Record<string, S> = {
       modules: arr(str),
       sysctl: map,
       firewall: nul({ type: "object" }),
-      packages: arr(obj({ manager: str, name: str, version: str, arch: nul(str) })),
+      packages: arr(
+        obj(
+          {
+            manager: str,
+            name: str,
+            version: str,
+            arch: nul(str),
+            source: { ...nul(str), description: "The package it was built from: the deb source, the src.rpm or the apk origin." },
+            sourceVersion: { ...nul(str), description: "The deb source's version, when it differs." },
+            epoch: { ...nul(int), description: "rpm's epoch." },
+          },
+          ["manager", "name", "version", "arch"],
+        ),
+      ),
       containers: nul(arr(ref("Container"))),
       unreadable: arr(str),
     },

@@ -82,6 +82,8 @@ export interface Host {
   lastSuccessAt: string | null;
   createdAt: string;
   summary: HostSummary | null;
+  /** When its packages last reached Vulnerabilities; null when Infrastructure does not send them. */
+  vulnerabilities: { sentAt: string | null; error: string | null; assetId: string | null } | null;
 }
 
 export interface Cluster {

@@ -38,6 +38,13 @@ free memory) are not changes. A collection that changed nothing stores nothing n
 Values that look like secrets are masked before they are stored: container environment variables are kept by name
 only, and passwords, tokens and keys in command lines are replaced with `***`.
 
+**Packages to Vulnerabilities.** With `INFRA_VULNS_URL` and `INFRA_VULNS_TOKEN` set, Infrastructure sends each host's
+packages to [Vulnerabilities](https://github.com/openasy/vulns) as a CycloneDX SBOM, under the host's name, so the
+hosts it reads need no vulns-agent. Each package carries its distribution and the source package it was built from,
+which is what Grype matches advisories by: the findings are the same as a scan on the host. It is sent when the
+packages change and once a day otherwise; a send that fails shows on the host's page and is tried again every few
+minutes.
+
 ## Run
 
 ```bash
@@ -69,6 +76,8 @@ to reach infra and the hosts of its network; infra never connects to it.
 | `INFRA_DB` | `/data/infra.db` | SQLite file (WAL), on the `/data` volume |
 | `INFRA_RETENTION_DAYS` | `365` | Changes and snapshots older than this are deleted; the newest snapshot of each host stays |
 | `INFRA_CONCURRENCY` | `4` | Cluster collections at the same time |
+| `INFRA_VULNS_URL` | | Where Infrastructure sends hosts' packages, such as `http://vulns:8080`. Set it with the token |
+| `INFRA_VULNS_TOKEN` | | Vulnerabilities' `VULNS_INGEST_TOKEN`, or an API token of it with the editor role |
 | `OPENASY_HOSTS` | | A YAML file of hosts, shared with Logs; see [From a file](#from-a-file) |
 | `INFRA_METRICS_PORT` | | Serve `/metrics` on this port only (ADR 0026) |
 | `INFRA_HEADLESS` | `false` | `true` serves only the API |

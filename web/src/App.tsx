@@ -332,7 +332,7 @@ function Product() {
       onLanguageChange={(code) => setLocale(toLocale(code))}
     >
       {route.page === "host" ? (
-        <HostPage key={route.id} call={call} id={route.id} />
+        <HostPage key={route.id} call={call} id={route.id} vulnsUrl={products.find((p) => p.id === "vulnerabilities")?.url} />
       ) : route.page === "cluster" ? (
         <ClusterPage key={route.id} call={call} id={route.id} />
       ) : page === "hosts" ? (

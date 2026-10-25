@@ -8,6 +8,7 @@ import { createInfra } from "./infra.ts";
 import { createKeyring } from "./kek.ts";
 import { log } from "./log.ts";
 import { parseProducts } from "./products.ts";
+import { createVulnsLink } from "./vulns.ts";
 
 const { version } = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
 const port = Number(process.env.PORT ?? 8080);
@@ -31,7 +32,13 @@ if (!Number.isFinite(retentionDays) || retentionDays < 1) throw new Error("INFRA
 
 const db = openDb(dbPath);
 const keyring = createKeyring(kek);
-const infra = createInfra(db, keyring, { version, concurrency: Number(process.env.INFRA_CONCURRENCY ?? 4) });
+// Each host's packages to Vulnerabilities, so the hosts Infrastructure reads need no vulns-agent (ADR 0031).
+const vulnsUrl = process.env.INFRA_VULNS_URL?.trim();
+const vulnsToken = process.env.INFRA_VULNS_TOKEN?.trim();
+if (!!vulnsUrl !== !!vulnsToken)
+  log("warn", "set both INFRA_VULNS_URL and INFRA_VULNS_TOKEN to send hosts' packages to Vulnerabilities; neither is used alone");
+const vulns = vulnsUrl && vulnsToken ? createVulnsLink({ db, url: vulnsUrl, token: vulnsToken, version, log }) : undefined;
+const infra = createInfra(db, keyring, { version, concurrency: Number(process.env.INFRA_CONCURRENCY ?? 4), vulns });
 // The address people open Infrastructure at, behind the TLS proxy (ADR 0026). Cookies, passkeys and OIDC use it.
 const publicUrl = (process.env.INFRA_PUBLIC_URL ?? `http://localhost:${port}`).replace(/\/$/, "");
 const auth = createAuth({
@@ -77,7 +84,7 @@ const server = createServer(
 const metricsServer = metricsPort !== undefined ? createServer(createMetricsHandler(infra, version)) : undefined;
 metricsServer?.listen(metricsPort, () => log("info", "metrics on their own port", { port: metricsPort }));
 
-server.listen(port, () => log("info", "infra started", { version, port, db: dbPath, headless }));
+server.listen(port, () => log("info", "infra started", { version, port, db: dbPath, headless, vulns: vulnsUrl && vulnsToken ? vulnsUrl : null }));
 if (!publicUrl.startsWith("https://") && !/^http:\/\/(localhost|127\.0\.0\.1)(:|$)/.test(publicUrl)) {
   log("warn", "INFRA_PUBLIC_URL is not https: browsers will not keep secure cookies or allow passkeys. Put Infrastructure behind TLS (ADR 0026)", {
     url: publicUrl,
@@ -99,6 +106,7 @@ const timers: NodeJS.Timeout[] = [
       .finally(() => (ticking = false));
   }, 10_000),
   setInterval(() => infra.purge(retentionDays), 24 * 3_600_000),
+  ...(vulns ? [setInterval(() => void vulns.deliver(), 30_000)] : []),
 ];
 
 function shutdown(signal: string) {

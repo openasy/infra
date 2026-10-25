@@ -419,7 +419,8 @@ function Overview({ f, host }: { f: F; host: Host }) {
   );
 }
 
-export function HostPage({ call, id }: { call: Call; id: string }) {
+/** vulnsUrl: where Vulnerabilities is, when the install has it (OPENASY_PRODUCTS). */
+export function HostPage({ call, id, vulnsUrl }: { call: Call; id: string; vulnsUrl?: string }) {
   const ago = useAgo();
   const t = useT();
   const { can } = useAuth();
@@ -446,6 +447,18 @@ export function HostPage({ call, id }: { call: Call; id: string }) {
           <span className="flex items-center gap-1.5">
             <Status status={h.status} />
             {h.source === "file" && <Badge tone="neutral">{t("hostPage.fromFile")}</Badge>}
+            {h.vulnerabilities?.sentAt && (
+              <span className="text-xs text-fg-muted">
+                {vulnsUrl && h.vulnerabilities.assetId ? (
+                  <a href={`${vulnsUrl.replace(/\/$/, "")}/assets/${encodeURIComponent(h.vulnerabilities.assetId)}`}>
+                    {t("hostPage.packagesInVulnerabilities")}
+                  </a>
+                ) : (
+                  t("hostPage.packagesInVulnerabilities")
+                )}{" "}
+                {ago(h.vulnerabilities.sentAt)}
+              </span>
+            )}
           </span>
         }
         actions={
@@ -467,6 +480,11 @@ export function HostPage({ call, id }: { call: Call; id: string }) {
       {!waitingForKey && h.status !== "ok" && h.statusDetail && (
         <Callout tone="danger" title={t("hostPage.theLastCollectionFailed")}>
           {h.statusDetail} {h.lastSuccessAt && t("hostPage.whatIsShownIsFrom", { ago: ago(h.lastSuccessAt) })}
+        </Callout>
+      )}
+      {h.vulnerabilities?.error && (
+        <Callout tone="warning" title={t("hostPage.packagesNotSent")}>
+          {h.vulnerabilities.error} {t("hostPage.triedAgain")}
         </Callout>
       )}
       {f && f.unreadable.length > 0 && (

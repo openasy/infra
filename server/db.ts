@@ -98,6 +98,17 @@ const MIGRATIONS = [
   `-- A host from the file with auth key may name a private key in the agent's key folder. Only the name is kept: the
    -- agent reads the file itself, so Infrastructure never holds a key that opens a host (ADR 0031).
    ALTER TABLE hosts ADD COLUMN key_file TEXT`,
+  `-- Each host's packages as last sent to Vulnerabilities (INFRA_VULNS_URL): their hash, whether a send is due, and
+   -- why the last one failed. asset_id is the host in Vulnerabilities, for a link to it.
+   CREATE TABLE vulns_sends (
+     host_id TEXT PRIMARY KEY REFERENCES hosts (id) ON DELETE CASCADE,
+     hash TEXT,
+     due INTEGER NOT NULL DEFAULT 0,
+     sent_at TEXT,
+     attempt_at TEXT,
+     error TEXT,
+     asset_id TEXT
+   )`,
 ];
 
 /** Opens the product's single SQLite file in WAL mode (ADR 0011) and migrates it forward. */

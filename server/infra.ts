@@ -9,6 +9,7 @@ import { checkFacts, type Facts } from "./facts.ts";
 import { clusterItems, collectCluster, K8sError, RBAC, type ClusterFacts } from "./k8s.ts";
 import type { HostEntry } from "./hosts.ts";
 import type { Keyring } from "./kek.ts";
+import type { VulnsLink } from "./vulns.ts";
 import { log } from "./log.ts";
 
 export type ProblemCode =
@@ -107,7 +108,14 @@ export function fingerprint(keyLine: string): string {
 export function createInfra(
   db: DatabaseSync,
   keyring: Keyring,
-  opts: { version: string; now?: () => number; collectCluster?: typeof collectCluster; concurrency?: number },
+  opts: {
+    version: string;
+    now?: () => number;
+    collectCluster?: typeof collectCluster;
+    concurrency?: number;
+    /** Sends each host's packages to Vulnerabilities, when INFRA_VULNS_URL is set. */
+    vulns?: VulnsLink;
+  },
 ) {
   const now = opts.now ?? Date.now;
   const iso = (ms = now()) => new Date(ms).toISOString();
@@ -347,6 +355,7 @@ export function createInfra(
       const changes = record("host", h.id, facts, hostItems(facts), at);
       db.prepare("UPDATE hosts SET status = 'ok', status_detail = NULL, last_success_at = ?, latest_facts = ? WHERE id = ?").run(at, pack(facts), h.id);
       if (changes.length) log("info", "host changed", { host: h.name, changes: changes.length });
+      opts.vulns?.collected(h.id, facts);
       return { status: "accepted" };
     }
     const e = b.error as { kind?: unknown; message?: unknown } | undefined;
@@ -422,6 +431,8 @@ export function createInfra(
       lastSuccessAt: h.last_success_at,
       createdAt: h.created_at,
       summary: hostSummary(h.latest_facts ? unpack<Facts>(h.latest_facts) : null),
+      // When its packages last reached Vulnerabilities; null when Infrastructure does not send them.
+      vulnerabilities: opts.vulns ? (opts.vulns.state(h.id) ?? { sentAt: null, error: null, assetId: null }) : null,
     };
   }
 

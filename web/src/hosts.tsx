@@ -1,7 +1,7 @@
 import { Badge, Button, Callout, EmptyState, navigate, PageHeader, Panel, type Column, useAgo } from "@openasy/ui";
 import { useAuth } from "@openasy/auth/react";
 import { ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Agent, Host, Summary } from "./api.ts";
 import { duration, List, Status, Usage, useData, type Call } from "./shared.tsx";
 import { useT } from "./i18n.ts";
@@ -15,6 +15,12 @@ export function HostsPage({ call }: { call: Call }) {
   const file = useData<Summary>(call, "/api/v1/summary").data?.hostsFile;
   const hosts = data?.hosts;
   const added = (hosts ?? []).filter((h) => h.source === "ui");
+  // Other products link to a host by its name, the key the hosts file gives every product (ADR 0052): /hosts?name=web.
+  const wanted = new URLSearchParams(location.search).get("name");
+  const found = wanted ? hosts?.find((h) => h.name === wanted) : undefined;
+  useEffect(() => {
+    if (found) navigate(`/hosts/${found.id}`, { replace: true });
+  }, [found]);
   const columns: Column<Host>[] = [
     {
       id: "name",
@@ -65,6 +71,11 @@ export function HostsPage({ call }: { call: Call }) {
   return (
     <>
       <PageHeader title={t("hostsPage.hosts")} description={t("hostsPage.readOverSshAsThe")} />
+      {wanted && hosts && !found && (
+        <Callout tone="warning" title={t("hostsPage.noHostNamed", { name: wanted })}>
+          {t("hostsPage.noHostNamedText")}
+        </Callout>
+      )}
       {agents.data?.agents.length === 0 && (
         <Callout
           tone="info"

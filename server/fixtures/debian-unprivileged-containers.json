@@ -863,799 +863,1465 @@
       "manager": "dpkg",
       "name": "adduser",
       "version": "3.152",
-      "arch": "all"
+      "arch": "all",
+      "source": "adduser",
+      "sourceVersion": "3.152"
     },
     {
       "manager": "dpkg",
       "name": "apt",
       "version": "3.0.3",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "apt",
+      "sourceVersion": "3.0.3"
     },
     {
       "manager": "dpkg",
       "name": "base-files",
       "version": "13.8+deb13u7",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "base-files",
+      "sourceVersion": "13.8+deb13u7"
     },
     {
       "manager": "dpkg",
       "name": "base-passwd",
       "version": "3.6.7",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "base-passwd",
+      "sourceVersion": "3.6.7"
     },
     {
       "manager": "dpkg",
       "name": "bash",
       "version": "5.2.37-2+b10",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "bash",
+      "sourceVersion": "5.2.37-2"
+    },
+    {
+      "manager": "dpkg",
+      "name": "bsd-mailx",
+      "version": "8.1.2-0.20220412cvs-1.1",
+      "arch": "arm64",
+      "source": "bsd-mailx",
+      "sourceVersion": "8.1.2-0.20220412cvs-1.1"
     },
     {
       "manager": "dpkg",
       "name": "bsdutils",
       "version": "1:2.41.5-0+deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "util-linux",
+      "sourceVersion": "2.41.5-0+deb13u1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "ca-certificates",
+      "version": "20250419+deb13u1",
+      "arch": "all",
+      "source": "ca-certificates",
+      "sourceVersion": "20250419+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "coreutils",
       "version": "9.7-3",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "coreutils",
+      "sourceVersion": "9.7-3"
     },
     {
       "manager": "dpkg",
       "name": "cron",
       "version": "3.0pl1-197",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "cron",
+      "sourceVersion": "3.0pl1-197"
     },
     {
       "manager": "dpkg",
       "name": "cron-daemon-common",
       "version": "3.0pl1-197",
-      "arch": "all"
+      "arch": "all",
+      "source": "cron",
+      "sourceVersion": "3.0pl1-197"
     },
     {
       "manager": "dpkg",
       "name": "dash",
       "version": "0.5.12-12",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "dash",
+      "sourceVersion": "0.5.12-12"
+    },
+    {
+      "manager": "dpkg",
+      "name": "dbus",
+      "version": "1.16.2-2",
+      "arch": "arm64",
+      "source": "dbus",
+      "sourceVersion": "1.16.2-2"
+    },
+    {
+      "manager": "dpkg",
+      "name": "dbus-bin",
+      "version": "1.16.2-2",
+      "arch": "arm64",
+      "source": "dbus",
+      "sourceVersion": "1.16.2-2"
+    },
+    {
+      "manager": "dpkg",
+      "name": "dbus-daemon",
+      "version": "1.16.2-2",
+      "arch": "arm64",
+      "source": "dbus",
+      "sourceVersion": "1.16.2-2"
+    },
+    {
+      "manager": "dpkg",
+      "name": "dbus-session-bus-common",
+      "version": "1.16.2-2",
+      "arch": "all",
+      "source": "dbus",
+      "sourceVersion": "1.16.2-2"
+    },
+    {
+      "manager": "dpkg",
+      "name": "dbus-system-bus-common",
+      "version": "1.16.2-2",
+      "arch": "all",
+      "source": "dbus",
+      "sourceVersion": "1.16.2-2"
+    },
+    {
+      "manager": "dpkg",
+      "name": "dbus-user-session",
+      "version": "1.16.2-2",
+      "arch": "arm64",
+      "source": "dbus",
+      "sourceVersion": "1.16.2-2"
     },
     {
       "manager": "dpkg",
       "name": "debconf",
       "version": "1.5.91",
-      "arch": "all"
+      "arch": "all",
+      "source": "debconf",
+      "sourceVersion": "1.5.91"
     },
     {
       "manager": "dpkg",
       "name": "debian-archive-keyring",
       "version": "2025.1",
-      "arch": "all"
+      "arch": "all",
+      "source": "debian-archive-keyring",
+      "sourceVersion": "2025.1"
     },
     {
       "manager": "dpkg",
       "name": "debianutils",
       "version": "5.23.2",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "debianutils",
+      "sourceVersion": "5.23.2"
     },
     {
       "manager": "dpkg",
       "name": "diffutils",
       "version": "1:3.10-4",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "diffutils",
+      "sourceVersion": "1:3.10-4"
     },
     {
       "manager": "dpkg",
-      "name": "docker-cli",
-      "version": "26.1.5+dfsg1-9+deb13u1",
-      "arch": "arm64"
+      "name": "dmsetup",
+      "version": "2:1.02.205-2",
+      "arch": "arm64",
+      "source": "lvm2",
+      "sourceVersion": "2.03.31-2"
     },
     {
       "manager": "dpkg",
       "name": "dpkg",
       "version": "1.22.22",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "dpkg",
+      "sourceVersion": "1.22.22"
+    },
+    {
+      "manager": "dpkg",
+      "name": "exim4-base",
+      "version": "4.98.2-1+deb13u5",
+      "arch": "arm64",
+      "source": "exim4",
+      "sourceVersion": "4.98.2-1+deb13u5"
+    },
+    {
+      "manager": "dpkg",
+      "name": "exim4-config",
+      "version": "4.98.2-1+deb13u5",
+      "arch": "all",
+      "source": "exim4",
+      "sourceVersion": "4.98.2-1+deb13u5"
+    },
+    {
+      "manager": "dpkg",
+      "name": "exim4-daemon-light",
+      "version": "4.98.2-1+deb13u5",
+      "arch": "arm64",
+      "source": "exim4",
+      "sourceVersion": "4.98.2-1+deb13u5"
     },
     {
       "manager": "dpkg",
       "name": "findutils",
       "version": "4.10.0-3",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "findutils",
+      "sourceVersion": "4.10.0-3"
     },
     {
       "manager": "dpkg",
       "name": "gcc-14-base",
       "version": "14.2.0-19",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "gcc-14",
+      "sourceVersion": "14.2.0-19"
     },
     {
       "manager": "dpkg",
       "name": "grep",
       "version": "3.11-4+b1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "grep",
+      "sourceVersion": "3.11-4"
     },
     {
       "manager": "dpkg",
       "name": "gzip",
       "version": "1.13-1+deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "gzip",
+      "sourceVersion": "1.13-1+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "hostname",
       "version": "3.25",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "hostname",
+      "sourceVersion": "3.25"
     },
     {
       "manager": "dpkg",
       "name": "init-system-helpers",
       "version": "1.69~deb13u1",
-      "arch": "all"
+      "arch": "all",
+      "source": "init-system-helpers",
+      "sourceVersion": "1.69~deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "iproute2",
       "version": "6.15.0-1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "iproute2",
+      "sourceVersion": "6.15.0-1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "krb5-locales",
+      "version": "1.21.3-5+deb13u1",
+      "arch": "all",
+      "source": "krb5",
+      "sourceVersion": "1.21.3-5+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "libacl1",
       "version": "2.3.2-2+b1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "acl",
+      "sourceVersion": "2.3.2-2"
     },
     {
       "manager": "dpkg",
       "name": "libapparmor1",
       "version": "4.1.0-1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "apparmor",
+      "sourceVersion": "4.1.0-1"
     },
     {
       "manager": "dpkg",
       "name": "libapt-pkg7.0",
       "version": "3.0.3",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "apt",
+      "sourceVersion": "3.0.3"
     },
     {
       "manager": "dpkg",
       "name": "libattr1",
       "version": "1:2.5.2-3",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "attr",
+      "sourceVersion": "1:2.5.2-3"
     },
     {
       "manager": "dpkg",
       "name": "libaudit-common",
       "version": "1:4.0.2-2+deb13u1",
-      "arch": "all"
+      "arch": "all",
+      "source": "audit",
+      "sourceVersion": "1:4.0.2-2+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "libaudit1",
       "version": "1:4.0.2-2+deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "audit",
+      "sourceVersion": "1:4.0.2-2+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "libblkid1",
       "version": "2.41.5-0+deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "util-linux",
+      "sourceVersion": "2.41.5-0+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "libbpf1",
       "version": "1:1.5.0-3",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "libbpf",
+      "sourceVersion": "1.5.0-3"
     },
     {
       "manager": "dpkg",
       "name": "libbsd0",
       "version": "0.12.2-2",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "libbsd",
+      "sourceVersion": "0.12.2-2"
     },
     {
       "manager": "dpkg",
       "name": "libbz2-1.0",
       "version": "1.0.8-6",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "bzip2",
+      "sourceVersion": "1.0.8-6"
     },
     {
       "manager": "dpkg",
       "name": "libc-bin",
       "version": "2.41-12+deb13u4",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "glibc",
+      "sourceVersion": "2.41-12+deb13u4"
     },
     {
       "manager": "dpkg",
       "name": "libc6",
       "version": "2.41-12+deb13u4",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "glibc",
+      "sourceVersion": "2.41-12+deb13u4"
     },
     {
       "manager": "dpkg",
       "name": "libcap-ng0",
       "version": "0.8.5-4+b1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "libcap-ng",
+      "sourceVersion": "0.8.5-4"
     },
     {
       "manager": "dpkg",
       "name": "libcap2",
       "version": "1:2.75-10+deb13u1+b3",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "libcap2",
+      "sourceVersion": "1:2.75-10+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "libcap2-bin",
       "version": "1:2.75-10+deb13u1+b3",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "libcap2",
+      "sourceVersion": "1:2.75-10+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "libcbor0.10",
       "version": "0.10.2-2",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "libcbor",
+      "sourceVersion": "0.10.2-2"
     },
     {
       "manager": "dpkg",
       "name": "libcom-err2",
       "version": "1.47.2-3+b12",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "e2fsprogs",
+      "sourceVersion": "1.47.2-3"
     },
     {
       "manager": "dpkg",
       "name": "libcrypt1",
       "version": "1:4.4.38-1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "libxcrypt",
+      "sourceVersion": "1:4.4.38-1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libcryptsetup12",
+      "version": "2:2.7.5-2",
+      "arch": "arm64",
+      "source": "cryptsetup",
+      "sourceVersion": "2:2.7.5-2"
     },
     {
       "manager": "dpkg",
       "name": "libdb5.3t64",
       "version": "5.3.28+dfsg2-9",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "db5.3",
+      "sourceVersion": "5.3.28+dfsg2-9"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libdbus-1-3",
+      "version": "1.16.2-2",
+      "arch": "arm64",
+      "source": "dbus",
+      "sourceVersion": "1.16.2-2"
     },
     {
       "manager": "dpkg",
       "name": "libdebconfclient0",
       "version": "0.280",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "cdebconf",
+      "sourceVersion": "0.280"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libdevmapper1.02.1",
+      "version": "2:1.02.205-2",
+      "arch": "arm64",
+      "source": "lvm2",
+      "sourceVersion": "2.03.31-2"
     },
     {
       "manager": "dpkg",
       "name": "libedit2",
       "version": "3.1-20250104-1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "libedit",
+      "sourceVersion": "3.1-20250104-1"
     },
     {
       "manager": "dpkg",
       "name": "libelf1t64",
       "version": "0.192-4",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "elfutils",
+      "sourceVersion": "0.192-4"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libevent-2.1-7t64",
+      "version": "2.1.13-stable-1~deb13u1",
+      "arch": "arm64",
+      "source": "libevent",
+      "sourceVersion": "2.1.13-stable-1~deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "libexpat1",
       "version": "2.9.0-1~deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "expat",
+      "sourceVersion": "2.9.0-1~deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "libffi8",
       "version": "3.4.8-2",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "libffi",
+      "sourceVersion": "3.4.8-2"
     },
     {
       "manager": "dpkg",
       "name": "libfido2-1",
       "version": "1.15.0-1+b1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "libfido2",
+      "sourceVersion": "1.15.0-1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libfile-fcntllock-perl",
+      "version": "0.22-4+b4",
+      "arch": "arm64",
+      "source": "libfile-fcntllock-perl",
+      "sourceVersion": "0.22-4"
     },
     {
       "manager": "dpkg",
       "name": "libgcc-s1",
       "version": "14.2.0-19",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "gcc-14",
+      "sourceVersion": "14.2.0-19"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libgdbm-compat4t64",
+      "version": "1.24-2",
+      "arch": "arm64",
+      "source": "gdbm",
+      "sourceVersion": "1.24-2"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libgdbm6t64",
+      "version": "1.24-2",
+      "arch": "arm64",
+      "source": "gdbm",
+      "sourceVersion": "1.24-2"
     },
     {
       "manager": "dpkg",
       "name": "libgmp10",
       "version": "2:6.3.0+dfsg-3",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "gmp",
+      "sourceVersion": "2:6.3.0+dfsg-3"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libgnutls-dane0t64",
+      "version": "3.8.9-3+deb13u4",
+      "arch": "arm64",
+      "source": "gnutls28",
+      "sourceVersion": "3.8.9-3+deb13u4"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libgnutls30t64",
+      "version": "3.8.9-3+deb13u4",
+      "arch": "arm64",
+      "source": "gnutls28",
+      "sourceVersion": "3.8.9-3+deb13u4"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libgpm2",
+      "version": "1.20.7-11+b2",
+      "arch": "arm64",
+      "source": "gpm",
+      "sourceVersion": "1.20.7-11"
     },
     {
       "manager": "dpkg",
       "name": "libgssapi-krb5-2",
       "version": "1.21.3-5+deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "krb5",
+      "sourceVersion": "1.21.3-5+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "libhogweed6t64",
       "version": "3.10.1-1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "nettle",
+      "sourceVersion": "3.10.1-1"
     },
     {
       "manager": "dpkg",
-      "name": "libjansson4",
-      "version": "2.14-2+b3",
-      "arch": "arm64"
+      "name": "libidn12",
+      "version": "1.43-1",
+      "arch": "arm64",
+      "source": "libidn",
+      "sourceVersion": "1.43-1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libidn2-0",
+      "version": "2.3.8-2",
+      "arch": "arm64",
+      "source": "libidn2",
+      "sourceVersion": "2.3.8-2"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libjson-c5",
+      "version": "0.18+ds-1",
+      "arch": "arm64",
+      "source": "json-c",
+      "sourceVersion": "0.18+ds-1"
     },
     {
       "manager": "dpkg",
       "name": "libk5crypto3",
       "version": "1.21.3-5+deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "krb5",
+      "sourceVersion": "1.21.3-5+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "libkeyutils1",
       "version": "1.6.3-6",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "keyutils",
+      "sourceVersion": "1.6.3-6"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libkmod2",
+      "version": "34.2-2",
+      "arch": "arm64",
+      "source": "kmod",
+      "sourceVersion": "34.2-2"
     },
     {
       "manager": "dpkg",
       "name": "libkrb5-3",
       "version": "1.21.3-5+deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "krb5",
+      "sourceVersion": "1.21.3-5+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "libkrb5support0",
       "version": "1.21.3-5+deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "krb5",
+      "sourceVersion": "1.21.3-5+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "liblastlog2-2",
       "version": "2.41.5-0+deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "util-linux",
+      "sourceVersion": "2.41.5-0+deb13u1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "liblockfile-bin",
+      "version": "1.17-2",
+      "arch": "arm64",
+      "source": "liblockfile",
+      "sourceVersion": "1.17-2"
+    },
+    {
+      "manager": "dpkg",
+      "name": "liblockfile1",
+      "version": "1.17-2",
+      "arch": "arm64",
+      "source": "liblockfile",
+      "sourceVersion": "1.17-2"
     },
     {
       "manager": "dpkg",
       "name": "liblz4-1",
       "version": "1.10.0-4",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "lz4",
+      "sourceVersion": "1.10.0-4"
     },
     {
       "manager": "dpkg",
       "name": "liblzma5",
-      "version": "5.8.1-1+deb13u1",
-      "arch": "arm64"
+      "version": "5.8.1-1+deb13u2",
+      "arch": "arm64",
+      "source": "xz-utils",
+      "sourceVersion": "5.8.1-1+deb13u2"
     },
     {
       "manager": "dpkg",
       "name": "libmd0",
       "version": "1.1.0-2+b1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "libmd",
+      "sourceVersion": "1.1.0-2"
     },
     {
       "manager": "dpkg",
       "name": "libmnl0",
       "version": "1.0.5-3",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "libmnl",
+      "sourceVersion": "1.0.5-3"
     },
     {
       "manager": "dpkg",
       "name": "libmount1",
       "version": "2.41.5-0+deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "util-linux",
+      "sourceVersion": "2.41.5-0+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "libncursesw6",
       "version": "6.5+20250216-2",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "ncurses",
+      "sourceVersion": "6.5+20250216-2"
     },
     {
       "manager": "dpkg",
       "name": "libnettle8t64",
       "version": "3.10.1-1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "nettle",
+      "sourceVersion": "3.10.1-1"
     },
     {
       "manager": "dpkg",
-      "name": "libnftables1",
-      "version": "1.1.3-1",
-      "arch": "arm64"
+      "name": "libnsl2",
+      "version": "1.3.0-3+b3",
+      "arch": "arm64",
+      "source": "libnsl",
+      "sourceVersion": "1.3.0-3"
     },
     {
       "manager": "dpkg",
-      "name": "libnftnl11",
-      "version": "1.2.9-1",
-      "arch": "arm64"
+      "name": "libnss-systemd",
+      "version": "257.13-1~deb13u1",
+      "arch": "arm64",
+      "source": "systemd",
+      "sourceVersion": "257.13-1~deb13u1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libp11-kit0",
+      "version": "0.25.5-3",
+      "arch": "arm64",
+      "source": "p11-kit",
+      "sourceVersion": "0.25.5-3"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libpam-cap",
+      "version": "1:2.75-10+deb13u1+b3",
+      "arch": "arm64",
+      "source": "libcap2",
+      "sourceVersion": "1:2.75-10+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "libpam-modules",
       "version": "1.7.0-5",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "pam",
+      "sourceVersion": "1.7.0-5"
     },
     {
       "manager": "dpkg",
       "name": "libpam-modules-bin",
       "version": "1.7.0-5",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "pam",
+      "sourceVersion": "1.7.0-5"
     },
     {
       "manager": "dpkg",
       "name": "libpam-runtime",
       "version": "1.7.0-5",
-      "arch": "all"
+      "arch": "all",
+      "source": "pam",
+      "sourceVersion": "1.7.0-5"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libpam-systemd",
+      "version": "257.13-1~deb13u1",
+      "arch": "arm64",
+      "source": "systemd",
+      "sourceVersion": "257.13-1~deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "libpam0g",
       "version": "1.7.0-5",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "pam",
+      "sourceVersion": "1.7.0-5"
     },
     {
       "manager": "dpkg",
       "name": "libpcre2-8-0",
       "version": "10.46-1~deb13u3",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "pcre2",
+      "sourceVersion": "10.46-1~deb13u3"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libperl5.40",
+      "version": "5.40.1-6+deb13u1",
+      "arch": "arm64",
+      "source": "perl",
+      "sourceVersion": "5.40.1-6+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "libproc2-0",
       "version": "2:4.0.4-9",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "procps",
+      "sourceVersion": "2:4.0.4-9"
     },
     {
       "manager": "dpkg",
       "name": "libpython3-stdlib",
       "version": "3.13.5-1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "python3-defaults",
+      "sourceVersion": "3.13.5-1"
     },
     {
       "manager": "dpkg",
       "name": "libpython3.13-minimal",
       "version": "3.13.5-2+deb13u5",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "python3.13",
+      "sourceVersion": "3.13.5-2+deb13u5"
     },
     {
       "manager": "dpkg",
       "name": "libpython3.13-stdlib",
       "version": "3.13.5-2+deb13u5",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "python3.13",
+      "sourceVersion": "3.13.5-2+deb13u5"
     },
     {
       "manager": "dpkg",
       "name": "libreadline8t64",
       "version": "8.2-6",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "readline",
+      "sourceVersion": "8.2-6"
     },
     {
       "manager": "dpkg",
       "name": "libseccomp2",
       "version": "2.6.0-2",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "libseccomp",
+      "sourceVersion": "2.6.0-2"
     },
     {
       "manager": "dpkg",
       "name": "libselinux1",
       "version": "3.8.1-1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "libselinux",
+      "sourceVersion": "3.8.1-1"
     },
     {
       "manager": "dpkg",
       "name": "libsemanage-common",
       "version": "3.8.1-1",
-      "arch": "all"
+      "arch": "all",
+      "source": "libsemanage",
+      "sourceVersion": "3.8.1-1"
     },
     {
       "manager": "dpkg",
       "name": "libsemanage2",
       "version": "3.8.1-1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "libsemanage",
+      "sourceVersion": "3.8.1-1"
     },
     {
       "manager": "dpkg",
       "name": "libsepol2",
       "version": "3.8.1-1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "libsepol",
+      "sourceVersion": "3.8.1-1"
     },
     {
       "manager": "dpkg",
       "name": "libsmartcols1",
       "version": "2.41.5-0+deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "util-linux",
+      "sourceVersion": "2.41.5-0+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "libsqlite3-0",
       "version": "3.46.1-7+deb13u2",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "sqlite3",
+      "sourceVersion": "3.46.1-7+deb13u2"
     },
     {
       "manager": "dpkg",
       "name": "libssl3t64",
       "version": "3.5.7-1~deb13u3",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "openssl",
+      "sourceVersion": "3.5.7-1~deb13u3"
     },
     {
       "manager": "dpkg",
       "name": "libstdc++6",
       "version": "14.2.0-19",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "gcc-14",
+      "sourceVersion": "14.2.0-19"
     },
     {
       "manager": "dpkg",
       "name": "libsystemd-shared",
       "version": "257.13-1~deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "systemd",
+      "sourceVersion": "257.13-1~deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "libsystemd0",
       "version": "257.13-1~deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "systemd",
+      "sourceVersion": "257.13-1~deb13u1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libtasn1-6",
+      "version": "4.20.0-2+deb13u1",
+      "arch": "arm64",
+      "source": "libtasn1-6",
+      "sourceVersion": "4.20.0-2+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "libtext-charwidth-perl",
       "version": "0.04-11+b4",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "libtext-charwidth-perl",
+      "sourceVersion": "0.04-11"
     },
     {
       "manager": "dpkg",
       "name": "libtext-wrapi18n-perl",
       "version": "0.06-10",
-      "arch": "all"
+      "arch": "all",
+      "source": "libtext-wrapi18n-perl",
+      "sourceVersion": "0.06-10"
     },
     {
       "manager": "dpkg",
       "name": "libtinfo6",
       "version": "6.5+20250216-2",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "ncurses",
+      "sourceVersion": "6.5+20250216-2"
     },
     {
       "manager": "dpkg",
       "name": "libtirpc-common",
       "version": "1.3.6+ds-1",
-      "arch": "all"
+      "arch": "all",
+      "source": "libtirpc",
+      "sourceVersion": "1.3.6+ds-1"
     },
     {
       "manager": "dpkg",
       "name": "libtirpc3t64",
       "version": "1.3.6+ds-1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "libtirpc",
+      "sourceVersion": "1.3.6+ds-1"
     },
     {
       "manager": "dpkg",
       "name": "libudev1",
       "version": "257.13-1~deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "systemd",
+      "sourceVersion": "257.13-1~deb13u1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libunbound8",
+      "version": "1.26.2-0+deb13u1",
+      "arch": "arm64",
+      "source": "unbound",
+      "sourceVersion": "1.26.2-0+deb13u1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libunistring5",
+      "version": "1.3-2",
+      "arch": "arm64",
+      "source": "libunistring",
+      "sourceVersion": "1.3-2"
     },
     {
       "manager": "dpkg",
       "name": "libuuid1",
       "version": "2.41.5-0+deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "util-linux",
+      "sourceVersion": "2.41.5-0+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "libwrap0",
       "version": "7.6.q-36",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "tcp-wrappers",
+      "sourceVersion": "7.6.q-36"
     },
     {
       "manager": "dpkg",
       "name": "libwtmpdb0",
       "version": "0.73.0-3+deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "wtmpdb",
+      "sourceVersion": "0.73.0-3+deb13u1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libx11-6",
+      "version": "2:1.8.12-1",
+      "arch": "arm64",
+      "source": "libx11",
+      "sourceVersion": "2:1.8.12-1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libx11-data",
+      "version": "2:1.8.12-1",
+      "arch": "all",
+      "source": "libx11",
+      "sourceVersion": "2:1.8.12-1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libxau6",
+      "version": "1:1.0.11-1",
+      "arch": "arm64",
+      "source": "libxau",
+      "sourceVersion": "1:1.0.11-1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libxcb1",
+      "version": "1.17.0-2+b1",
+      "arch": "arm64",
+      "source": "libxcb",
+      "sourceVersion": "1.17.0-2"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libxdmcp6",
+      "version": "1:1.1.5-1",
+      "arch": "arm64",
+      "source": "libxdmcp",
+      "sourceVersion": "1:1.1.5-1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libxext6",
+      "version": "2:1.3.4-1+b3",
+      "arch": "arm64",
+      "source": "libxext",
+      "sourceVersion": "2:1.3.4-1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "libxmuu1",
+      "version": "2:1.1.3-3+b4",
+      "arch": "arm64",
+      "source": "libxmu",
+      "sourceVersion": "2:1.1.3-3"
     },
     {
       "manager": "dpkg",
       "name": "libxtables12",
       "version": "1.8.11-2",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "iptables",
+      "sourceVersion": "1.8.11-2"
     },
     {
       "manager": "dpkg",
       "name": "libxxhash0",
       "version": "0.8.3-2",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "xxhash",
+      "sourceVersion": "0.8.3-2"
     },
     {
       "manager": "dpkg",
       "name": "libzstd1",
       "version": "1.5.7+dfsg-1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "libzstd",
+      "sourceVersion": "1.5.7+dfsg-1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "linux-sysctl-defaults",
+      "version": "4.12.1",
+      "arch": "all",
+      "source": "linux-base",
+      "sourceVersion": "4.12.1"
     },
     {
       "manager": "dpkg",
       "name": "login",
       "version": "1:4.16.0-2+really2.41.5-0+deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "util-linux",
+      "sourceVersion": "2.41.5-0+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "login.defs",
       "version": "1:4.17.4-2",
-      "arch": "all"
+      "arch": "all",
+      "source": "shadow",
+      "sourceVersion": "1:4.17.4-2"
     },
     {
       "manager": "dpkg",
       "name": "mawk",
       "version": "1.3.4.20250131-1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "mawk",
+      "sourceVersion": "1.3.4.20250131-1"
     },
     {
       "manager": "dpkg",
       "name": "media-types",
       "version": "13.0.0",
-      "arch": "all"
+      "arch": "all",
+      "source": "media-types",
+      "sourceVersion": "13.0.0"
     },
     {
       "manager": "dpkg",
       "name": "mount",
       "version": "2.41.5-0+deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "util-linux",
+      "sourceVersion": "2.41.5-0+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "ncurses-base",
       "version": "6.5+20250216-2",
-      "arch": "all"
+      "arch": "all",
+      "source": "ncurses",
+      "sourceVersion": "6.5+20250216-2"
     },
     {
       "manager": "dpkg",
       "name": "ncurses-bin",
       "version": "6.5+20250216-2",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "ncurses",
+      "sourceVersion": "6.5+20250216-2"
+    },
+    {
+      "manager": "dpkg",
+      "name": "ncurses-term",
+      "version": "6.5+20250216-2",
+      "arch": "all",
+      "source": "ncurses",
+      "sourceVersion": "6.5+20250216-2"
     },
     {
       "manager": "dpkg",
       "name": "netbase",
       "version": "6.5",
-      "arch": "all"
-    },
-    {
-      "manager": "dpkg",
-      "name": "nftables",
-      "version": "1.1.3-1",
-      "arch": "arm64"
+      "arch": "all",
+      "source": "netbase",
+      "sourceVersion": "6.5"
     },
     {
       "manager": "dpkg",
       "name": "openssh-client",
       "version": "1:10.0p1-7+deb13u4",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "openssh",
+      "sourceVersion": "1:10.0p1-7+deb13u4"
     },
     {
       "manager": "dpkg",
       "name": "openssh-server",
       "version": "1:10.0p1-7+deb13u4",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "openssh",
+      "sourceVersion": "1:10.0p1-7+deb13u4"
     },
     {
       "manager": "dpkg",
       "name": "openssh-sftp-server",
       "version": "1:10.0p1-7+deb13u4",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "openssh",
+      "sourceVersion": "1:10.0p1-7+deb13u4"
+    },
+    {
+      "manager": "dpkg",
+      "name": "openssl",
+      "version": "3.5.7-1~deb13u3",
+      "arch": "arm64",
+      "source": "openssl",
+      "sourceVersion": "3.5.7-1~deb13u3"
     },
     {
       "manager": "dpkg",
       "name": "openssl-provider-legacy",
       "version": "3.5.7-1~deb13u3",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "openssl",
+      "sourceVersion": "3.5.7-1~deb13u3"
     },
     {
       "manager": "dpkg",
       "name": "passwd",
       "version": "1:4.17.4-2",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "shadow",
+      "sourceVersion": "1:4.17.4-2"
+    },
+    {
+      "manager": "dpkg",
+      "name": "perl",
+      "version": "5.40.1-6+deb13u1",
+      "arch": "arm64",
+      "source": "perl",
+      "sourceVersion": "5.40.1-6+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "perl-base",
       "version": "5.40.1-6+deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "perl",
+      "sourceVersion": "5.40.1-6+deb13u1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "perl-modules-5.40",
+      "version": "5.40.1-6+deb13u1",
+      "arch": "all",
+      "source": "perl",
+      "sourceVersion": "5.40.1-6+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "procps",
       "version": "2:4.0.4-9",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "procps",
+      "sourceVersion": "2:4.0.4-9"
+    },
+    {
+      "manager": "dpkg",
+      "name": "psmisc",
+      "version": "23.7-2",
+      "arch": "arm64",
+      "source": "psmisc",
+      "sourceVersion": "23.7-2"
     },
     {
       "manager": "dpkg",
       "name": "python3",
       "version": "3.13.5-1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "python3-defaults",
+      "sourceVersion": "3.13.5-1"
     },
     {
       "manager": "dpkg",
       "name": "python3-minimal",
       "version": "3.13.5-1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "python3-defaults",
+      "sourceVersion": "3.13.5-1"
     },
     {
       "manager": "dpkg",
       "name": "python3.13",
       "version": "3.13.5-2+deb13u5",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "python3.13",
+      "sourceVersion": "3.13.5-2+deb13u5"
     },
     {
       "manager": "dpkg",
       "name": "python3.13-minimal",
       "version": "3.13.5-2+deb13u5",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "python3.13",
+      "sourceVersion": "3.13.5-2+deb13u5"
     },
     {
       "manager": "dpkg",
       "name": "readline-common",
       "version": "8.2-6",
-      "arch": "all"
+      "arch": "all",
+      "source": "readline",
+      "sourceVersion": "8.2-6"
     },
     {
       "manager": "dpkg",
       "name": "runit-helper",
       "version": "2.16.4",
-      "arch": "all"
+      "arch": "all",
+      "source": "dh-runit",
+      "sourceVersion": "2.16.4"
     },
     {
       "manager": "dpkg",
       "name": "sed",
       "version": "4.9-2+deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "sed",
+      "sourceVersion": "4.9-2+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "sensible-utils",
       "version": "0.0.25",
-      "arch": "all"
+      "arch": "all",
+      "source": "sensible-utils",
+      "sourceVersion": "0.0.25"
     },
     {
       "manager": "dpkg",
       "name": "sqv",
       "version": "1.3.0-3+b2",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "rust-sequoia-sqv",
+      "sourceVersion": "1.3.0-3"
     },
     {
       "manager": "dpkg",
       "name": "sudo",
       "version": "1.9.16p2-3+deb13u2",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "sudo",
+      "sourceVersion": "1.9.16p2-3+deb13u2"
     },
     {
       "manager": "dpkg",
       "name": "systemd",
       "version": "257.13-1~deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "systemd",
+      "sourceVersion": "257.13-1~deb13u1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "systemd-cryptsetup",
+      "version": "257.13-1~deb13u1",
+      "arch": "arm64",
+      "source": "systemd",
+      "sourceVersion": "257.13-1~deb13u1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "systemd-sysv",
+      "version": "257.13-1~deb13u1",
+      "arch": "arm64",
+      "source": "systemd",
+      "sourceVersion": "257.13-1~deb13u1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "systemd-timesyncd",
+      "version": "257.13-1~deb13u1",
+      "arch": "arm64",
+      "source": "systemd",
+      "sourceVersion": "257.13-1~deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "sysvinit-utils",
       "version": "3.14-4",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "sysvinit",
+      "sourceVersion": "3.14-4"
     },
     {
       "manager": "dpkg",
       "name": "tar",
       "version": "1.35+dfsg-3.1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "tar",
+      "sourceVersion": "1.35+dfsg-3.1"
     },
     {
       "manager": "dpkg",
       "name": "tzdata",
       "version": "2026c-0+deb13u1",
-      "arch": "all"
+      "arch": "all",
+      "source": "tzdata",
+      "sourceVersion": "2026c-0+deb13u1"
     },
     {
       "manager": "dpkg",
       "name": "ucf",
       "version": "3.0052",
-      "arch": "all"
+      "arch": "all",
+      "source": "ucf",
+      "sourceVersion": "3.0052"
     },
     {
       "manager": "dpkg",
       "name": "util-linux",
       "version": "2.41.5-0+deb13u1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "util-linux",
+      "sourceVersion": "2.41.5-0+deb13u1"
+    },
+    {
+      "manager": "dpkg",
+      "name": "xauth",
+      "version": "1:1.1.2-1.1",
+      "arch": "arm64",
+      "source": "xauth",
+      "sourceVersion": "1:1.1.2-1.1"
     },
     {
       "manager": "dpkg",
       "name": "zlib1g",
       "version": "1:1.3.dfsg+really1.3.1-1+b1",
-      "arch": "arm64"
+      "arch": "arm64",
+      "source": "zlib",
+      "sourceVersion": "1:1.3.dfsg+really1.3.1-1"
     }
   ],
   "containers": [

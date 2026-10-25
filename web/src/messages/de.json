@@ -354,7 +354,10 @@
     "containers": "Container",
     "network": "Netzwerk",
     "storage": "Speicher",
-    "changes": "Änderungen"
+    "changes": "Änderungen",
+    "packagesInVulnerabilities": "Pakete an Vulnerabilities gesendet",
+    "packagesNotSent": "Die Pakete haben Vulnerabilities nicht erreicht",
+    "triedAgain": "Infrastructure versucht es alle paar Minuten erneut."
   },
   "hostsPage": {
     "host": "Host",
@@ -372,6 +375,8 @@
     "addAnAgentFirst": "Fügen Sie zuerst einen Agent hinzu",
     "agents": "Agents",
     "anAgentReadsTheHosts": "Ein Agent liest die Hosts über SSH. Installieren Sie ihn einmal, neben Infrastructure oder im Netz der Hosts.",
+    "noHostNamed": "Kein Host heißt {{name}}",
+    "noHostNamedText": "Infrastructure liest die Hosts aus der Hosts-Datei und die hier hinzugefügten. Prüfen Sie, ob der Host in der Datei steht und ein Agent ihn liest.",
     "theHostsFromItsLast": "{{error}}Die Hosts aus der letzten gültigen Fassung bleiben, bis die Datei korrigiert ist ({{path}}).",
     "theHostsFileIsNot": "Die Hostdatei wird nicht angewendet",
     "theHostsFileHasSomething": "In der Hostdatei ist etwas zu korrigieren",
