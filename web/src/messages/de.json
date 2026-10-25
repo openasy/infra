@@ -27,7 +27,10 @@
     "removed": "Entfernt",
     "needsAttention": "Braucht Aufmerksamkeit",
     "hostsThatNeedAttention": "Hosts, die Aufmerksamkeit brauchen",
-    "latestChanges": "Neueste Änderungen"
+    "latestChanges": "Neueste Änderungen",
+    "hostsByStatus": "Hosts nach Status",
+    "hostsByStatusDetail": "Wie die letzte Erfassung jedes Hosts lief.",
+    "hostsCaption": "Hosts"
   },
   "containersPage": {
     "containers": "Container",
@@ -372,6 +375,8 @@
     "collected": "Erfasst",
     "hosts": "Hosts",
     "readOverSshAsThe": "Über SSH als Konto openasy mit einem 5-Minuten-Zertifikat gelesen. Auf ihnen wird nichts installiert.",
+    "noHostNamed": "Kein Host heißt {{name}}",
+    "noHostNamedText": "Infrastructure liest die Hosts aus der Hosts-Datei und die hier hinzugefügten. Prüfen Sie, ob der Host in der Datei steht und ein Agent ihn liest.",
     "addAnAgentFirst": "Fügen Sie zuerst einen Agent hinzu",
     "agents": "Agents",
     "anAgentReadsTheHosts": "Ein Agent liest die Hosts über SSH. Installieren Sie ihn einmal, neben Infrastructure oder im Netz der Hosts.",

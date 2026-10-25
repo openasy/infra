@@ -17,11 +17,13 @@ import {
   Tabs,
   TONE_COLORS,
   usePath,
-  type Column,
-  type ProductId,
   useThemePreference,
   toLocale,
   useLocalePreference,
+  DonutChart,
+  OverviewGrid,
+  type Column,
+  type ProductId,
 } from "@openasy/ui";
 import { AccountSettings, AuthGate, MembersSettings, SignInSettings, TokensSettings, useAccountMenu, useAuth, useInstallBrand } from "@openasy/auth/react";
 import colophon from "virtual:openasy-colophon";
@@ -32,7 +34,7 @@ import { AgentsPage } from "./agents.tsx";
 import { ClusterPage, ClustersPage } from "./clusters.tsx";
 import { ContainerTable, HostPage } from "./host.tsx";
 import { HostsPage } from "./hosts.tsx";
-import { ChangeList, Code, List, Status, useApi, useData, type Call } from "./shared.tsx";
+import { ChangeList, Code, List, Status, STATUS, useApi, useData, type Call } from "./shared.tsx";
 import { useT, type T } from "./i18n.ts";
 import { search } from "./search.ts";
 
@@ -102,12 +104,19 @@ function OverviewPage({ call }: { call: Call }) {
         <KpiCard
           label={t("overviewPage.hostsCollected")}
           value={`${s?.hosts.ok ?? 0}/${total(s?.hosts)}`}
+          icon={Server}
           tone={s && (s.hosts.ok ?? 0) < total(s.hosts) ? "warning" : undefined}
           href="/hosts"
         />
-        <KpiCard label={t("overviewPage.containers")} value={s?.containers ?? "–"} href="/containers" />
-        <KpiCard label={t("overviewPage.clustersCollected")} value={`${s?.clusters.ok ?? 0}/${total(s?.clusters)}`} href="/clusters" />
-        <KpiCard label={t("overviewPage.changesIn24H")} value={s?.changesLastDay ?? "–"} href="/changes" />
+        <KpiCard label={t("overviewPage.containers")} value={s?.containers ?? "–"} icon={Boxes} href="/containers" />
+        <KpiCard label={t("overviewPage.clustersCollected")} value={`${s?.clusters.ok ?? 0}/${total(s?.clusters)}`} icon={Network} href="/clusters" />
+        <KpiCard
+          label={t("overviewPage.changesIn24H")}
+          value={s?.changesLastDay ?? "–"}
+          icon={GitCompare}
+          trend={s?.changeDays.map((d) => d.added + d.changed + d.removed)}
+          href="/changes"
+        />
       </KpiGrid>
       {(disks.length > 0 || memory.length > 0) && (
         <div className="grid gap-3 lg:grid-cols-2">
@@ -120,22 +129,40 @@ function OverviewPage({ call }: { call: Call }) {
         </div>
       )}
       {s && (
-        <Panel title={t("overviewPage.changesOverTime")} description={t("overviewPage.eachDayOfTheLast")}>
-          <StackedBarChart
-            label={t("overviewPage.changesEachDayByKind")}
-            categories={s.changeDays.map((d) =>
-              new Date(`${d.day}T00:00:00Z`).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" }),
-            )}
-            segments={[
-              { id: "added", name: t("overviewPage.added"), color: TONE_COLORS.success },
-              { id: "changed", name: t("overviewPage.changed"), color: TONE_COLORS.info },
-              { id: "removed", name: t("overviewPage.removed"), color: TONE_COLORS.danger },
-            ]}
-            values={s.changeDays.map((d) => [d.added, d.changed, d.removed])}
-            height={140}
-            xTicks={7}
-          />
-        </Panel>
+        <OverviewGrid>
+          <Panel title={t("overviewPage.changesOverTime")} description={t("overviewPage.eachDayOfTheLast")}>
+            <StackedBarChart
+              label={t("overviewPage.changesEachDayByKind")}
+              categories={s.changeDays.map((d) =>
+                new Date(`${d.day}T00:00:00Z`).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" }),
+              )}
+              segments={[
+                { id: "added", name: t("overviewPage.added"), color: TONE_COLORS.success },
+                { id: "changed", name: t("overviewPage.changed"), color: TONE_COLORS.info },
+                { id: "removed", name: t("overviewPage.removed"), color: TONE_COLORS.danger },
+              ]}
+              values={s.changeDays.map((d) => [d.added, d.changed, d.removed])}
+              height={190}
+              xTicks={7}
+            />
+          </Panel>
+          <Panel title={t("overviewPage.hostsByStatus")} description={t("overviewPage.hostsByStatusDetail")}>
+            <DonutChart
+              label={t("overviewPage.hostsByStatus")}
+              caption={t("overviewPage.hostsCaption")}
+              slices={Object.entries(s.hosts)
+                .filter(([, n]) => n > 0)
+                .sort((a, b) => b[1] - a[1])
+                .map(([status, n]) => ({
+                  id: status,
+                  name: STATUS(t)[status]?.label ?? status,
+                  value: n,
+                  color: TONE_COLORS[STATUS(t)[status]?.tone ?? "neutral"],
+                  href: "/hosts",
+                }))}
+            />
+          </Panel>
+        </OverviewGrid>
       )}
       {attention.length > 0 && (
         <Panel title={t("overviewPage.needsAttention")} flush>

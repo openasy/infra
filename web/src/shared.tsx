@@ -62,7 +62,7 @@ export const bytes = (n: number | null | undefined) => {
   return `${v >= 10 || i === 0 ? Math.round(v) : v.toFixed(1)} ${u[i]}`;
 };
 
-const STATUS = (t: T): Record<string, { tone: "success" | "warning" | "danger" | "info" | "neutral"; label: string }> => ({
+export const STATUS = (t: T): Record<string, { tone: "success" | "warning" | "danger" | "info" | "neutral"; label: string }> => ({
   ok: { tone: "success", label: t("status.ok") },
   new: { tone: "info", label: t("status.new") },
   pending: { tone: "info", label: t("status.waitingForTheFirstCollection") },

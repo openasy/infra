@@ -27,7 +27,10 @@
     "removed": "Kaldırılan",
     "needsAttention": "İlgi gerektirenler",
     "hostsThatNeedAttention": "İlgi gerektiren sunucular",
-    "latestChanges": "Son değişiklikler"
+    "latestChanges": "Son değişiklikler",
+    "hostsByStatus": "Duruma göre sunucular",
+    "hostsByStatusDetail": "Her sunucudan son toplamanın nasıl geçtiği.",
+    "hostsCaption": "sunucu"
   },
   "containersPage": {
     "containers": "Kapsayıcılar",
@@ -372,6 +375,8 @@
     "collected": "Toplandı",
     "hosts": "Sunucular",
     "readOverSshAsThe": "5 dakikalık bir sertifikayla openasy hesabı olarak SSH üzerinden okunur. Üzerlerine hiçbir şey kurulmaz.",
+    "noHostNamed": "{{name}} adında bir sunucu yok",
+    "noHostNamedText": "Infrastructure, hosts dosyasındaki ve burada eklenen sunucuları okur. Sunucunun dosyada olduğunu ve bir ajanın onu okuduğunu kontrol edin.",
     "addAnAgentFirst": "Önce bir ajan ekleyin",
     "agents": "Ajanlar",
     "anAgentReadsTheHosts": "Bir ajan sunucuları SSH üzerinden okur. Onu bir kez, Infrastructure'ın yanına ya da sunucuların ağına kurun.",

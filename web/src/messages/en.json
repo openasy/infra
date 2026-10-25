@@ -27,7 +27,10 @@
     "removed": "Removed",
     "needsAttention": "Needs attention",
     "hostsThatNeedAttention": "Hosts that need attention",
-    "latestChanges": "Latest changes"
+    "latestChanges": "Latest changes",
+    "hostsByStatus": "Hosts by status",
+    "hostsByStatusDetail": "How the last collection from each host went.",
+    "hostsCaption": "hosts"
   },
   "containersPage": {
     "containers": "Containers",
@@ -372,6 +375,8 @@
     "collected": "Collected",
     "hosts": "Hosts",
     "readOverSshAsThe": "Read over SSH as the openasy account with a 5-minute certificate. Nothing is installed on them.",
+    "noHostNamed": "No host is named {{name}}",
+    "noHostNamedText": "Infrastructure reads the hosts in the hosts file and the ones added here. Check that the host is in the file and that an agent reads it.",
     "addAnAgentFirst": "Add an agent first",
     "agents": "Agents",
     "anAgentReadsTheHosts": "An agent reads the hosts over SSH. Install it once, next to Infrastructure or in the network of the hosts.",
