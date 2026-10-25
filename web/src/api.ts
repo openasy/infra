@@ -130,6 +130,8 @@ export interface Summary {
   containers: number;
   changesLastDay: number;
   hostsFile: HostsFile | null;
+  /** Changes on each of the last 14 days (UTC), by kind, oldest first. */
+  changeDays: Array<{ day: string; added: number; removed: number; changed: number }>;
 }
 
 /** The hosts file (ADR 0052): a file that cannot be applied leaves the hosts from its last good version. */

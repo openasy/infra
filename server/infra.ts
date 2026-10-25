@@ -818,7 +818,25 @@ export function createInfra(
       clusters: count(db.prepare("SELECT status, COUNT(*) AS n FROM clusters GROUP BY status").all() as Array<{ status: string; n: number }>),
       containers: containers().length,
       changesLastDay: (db.prepare("SELECT COUNT(*) AS n FROM changes WHERE at >= ?").get(iso(now() - 86_400_000)) as { n: number }).n,
+      changeDays: changeDays(),
     };
+  }
+
+  /** Changes on each of the last 14 days (UTC), by kind, oldest first. */
+  function changeDays() {
+    const DAY = 86_400_000;
+    const today = Math.floor(now() / DAY) * DAY;
+    const days = Array.from({ length: 14 }, (_, i) => ({ day: iso(today - (13 - i) * DAY).slice(0, 10), added: 0, removed: 0, changed: 0 }));
+    const at = new Map(days.map((d) => [d.day, d]));
+    for (const r of db.prepare("SELECT substr(at, 1, 10) AS d, kind, COUNT(*) AS n FROM changes WHERE at >= ? GROUP BY d, kind").all(days[0]!.day) as Array<{
+      d: string;
+      kind: "added" | "removed" | "changed";
+      n: number;
+    }>) {
+      const d = at.get(r.d);
+      if (d) d[r.kind] = r.n;
+    }
+    return days;
   }
 
   /** Deletes changes and snapshots older than the retention, keeping the newest snapshot of every target. */

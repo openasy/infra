@@ -1,5 +1,6 @@
 import {
   AppShell,
+  BarList,
   BrandProvider,
   Button,
   Callout,
@@ -12,23 +13,28 @@ import {
   PRODUCT_IDS,
   SegmentedControl,
   SelectField,
+  StackedBarChart,
   Tabs,
+  TONE_COLORS,
   usePath,
   type Column,
   type ProductId,
   useThemePreference,
+  toLocale,
+  useLocalePreference,
 } from "@openasy/ui";
-import { AccountSettings, AuthGate, MembersSettings, SignInSettings, TokensSettings, useAuth, useInstallBrand } from "@openasy/auth/react";
+import { AccountSettings, AuthGate, MembersSettings, SignInSettings, TokensSettings, useAccountMenu, useAuth, useInstallBrand } from "@openasy/auth/react";
 import colophon from "virtual:openasy-colophon";
-import { Bot, Boxes, GitCompare, KeyRound, LayoutDashboard, LogIn, LogOut, Server, Settings2, UserRound, Users, Network } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Bot, Boxes, GitCompare, KeyRound, LayoutDashboard, LogIn, LogOut, Server, UserRound, Users, Network } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import type { Agent, AgentSetup, Change, Container, Host, ProductLink, Setup, Summary } from "./api.ts";
 import { AgentsPage } from "./agents.tsx";
 import { ClusterPage, ClustersPage } from "./clusters.tsx";
 import { ContainerTable, HostPage } from "./host.tsx";
 import { HostsPage } from "./hosts.tsx";
 import { ChangeList, Code, List, Status, useApi, useData, type Call } from "./shared.tsx";
-import { useT } from "./i18n.ts";
+import { useT, type T } from "./i18n.ts";
+import { search } from "./search.ts";
 
 export const PAGES = ["overview", "hosts", "containers", "clusters", "changes", "setup", "agents", "account", "members", "signin", "tokens", "about"] as const;
 type Page = (typeof PAGES)[number];
@@ -50,6 +56,19 @@ function OverviewPage({ call }: { call: Call }) {
   const s = summary.data;
   const total = (r: Record<string, number> | undefined) => Object.values(r ?? {}).reduce((a, b) => a + b, 0);
   const attention = (hosts.data?.hosts ?? []).filter((h) => h.status !== "ok" || (h.summary?.fullestDisk?.pct ?? 0) >= 85);
+  // The hosts using the most of their disk and memory, as last read; 85% and more is what needs attention.
+  const read = (hosts.data?.hosts ?? []).filter((h) => h.summary);
+  const top = (pct: (h: Host) => number | null) =>
+    read
+      .map((h) => ({ h, pct: pct(h) }))
+      .filter((x): x is { h: Host; pct: number } => x.pct !== null)
+      .sort((a, b) => b.pct - a.pct)
+      .slice(0, 8)
+      .map(({ h, pct }) => ({ id: h.id, label: h.name, value: pct, href: `/hosts/${h.id}`, color: pct >= 85 ? TONE_COLORS.warning : undefined }));
+  const disks = top((h) => h.summary!.fullestDisk?.pct ?? null);
+  const memory = top((h) =>
+    h.summary!.memoryTotalKb ? Math.round(((h.summary!.memoryTotalKb - h.summary!.memoryAvailableKb) / h.summary!.memoryTotalKb) * 100) : null,
+  );
   if (s && total(s.hosts) + total(s.clusters) === 0) {
     return (
       <>
@@ -90,6 +109,34 @@ function OverviewPage({ call }: { call: Call }) {
         <KpiCard label={t("overviewPage.clustersCollected")} value={`${s?.clusters.ok ?? 0}/${total(s?.clusters)}`} href="/clusters" />
         <KpiCard label={t("overviewPage.changesIn24H")} value={s?.changesLastDay ?? "–"} href="/changes" />
       </KpiGrid>
+      {(disks.length > 0 || memory.length > 0) && (
+        <div className="grid gap-3 lg:grid-cols-2">
+          <Panel title={t("overviewPage.fullestDisks")} description={t("overviewPage.theFullestDiskOfEach")}>
+            <BarList label={t("overviewPage.fullestDisks")} items={disks} max={100} format={(v) => `${v}%`} />
+          </Panel>
+          <Panel title={t("overviewPage.memoryInUse")} description={t("overviewPage.ofEachHostAsLast")}>
+            <BarList label={t("overviewPage.memoryInUse")} items={memory} max={100} format={(v) => `${v}%`} />
+          </Panel>
+        </div>
+      )}
+      {s && (
+        <Panel title={t("overviewPage.changesOverTime")} description={t("overviewPage.eachDayOfTheLast")}>
+          <StackedBarChart
+            label={t("overviewPage.changesEachDayByKind")}
+            categories={s.changeDays.map((d) =>
+              new Date(`${d.day}T00:00:00Z`).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" }),
+            )}
+            segments={[
+              { id: "added", name: t("overviewPage.added"), color: TONE_COLORS.success },
+              { id: "changed", name: t("overviewPage.changed"), color: TONE_COLORS.info },
+              { id: "removed", name: t("overviewPage.removed"), color: TONE_COLORS.danger },
+            ]}
+            values={s.changeDays.map((d) => [d.added, d.changed, d.removed])}
+            height={140}
+            xTicks={7}
+          />
+        </Panel>
+      )}
       {attention.length > 0 && (
         <Panel title={t("overviewPage.needsAttention")} flush>
           <List label={t("overviewPage.hostsThatNeedAttention")} rows={attention} columns={cols} empty="" getRowId={(h) => h.id} />
@@ -213,24 +260,22 @@ function SetupPage({ call }: { call: Call }) {
   );
 }
 
-const SETTINGS = {
-  account: ["Account", "Your profile, password, two-step verification and where you are signed in."],
-  members: [
-    "Members",
-    "Who can sign in, and with which role. Viewers see everything; editors also start collections; admins also add and remove agents, hosts and clusters, accept host keys, and manage members and tokens.",
-  ],
-  signin: [
-    "Sign-in",
-    "Identity providers people can sign in with, such as OpenAsy Identity, Keycloak or Microsoft Entra ID, and which of their groups give which role.",
-  ],
-  tokens: ["API tokens", "For scripts. Each token has one role and an expiry; the secret is shown once."],
-} as const;
+const SETTINGS = (t: T) =>
+  ({
+    account: [t("settings.account"), t("settings.accountText")],
+    members: [t("settings.members"), t("settings.membersText")],
+    signin: [t("settings.signin"), t("settings.signinText")],
+    tokens: [t("settings.tokens"), t("settings.tokensText")],
+  }) as const;
 
 function Product() {
   const t = useT();
   const [theme, setTheme] = useThemePreference();
+  const [, setLocale] = useLocalePreference();
   const { me, can, signOut } = useAuth();
+  const account = useAccountMenu();
   const call = useApi();
+  const onSearch = useMemo(() => search(call, t), [call, t]);
   const route = parseRoute(usePath());
   const [products, setProducts] = useState<Array<ProductLink & { id: ProductId }>>([]);
   const summary = useData<Summary>(call, "/api/v1/summary", 30_000);
@@ -253,7 +298,6 @@ function Product() {
     { id: "changes", label: t("product.changes"), icon: GitCompare },
   ];
   const footerNav = [
-    { id: "setup", label: t("product.setup"), icon: Settings2 },
     { id: "agents", label: t("product.agents"), icon: Bot },
     ...(can("admin")
       ? [
@@ -270,6 +314,7 @@ function Product() {
   return (
     <AppShell
       product="infrastructure"
+      onSearch={onSearch}
       about={colophon}
       nav={nav}
       activeNav={active}
@@ -279,10 +324,12 @@ function Product() {
         const to = products.find((p) => p.id === id);
         if (to) window.location.assign(to.url);
       }}
-      footerNav={footerNav}
-      user={{ name: me.user.name, role: roleName }}
+      footerNav={account.settings(footerNav)}
+      setup
+      user={{ name: me.user.name, role: roleName, ...account.user }}
       theme={theme}
       onThemeChange={setTheme}
+      onLanguageChange={(code) => setLocale(toLocale(code))}
     >
       {route.page === "host" ? (
         <HostPage key={route.id} call={call} id={route.id} />
@@ -306,8 +353,8 @@ function Product() {
         ) : (
           <>
             <PageHeader
-              title={SETTINGS[page][0]}
-              description={SETTINGS[page][1]}
+              title={SETTINGS(t)[page][0]}
+              description={SETTINGS(t)[page][1]}
               actions={
                 page === "account" && (
                   <Button icon={<LogOut />} onClick={() => void signOut()}>
@@ -329,9 +376,10 @@ function Product() {
 export function App() {
   const installBrand = useInstallBrand();
   const [theme] = useThemePreference();
+  const [locale] = useLocalePreference();
   return (
     // The install's brand from config/brand.env (ADR 0053); OpenAsy's own look where it sets none.
-    <BrandProvider theme={theme} brand={{ name: "OpenAsy", organization: undefined, ...installBrand }} className="min-h-screen">
+    <BrandProvider theme={theme} locale={locale} brand={{ name: "OpenAsy", organization: undefined, ...installBrand }} className="min-h-screen">
       <AuthGate product="OpenAsy Infrastructure">
         <Product />
       </AuthGate>

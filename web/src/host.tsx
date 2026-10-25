@@ -390,7 +390,7 @@ function Overview({ f, host }: { f: F; host: Host }) {
             [t("overview.serialNumber"), f.system.serial ?? t("overview.notReadable")],
             [t("overview.machineId"), f.system.machineId ?? "–"],
             [t("overview.packages"), String(f.packages.length)],
-            [t("overview.readAs"), `${f.account.user}${f.account.sudo === "all" ? " with unrestricted sudo" : ""}, ${ago(f.collectedAt)}`],
+            [t("overview.readAs"), `${f.account.user}${f.account.sudo === "all" ? ` ${t("overview.withUnrestrictedSudo")}` : ""}, ${ago(f.collectedAt)}`],
             [
               t("overview.address"),
               t("overview.readBy", {

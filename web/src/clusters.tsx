@@ -21,7 +21,8 @@ export function ClustersPage({ call }: { call: Call }) {
       id: "pods",
       header: t("clustersPage.pods"),
       width: "140px",
-      cell: (c) => (c.summary ? `${c.summary.pods}${c.summary.podsNotRunning ? `, ${c.summary.podsNotRunning} not running` : ""}` : "–"),
+      cell: (c) =>
+        c.summary ? `${c.summary.pods}${c.summary.podsNotRunning ? `, ${t("clustersPage.notRunning", { count: c.summary.podsNotRunning })}` : ""}` : "–",
     },
     { id: "warnings", header: t("clustersPage.warnings"), width: "100px", align: "right", cell: (c) => c.summary?.warnings ?? "–" },
     { id: "seen", header: t("clustersPage.collected"), width: "110px", cell: (c) => ago(c.lastSuccessAt) },

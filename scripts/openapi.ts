@@ -277,6 +277,10 @@ const schemas: Record<string, S> = {
     containers: int,
     changesLastDay: int,
     hostsFile: { ...nul(ref("HostsFile")), description: "null when OPENASY_HOSTS is not set." },
+    changeDays: {
+      ...arr(obj({ day: { type: "string", format: "date" }, added: int, removed: int, changed: int })),
+      description: "Changes on each of the last 14 days (UTC), by kind, oldest first.",
+    },
   }),
   HostsFile: {
     ...obj({

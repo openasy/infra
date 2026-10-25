@@ -355,7 +355,12 @@ describe("product", () => {
   it("answers setup, summary, version, health and metrics", async () => {
     const setup = (await call("viewer", "GET", "/api/v1/setup")).body as { kubernetesRbac: string };
     expect(setup.kubernetesRbac).toContain("openasy-infra-read");
-    expect((await call("viewer", "GET", "/api/v1/summary")).body).toMatchObject({ agents: { online: 1 }, hosts: { ok: 2 } });
+    const summary = (await call("viewer", "GET", "/api/v1/summary")).body as { changeDays: Array<Record<string, number | string>> };
+    expect(summary).toMatchObject({ agents: { online: 1 }, hosts: { ok: 2 } });
+    // Every change the tests above made is from today, and each is counted once by its kind.
+    expect(summary.changeDays).toHaveLength(14);
+    const counted = summary.changeDays.reduce((n, d) => n + Number(d.added) + Number(d.removed) + Number(d.changed), 0);
+    expect(counted).toBe((app.db.prepare("SELECT COUNT(*) AS n FROM changes").get() as { n: number }).n);
     await call("none", "GET", "/api/v1/version");
     expect((await call("viewer", "GET", "/api/v1/products")).body).toEqual({ products: [] });
     await call("none", "GET", "/api/v1/products");

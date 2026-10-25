@@ -3410,7 +3410,8 @@
           "clusters",
           "containers",
           "changesLastDay",
-          "hostsFile"
+          "hostsFile",
+          "changeDays"
         ],
         "properties": {
           "agents": {
@@ -3447,6 +3448,34 @@
               }
             ],
             "description": "null when OPENASY_HOSTS is not set."
+          },
+          "changeDays": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "day",
+                "added",
+                "removed",
+                "changed"
+              ],
+              "properties": {
+                "day": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "added": {
+                  "type": "integer"
+                },
+                "removed": {
+                  "type": "integer"
+                },
+                "changed": {
+                  "type": "integer"
+                }
+              }
+            },
+            "description": "Changes on each of the last 14 days (UTC), by kind, oldest first."
           }
         }
       },

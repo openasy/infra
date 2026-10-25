@@ -15,6 +15,16 @@
     "containers": "Containers",
     "clustersCollected": "Clusters collected",
     "changesIn24H": "Changes in 24 h",
+    "fullestDisks": "Fullest disks",
+    "theFullestDiskOfEach": "The fullest disk of each host, as last read.",
+    "memoryInUse": "Memory in use",
+    "ofEachHostAsLast": "Of each host, as last read.",
+    "changesOverTime": "Changes over time",
+    "eachDayOfTheLast": "Each day of the last 14, in UTC.",
+    "changesEachDayByKind": "Changes each day of the last 14, by kind",
+    "added": "Added",
+    "changed": "Changed",
+    "removed": "Removed",
     "needsAttention": "Needs attention",
     "hostsThatNeedAttention": "Hosts that need attention",
     "latestChanges": "Latest changes"
@@ -124,7 +134,8 @@
     "setup": "Setup",
     "toAClusterThenAdd": "to a cluster, then add it here with its token.",
     "clusters": "Clusters",
-    "noClusters": "No clusters"
+    "noClusters": "No clusters",
+    "notRunning": "{{count}} not running"
   },
   "addCluster": {
     "addACluster": "Add a cluster",
@@ -316,7 +327,8 @@
     "readAs": "Read as",
     "address": "Address",
     "readBy": "{{user}}@{{address}}:{{port}}{{value}}, read by {{name}}",
-    "tags": "Tags"
+    "tags": "Tags",
+    "withUnrestrictedSudo": "with unrestricted sudo"
   },
   "hostPage": {
     "notFound": "Not found",
@@ -422,5 +434,20 @@
     "firewallRules": "the firewall rules",
     "containers": "containers",
     "noRules": "(no rules)"
+  },
+  "search": {
+    "host": "Host",
+    "cluster": "Cluster",
+    "container": "Container"
+  },
+  "settings": {
+    "account": "Account",
+    "accountText": "Your profile, password, two-step verification and where you are signed in.",
+    "members": "Members",
+    "signin": "Sign-in",
+    "tokens": "API tokens",
+    "membersText": "Who can sign in, and with which role. Viewers see everything; editors also start collections; admins also add and remove agents, hosts and clusters, accept host keys, and manage members and tokens.",
+    "signinText": "Identity providers people can sign in with, such as OpenAsy Identity, Keycloak or Microsoft Entra ID, and which of their groups give which role.",
+    "tokensText": "For scripts. Each token has one role and an expiry; the secret is shown once."
   }
 }
