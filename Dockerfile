@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:26.12.0-trixie-slim AS build
+FROM node:26.12.1-trixie-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
@@ -9,7 +9,7 @@ RUN npm run build && npm prune --omit=dev && mkdir -p /out/data
 
 # OpenSSH's own client does the SSH (ADR 0031), so this image is Debian slim with openssh-client rather than
 # distroless. Node runs the TypeScript sources directly; only production dependencies are copied.
-FROM node:26.12.0-trixie-slim
+FROM node:26.12.1-trixie-slim
 RUN apt-get update && apt-get install -y --no-install-recommends openssh-client \
   && rm -rf /var/lib/apt/lists/* /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx /opt/yarn* /usr/local/bin/yarn*
 WORKDIR /app
