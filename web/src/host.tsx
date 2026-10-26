@@ -3,11 +3,12 @@ import { useAuth } from "@openasy/auth/react";
 import { Play, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Change, Container, Facts, Host } from "./api.ts";
+import { HostHardwareTab } from "./bmcs.tsx";
 import { HostKeyCheck } from "./hosts.tsx";
 import { bytes, ChangeList, duration, List, Pairs, Status, Usage, useData, type Call } from "./shared.tsx";
 import { useT, type T } from "./i18n.ts";
 
-type Tab = "overview" | "ports" | "processes" | "services" | "access" | "packages" | "containers" | "network" | "storage" | "changes";
+type Tab = "overview" | "ports" | "processes" | "services" | "access" | "packages" | "containers" | "network" | "storage" | "hardware" | "changes";
 
 type F = Facts;
 type Unreadable = "ports" | "authorizedKeys" | "sudoRules" | "sshServerSettings" | "firewallRules" | "containers";
@@ -447,6 +448,11 @@ export function HostPage({ call, id, vulnsUrl }: { call: Call; id: string; vulns
           <span className="flex items-center gap-1.5">
             <Status status={h.status} />
             {h.source === "file" && <Badge tone="neutral">{t("hostPage.fromFile")}</Badge>}
+            {h.bmc && (
+              <a className="text-xs" href={`/bmcs/${h.bmc.id}`}>
+                {t("hostPage.itsBmc", { name: h.bmc.name })}
+              </a>
+            )}
             {h.vulnerabilities?.sentAt && (
               <span className="text-xs text-fg-muted">
                 {vulnsUrl && h.vulnerabilities.assetId ? (
@@ -509,6 +515,7 @@ export function HostPage({ call, id, vulnsUrl }: { call: Call; id: string; vulns
               ...(h.containers ? [{ value: "containers" as const, label: t("hostPage.containers"), count: f.containers?.length }] : []),
               { value: "network", label: t("hostPage.network") },
               { value: "storage", label: t("hostPage.storage") },
+              ...(h.bmc ? [{ value: "hardware" as const, label: t("hostsPage.hardware"), count: h.bmc.unhealthy || undefined }] : []),
               { value: "changes", label: t("hostPage.changes") },
             ]}
           />
@@ -521,6 +528,7 @@ export function HostPage({ call, id, vulnsUrl }: { call: Call; id: string; vulns
           {tab === "containers" && (f.containers ? <ContainerTable rows={f.containers} /> : notReadable(t, "containers"))}
           {tab === "network" && <Network f={f} />}
           {tab === "storage" && <Storage f={f} />}
+          {tab === "hardware" && <HostHardwareTab call={call} hostId={h.id} />}
           {tab === "changes" && <ChangeList changes={changes.data?.changes} />}
         </>
       )}

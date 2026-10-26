@@ -4,7 +4,7 @@
     "title": "OpenAsy Infrastructure API",
     "version": "0.6.0",
     "summary": "Hosts, containers and Kubernetes, read without installing anything, with every change kept.",
-    "description": "Every screen of Infrastructure uses this API, and so can your scripts (ADR 0014). Within `/api/v1` changes are additive only (ADR 0024). Errors use Problem Details (RFC 9457).\n\nHosts are read over SSH as an unprivileged `openasy` account with 5-minute certificates, and clusters through their API with a read-only token (ADR 0031). Each operation names the role it needs (`x-openasy-role`). Sign-in, members and API tokens are under `/api/v1/auth`, provided by [@openasy/auth](https://github.com/openasy/auth#routes).",
+    "description": "Every screen of Infrastructure uses this API, and so can your scripts (ADR 0014). Within `/api/v1` changes are additive only (ADR 0024). Errors use Problem Details (RFC 9457).\n\nHosts are read over SSH as an unprivileged `openasy` account with 5-minute certificates, clusters through their API with a read-only token (ADR 0031), and BMCs over Redfish by the agent, with GET only and a read-only account (ADR 0055). Each operation names the role it needs (`x-openasy-role`). Sign-in, members and API tokens are under `/api/v1/auth`, provided by [@openasy/auth](https://github.com/openasy/auth#routes).",
     "license": {
       "name": "AGPL-3.0-only",
       "identifier": "AGPL-3.0-only"
@@ -24,6 +24,10 @@
     {
       "name": "Hosts",
       "description": "Servers an agent reads over SSH."
+    },
+    {
+      "name": "BMCs",
+      "description": "Servers' management controllers (iDRAC, iLO, XClarity), read by an agent over Redfish with GET only (ADR 0055)."
     },
     {
       "name": "Clusters",
@@ -618,7 +622,14 @@
                     "jobs": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/Job"
+                        "anyOf": [
+                          {
+                            "$ref": "#/components/schemas/Job"
+                          },
+                          {
+                            "$ref": "#/components/schemas/BmcJob"
+                          }
+                        ]
                       }
                     }
                   }
@@ -949,7 +960,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "package, port, service, user, sudo, ssh-key, container, ..."
+            "description": "package, port, service, user, sudo, ssh-key, container, ...; for a BMC firmware, hardware, health, power, drive, bmc-account, bmc-service."
           },
           {
             "name": "since",
@@ -998,6 +1009,56 @@
             "$ref": "#/components/responses/Problem"
           },
           "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/hosts/{id}/hardware": {
+      "get": {
+        "operationId": "hostHardware",
+        "tags": [
+          "Hosts"
+        ],
+        "summary": "The host as its BMC sees it",
+        "description": "Its BMC and whether they match, the parts that are not OK, and its reboots with what the BMC logged around each (ADR 0055). 404 when no BMC is matched with it.\n\nNeeds the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostHardware"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
             "$ref": "#/components/responses/Problem"
           }
         }
@@ -1166,6 +1227,452 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Host"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/bmcs": {
+      "get": {
+        "operationId": "listBmcs",
+        "tags": [
+          "BMCs"
+        ],
+        "summary": "List BMCs",
+        "description": "The BMCs come from the bmcs: list of the hosts file (OPENASY_HOSTS, ADR 0052, 0055); no route adds or changes one.\n\nNeeds the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "bmcs"
+                  ],
+                  "properties": {
+                    "bmcs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Bmc"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/bmcs/{id}": {
+      "get": {
+        "operationId": "getBmc",
+        "tags": [
+          "BMCs"
+        ],
+        "summary": "Get a BMC",
+        "description": "Needs the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bmc"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/bmcs/{id}/facts": {
+      "get": {
+        "operationId": "bmcFacts",
+        "tags": [
+          "BMCs"
+        ],
+        "summary": "What the BMC says about its server",
+        "description": "The last collection, or with `at` the one in effect at that time.\n\nNeeds the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "at",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "facts",
+                    "collectedAt"
+                  ],
+                  "properties": {
+                    "facts": {
+                      "$ref": "#/components/schemas/BmcFacts"
+                    },
+                    "collectedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/bmcs/{id}/changes": {
+      "get": {
+        "operationId": "bmcChanges",
+        "tags": [
+          "Changes"
+        ],
+        "summary": "What changed on a BMC",
+        "description": "Firmware, hardware, the health of its parts, power, accounts and network services.\n\nNeeds the viewer role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "viewer",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "package, port, service, user, sudo, ssh-key, container, ...; for a BMC firmware, hardware, health, power, drive, bmc-account, bmc-service."
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Changes"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/bmcs/{id}/collect": {
+      "post": {
+        "operationId": "collectBmc",
+        "tags": [
+          "BMCs"
+        ],
+        "summary": "Collect now",
+        "description": "Needs the editor role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "editor",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Requested",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/bmcs/{id}/certificate": {
+      "post": {
+        "operationId": "fetchBmcCertificate",
+        "tags": [
+          "BMCs"
+        ],
+        "summary": "Ask the BMC for its certificate again",
+        "description": "Needs the admin role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bmc"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/bmcs/{id}/certificate/accept": {
+      "post": {
+        "operationId": "acceptBmcCertificate",
+        "tags": [
+          "BMCs"
+        ],
+        "summary": "Accept a BMC's certificate",
+        "description": "After checking on the BMC that its certificate has this fingerprint, for example with `openssl s_client -connect <address>:443 </dev/null | openssl x509 -noout -fingerprint -sha256`.\n\nNeeds the admin role.",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "apiToken": []
+          }
+        ],
+        "x-openasy-role": "admin",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "fingerprint"
+                ],
+                "properties": {
+                  "fingerprint": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bmc"
                 }
               }
             }
@@ -1571,7 +2078,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "package, port, service, user, sudo, ssh-key, container, ..."
+            "description": "package, port, service, user, sudo, ssh-key, container, ...; for a BMC firmware, hardware, health, power, drive, bmc-account, bmc-service."
           },
           {
             "name": "since",
@@ -1756,7 +2263,8 @@
               "type": "string",
               "enum": [
                 "host",
-                "cluster"
+                "cluster",
+                "bmc"
               ]
             }
           },
@@ -1766,7 +2274,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "package, port, service, user, sudo, ssh-key, container, ..."
+            "description": "package, port, service, user, sudo, ssh-key, container, ...; for a BMC firmware, hardware, health, power, drive, bmc-account, bmc-service."
           },
           {
             "name": "since",
@@ -2154,6 +2662,7 @@
           "lastSuccessAt",
           "createdAt",
           "summary",
+          "bmc",
           "vulnerabilities"
         ],
         "properties": {
@@ -2315,6 +2824,68 @@
           },
           "summary": {
             "$ref": "#/components/schemas/HostSummary"
+          },
+          "bmc": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "id",
+                  "name",
+                  "match",
+                  "health",
+                  "unhealthy",
+                  "powerState"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "match": {
+                    "$ref": "#/components/schemas/MatchState"
+                  },
+                  "health": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "As Redfish says it: OK, Warning or Critical."
+                  },
+                  "unhealthy": {
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Its parts that say Warning or Critical, as the BMC last said."
+                  },
+                  "powerState": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Its management controller: a BMC that says it is this machine (by SMBIOS UUID or serial), or that the hosts file names with server: this host (ADR 0055)."
           },
           "vulnerabilities": {
             "anyOf": [
@@ -3033,6 +3604,832 @@
         ],
         "description": "Nodes, namespaces, workloads, pods, services, ingresses, volumes, cluster-admin bindings and recent warnings."
       },
+      "MatchState": {
+        "type": "string",
+        "enum": [
+          "confirmed",
+          "mismatch",
+          "unverified",
+          "found"
+        ],
+        "description": "confirmed: the host and the BMC report the same SMBIOS UUID or serial; mismatch: the file's server: reports another; unverified: nothing to compare yet (the host needs the sudo rules for its UUID and serial); found: matched by them, with no server: in the file."
+      },
+      "Match": {
+        "type": "object",
+        "required": [
+          "host",
+          "state",
+          "by",
+          "detail"
+        ],
+        "properties": {
+          "host": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/MatchState"
+          },
+          "by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "uuid",
+                  "serial"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What agreed."
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What differs, for a mismatch, and which host the BMC matches instead."
+          }
+        }
+      },
+      "HostHardware": {
+        "type": "object",
+        "required": [
+          "bmc",
+          "match",
+          "parts",
+          "reboots"
+        ],
+        "properties": {
+          "bmc": {
+            "$ref": "#/components/schemas/Bmc"
+          },
+          "match": {
+            "$ref": "#/components/schemas/Match"
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "kind",
+                "name",
+                "health"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "health": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "As Redfish says it: OK, Warning or Critical."
+                }
+              }
+            },
+            "description": "Parts the BMC says are Warning or Critical."
+          },
+          "reboots": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "at",
+                "events"
+              ],
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "events": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "log",
+                      "id",
+                      "at",
+                      "severity",
+                      "message"
+                    ],
+                    "properties": {
+                      "log": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "at": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "severity": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "message": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "description": "The host's boots, newest first, each with the BMC's events from 30 minutes before to 5 minutes after."
+          }
+        }
+      },
+      "BmcCertificate": {
+        "type": "object",
+        "required": [
+          "fingerprint",
+          "subject",
+          "issuer",
+          "validTo"
+        ],
+        "properties": {
+          "fingerprint": {
+            "type": "string",
+            "pattern": "^([0-9A-F]{2}:){31}[0-9A-F]{2}$",
+            "description": "SHA-256, as openssl x509 -fingerprint -sha256 prints it."
+          },
+          "subject": {
+            "type": "string"
+          },
+          "issuer": {
+            "type": "string"
+          },
+          "validTo": {
+            "type": "string"
+          }
+        }
+      },
+      "BmcSummary": {
+        "anyOf": [
+          {
+            "type": "object",
+            "required": [
+              "vendor",
+              "model",
+              "serial",
+              "sku",
+              "powerState",
+              "health",
+              "biosVersion",
+              "bmcFirmware",
+              "unhealthy",
+              "services",
+              "accounts",
+              "administrators",
+              "unreadable"
+            ],
+            "properties": {
+              "vendor": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "model": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "serial": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "sku": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Dell's service tag, HPE's product number."
+              },
+              "powerState": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "health": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "As Redfish says it: OK, Warning or Critical."
+              },
+              "biosVersion": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "bmcFirmware": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "unhealthy": {
+                "type": "integer",
+                "description": "Power supplies, fans, temperatures, controllers and drives that say Warning or Critical."
+              },
+              "services": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "What the BMC offers on the network: HTTPS, IPMI, SSH, SNMP, KVMIP..."
+              },
+              "accounts": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Enabled accounts on the BMC; null when this account may not read them."
+              },
+              "administrators": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "unreadable": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "Bmc": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "address",
+          "port",
+          "user",
+          "passwordFile",
+          "agent",
+          "server",
+          "match",
+          "fileCertificate",
+          "intervalMinutes",
+          "tags",
+          "certificates",
+          "pendingCertificate",
+          "status",
+          "statusDetail",
+          "lastAttemptAt",
+          "lastSuccessAt",
+          "createdAt",
+          "summary"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          },
+          "user": {
+            "type": "string",
+            "description": "The read-only account on the BMC."
+          },
+          "passwordFile": {
+            "type": "string",
+            "description": "The file in the agent's key folder that holds its password. The password never reaches Infrastructure (ADR 0055)."
+          },
+          "agent": {
+            "type": "object",
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "server": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "name",
+                  "id"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The server it manages, by its name in the hosts file; id when Infrastructure reads it too."
+          },
+          "match": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Match"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whether the host and the BMC say they are one machine; null when the file names no server and no host matches."
+          },
+          "fileCertificate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The fingerprint certificate gives in the hosts file: a BMC that presents it is trusted without an admin, and no other can be accepted here."
+          },
+          "intervalMinutes": {
+            "type": "integer"
+          },
+          "tags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "certificates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "fingerprint"
+              ],
+              "properties": {
+                "fingerprint": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Pinned. The agent sends the password only to a BMC that presents one of them."
+          },
+          "pendingCertificate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BmcCertificate"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the BMC presents now, waiting to be checked and accepted."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "certificate-pending",
+              "certificate-changed",
+              "pending",
+              "ok",
+              "unreachable",
+              "auth-failed",
+              "timeout",
+              "not-redfish",
+              "error"
+            ],
+            "description": "Of the last collection. new and certificate-pending wait for an admin to accept the BMC's TLS certificate."
+          },
+          "statusDetail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastAttemptAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastSuccessAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/BmcSummary"
+          }
+        }
+      },
+      "BmcFacts": {
+        "type": "object",
+        "description": "What the BMC says over Redfish in one collection: systems, chassis with power supplies, fans and temperatures, managers with their network services, firmware, storage, accounts (never a password) and the newest event log entries.",
+        "required": [
+          "collectedAt",
+          "service",
+          "systems",
+          "chassis",
+          "managers",
+          "firmware",
+          "storage",
+          "accounts",
+          "events",
+          "unreadable"
+        ],
+        "properties": {
+          "collectedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "service": {
+            "type": "object",
+            "required": [
+              "vendor",
+              "product",
+              "redfishVersion",
+              "uuid"
+            ],
+            "properties": {
+              "vendor": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "product": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "redfishVersion": {
+                "type": "string"
+              },
+              "uuid": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "systems": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "chassis": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "managers": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "firmware": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "version",
+                "updateable"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "version": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "updateable": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "storage": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "accounts": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "user",
+                    "role",
+                    "enabled",
+                    "locked"
+                  ],
+                  "properties": {
+                    "user": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "enabled": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "locked": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "log",
+                "id",
+                "at",
+                "severity",
+                "message"
+              ],
+              "properties": {
+                "log": {
+                  "type": "string"
+                },
+                "id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "at": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "severity": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "message": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "unreadable": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "Change": {
         "type": "object",
         "required": [
@@ -3061,7 +4458,8 @@
                 "type": "string",
                 "enum": [
                   "host",
-                  "cluster"
+                  "cluster",
+                  "bmc"
                 ]
               },
               "id": {
@@ -3140,6 +4538,7 @@
           "lastSeenAt",
           "lastError",
           "hosts",
+          "bmcs",
           "createdAt"
         ],
         "properties": {
@@ -3201,6 +4600,9 @@
             ]
           },
           "hosts": {
+            "type": "integer"
+          },
+          "bmcs": {
             "type": "integer"
           },
           "createdAt": {
@@ -3419,14 +4821,67 @@
           }
         }
       },
+      "BmcJob": {
+        "type": "object",
+        "required": [
+          "id",
+          "bmcId",
+          "action",
+          "target"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "bmcId": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "bmc-collect",
+              "bmc-certificate"
+            ]
+          },
+          "target": {
+            "type": "object",
+            "required": [
+              "address",
+              "port",
+              "user",
+              "passwordFile",
+              "certificates"
+            ],
+            "properties": {
+              "address": {
+                "type": "string"
+              },
+              "port": {
+                "type": "integer"
+              },
+              "user": {
+                "type": "string"
+              },
+              "passwordFile": {
+                "type": "string"
+              },
+              "certificates": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
       "Result": {
         "type": "object",
         "required": [
           "jobId",
-          "hostId",
           "ok"
         ],
-        "description": "One of: facts (a collection), hostKeys (the keys a host presents), or error.",
+        "description": "For a host (hostId): facts (a collection), hostKeys (the keys it presents), or error. For a BMC (bmcId): facts, certificate (the one it presents), or error.",
         "properties": {
           "jobId": {
             "type": "string"
@@ -3434,17 +4889,30 @@
           "hostId": {
             "type": "string"
           },
+          "bmcId": {
+            "type": "string"
+          },
           "ok": {
             "type": "boolean"
           },
           "facts": {
-            "$ref": "#/components/schemas/Facts"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Facts"
+              },
+              {
+                "$ref": "#/components/schemas/BmcFacts"
+              }
+            ]
           },
           "hostKeys": {
             "type": "array",
             "items": {
               "type": "string"
             }
+          },
+          "certificate": {
+            "$ref": "#/components/schemas/BmcCertificate"
           },
           "error": {
             "type": "object",
@@ -3493,6 +4961,7 @@
           "agents",
           "hosts",
           "clusters",
+          "bmcs",
           "containers",
           "changesLastDay",
           "hostsFile",
@@ -3512,6 +4981,12 @@
             }
           },
           "clusters": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          },
+          "bmcs": {
             "type": "object",
             "additionalProperties": {
               "type": "integer"
@@ -3590,7 +5065,8 @@
             "description": "When it was last read and applied; null if it never was."
           },
           "entries": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Servers in hosts:; its bmcs: are listed under /api/v1/bmcs."
           },
           "error": {
             "anyOf": [

@@ -27,10 +27,11 @@ import {
 } from "@openasy/ui";
 import { AccountSettings, AuthGate, MembersSettings, SignInSettings, TokensSettings, useAccountMenu, useAuth, useInstallBrand } from "@openasy/auth/react";
 import colophon from "virtual:openasy-colophon";
-import { Bot, Boxes, GitCompare, KeyRound, LayoutDashboard, LogIn, LogOut, Server, UserRound, Users, Network } from "lucide-react";
+import { Bot, Boxes, Cpu, GitCompare, KeyRound, LayoutDashboard, LogIn, LogOut, Server, UserRound, Users, Network } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { Agent, AgentSetup, Change, Container, Host, ProductLink, Setup, Summary } from "./api.ts";
 import { AgentsPage } from "./agents.tsx";
+import { BmcPage, BmcsPage } from "./bmcs.tsx";
 import { ClusterPage, ClustersPage } from "./clusters.tsx";
 import { ContainerTable, HostPage } from "./host.tsx";
 import { HostsPage } from "./hosts.tsx";
@@ -38,13 +39,28 @@ import { ChangeList, Code, List, Status, STATUS, useApi, useData, type Call } fr
 import { useT, type T } from "./i18n.ts";
 import { search } from "./search.ts";
 
-export const PAGES = ["overview", "hosts", "containers", "clusters", "changes", "setup", "agents", "account", "members", "signin", "tokens", "about"] as const;
+export const PAGES = [
+  "overview",
+  "hosts",
+  "bmcs",
+  "containers",
+  "clusters",
+  "changes",
+  "setup",
+  "agents",
+  "account",
+  "members",
+  "signin",
+  "tokens",
+  "about",
+] as const;
 type Page = (typeof PAGES)[number];
-type Route = { page: Page } | { page: "host"; id: string } | { page: "cluster"; id: string };
+type Route = { page: Page } | { page: "host"; id: string } | { page: "bmc"; id: string } | { page: "cluster"; id: string };
 
 function parseRoute(path: string): Route {
   const [page, id] = path.replace(/^\//, "").split("/");
   if (page === "hosts" && id) return { page: "host", id: decodeURIComponent(id) };
+  if (page === "bmcs" && id) return { page: "bmc", id: decodeURIComponent(id) };
   if (page === "clusters" && id) return { page: "cluster", id: decodeURIComponent(id) };
   if ((PAGES as readonly string[]).includes(page ?? "")) return { page: page as Page };
   return { page: "overview" };
@@ -189,7 +205,7 @@ function ContainersPage({ call }: { call: Call }) {
   );
 }
 
-const CATEGORIES = ["all", "package", "port", "user", "sudo", "ssh-key", "service", "container", "system"] as const;
+const CATEGORIES = ["all", "package", "port", "user", "sudo", "ssh-key", "service", "container", "system", "firmware", "health", "bmc-account"] as const;
 function ChangesPage({ call }: { call: Call }) {
   const t = useT();
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("all");
@@ -320,6 +336,7 @@ function Product() {
   const nav = [
     { id: "overview", label: t("product.overview"), icon: LayoutDashboard },
     { id: "hosts", label: t("product.hosts"), icon: Server, count: total(summary.data?.hosts) || undefined },
+    { id: "bmcs", label: t("product.bmcs"), icon: Cpu, count: total(summary.data?.bmcs) || undefined },
     { id: "containers", label: t("product.containers"), icon: Boxes, count: summary.data?.containers || undefined },
     { id: "clusters", label: t("product.kubernetes"), icon: Network, count: total(summary.data?.clusters) || undefined },
     { id: "changes", label: t("product.changes"), icon: GitCompare },
@@ -335,7 +352,7 @@ function Product() {
       : []),
     { id: "account", label: t("product.account"), icon: UserRound },
   ];
-  const active = route.page === "host" ? "hosts" : route.page === "cluster" ? "clusters" : route.page;
+  const active = route.page === "host" ? "hosts" : route.page === "bmc" ? "bmcs" : route.page === "cluster" ? "clusters" : route.page;
   const roleName = me.user.role.charAt(0).toUpperCase() + me.user.role.slice(1);
   const page = route.page;
   return (
@@ -360,10 +377,14 @@ function Product() {
     >
       {route.page === "host" ? (
         <HostPage key={route.id} call={call} id={route.id} vulnsUrl={products.find((p) => p.id === "vulnerabilities")?.url} />
+      ) : route.page === "bmc" ? (
+        <BmcPage key={route.id} call={call} id={route.id} />
       ) : route.page === "cluster" ? (
         <ClusterPage key={route.id} call={call} id={route.id} />
       ) : page === "hosts" ? (
         <HostsPage call={call} />
+      ) : page === "bmcs" ? (
+        <BmcsPage call={call} />
       ) : page === "containers" ? (
         <ContainersPage call={call} />
       ) : page === "clusters" ? (

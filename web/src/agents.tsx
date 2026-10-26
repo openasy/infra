@@ -84,6 +84,7 @@ export function AgentsPage({ call }: { call: Call }) {
       cell: (a) => <Badge tone={STATUS(t)[a.status]?.tone ?? "neutral"}>{STATUS(t)[a.status]?.label ?? a.status}</Badge>,
     },
     { id: "hosts", header: t("agentsPage.hosts"), width: "80px", align: "right", cell: (a) => a.hosts },
+    { id: "bmcs", header: t("agentsPage.bmcs"), width: "80px", align: "right", cell: (a) => a.bmcs },
     { id: "version", header: t("agentsPage.version"), width: "90px", mono: true, cell: (a) => a.version ?? "–" },
     { id: "ca", header: t("agentsPage.caFingerprint"), cell: (a) => <span className="infra-wrap font-mono text-xs">{a.caFingerprint ?? "–"}</span> },
     { id: "seen", header: t("agentsPage.lastSeen"), width: "110px", cell: (a) => <span title={a.lastError ?? undefined}>{ago(a.lastSeenAt)}</span> },

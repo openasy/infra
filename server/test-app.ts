@@ -8,13 +8,17 @@ import { gzipSync } from "node:zlib";
 import { createAuth } from "@openasy/auth";
 import { createApp, type AppOptions } from "./app.ts";
 import { openDb } from "./db.ts";
-import type { Facts } from "./facts.ts";
+import type { BmcFacts, Facts } from "./facts.ts";
 import { createInfra } from "./infra.ts";
 import { createKeyring } from "./kek.ts";
 import type { ClusterFacts } from "./k8s.ts";
 
 export const fixture = (name: string) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
 export const facts = (name: string) => JSON.parse(fixture(`${name}.json`)) as Facts;
+export const bmcFacts = (name: string) => JSON.parse(fixture(`bmc-${name}.json`)) as BmcFacts;
+/** TLS certificates a fake BMC presents, by their SHA-256 fingerprint. */
+export const BMC_CERT = { fingerprint: "AB:".repeat(31) + "AB", subject: "CN=idrac-db-1", issuer: "CN=idrac-db-1", validTo: "2030-01-01T00:00:00.000Z" };
+export const OTHER_CERT = { ...BMC_CERT, fingerprint: "CD:".repeat(31) + "CD" };
 export const HOST_KEY = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFmXq7hWQvK1eF4s3n0q6X8b9mZ2nqJ8V7cJq3s1kR2x";
 export const OTHER_KEY = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC9w3m0yQ1L7r2hY8kP4oX6n5aB1cD2eF3gH4iJ5kL6m";
 export const CA_KEY = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl OpenAsy Infrastructure CA";
@@ -24,6 +28,13 @@ export const PASSWORD = "correct horse battery staple";
 export interface FakeHost {
   key: string;
   facts: Facts;
+  fail?: { kind: string; message: string };
+}
+
+/** What each fake BMC answers. */
+export interface FakeBmc {
+  certificate: typeof BMC_CERT;
+  facts: BmcFacts;
   fail?: { kind: string; message: string };
 }
 
@@ -90,6 +101,7 @@ export async function startApp(opts: Partial<AppOptions> & { version: string }) 
   /** A stand-in infra-agent: enrols with the token, then each round asks for jobs and answers them. */
   const fakeAgent = (agentSecret: string) => {
     const hosts = new Map<string, FakeHost>();
+    const bmcs = new Map<string, FakeBmc>();
     const post = (path: string, body: unknown) =>
       fetch(base + path, {
         method: "POST",
@@ -98,11 +110,33 @@ export async function startApp(opts: Partial<AppOptions> & { version: string }) 
       });
     return {
       hosts,
+      bmcs,
       async round() {
         const { jobs } = (await (await post("/api/v1/agent/work", REPORT(opts.version))).json()) as {
-          jobs: Array<{ id: string; hostId: string; action: string; target: { address: string; hostKeys: string[] } }>;
+          jobs: Array<{ id: string; hostId: string; bmcId?: string; action: string; target: { address: string; hostKeys: string[]; certificates?: string[] } }>;
         };
         for (const j of jobs) {
+          if (j.bmcId) {
+            const b = bmcs.get(j.target.address);
+            const base = { jobId: j.id, bmcId: j.bmcId };
+            if (!b)
+              await post("/api/v1/agent/results", {
+                ...base,
+                ok: false,
+                error: { kind: "unreachable", message: `${j.target.address}:443: connect ECONNREFUSED` },
+              });
+            else if (j.action === "bmc-certificate") await post("/api/v1/agent/results", { ...base, ok: true, certificate: b.certificate });
+            else if (b.fail) await post("/api/v1/agent/results", { ...base, ok: false, error: b.fail });
+            else if (!j.target.certificates!.includes(b.certificate.fingerprint))
+              await post("/api/v1/agent/results", {
+                ...base,
+                ok: false,
+                error: { kind: "certificate-changed", message: "another certificate" },
+                certificate: b.certificate,
+              });
+            else await post("/api/v1/agent/results", { ...base, ok: true, facts: b.facts });
+            continue;
+          }
           const h = hosts.get(j.target.address);
           const base = { jobId: j.id, hostId: j.hostId };
           if (!h)

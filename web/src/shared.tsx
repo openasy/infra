@@ -68,6 +68,9 @@ export const STATUS = (t: T): Record<string, { tone: "success" | "warning" | "da
   pending: { tone: "info", label: t("status.waitingForTheFirstCollection") },
   "host-key-pending": { tone: "warning", label: t("status.checkTheHostKey") },
   "host-key-changed": { tone: "danger", label: t("status.hostKeyChanged") },
+  "certificate-pending": { tone: "warning", label: t("status.checkTheCertificate") },
+  "certificate-changed": { tone: "danger", label: t("status.certificateChanged") },
+  "not-redfish": { tone: "danger", label: t("status.notRedfish") },
   unreachable: { tone: "danger", label: t("status.unreachable") },
   "auth-failed": { tone: "danger", label: t("status.loginRefused") },
   forbidden: { tone: "danger", label: t("status.notAllowed") },
@@ -189,7 +192,9 @@ export function ChangeList({ changes, showTarget = false }: { changes: Change[] 
             id: "target",
             header: t("changeList.where"),
             width: "160px",
-            cell: (c: Change) => <a href={`/${c.target.kind === "host" ? "hosts" : "clusters"}/${c.target.id}`}>{c.target.name}</a>,
+            cell: (c: Change) => (
+              <a href={`/${c.target.kind === "host" ? "hosts" : c.target.kind === "bmc" ? "bmcs" : "clusters"}/${c.target.id}`}>{c.target.name}</a>
+            ),
           } satisfies Column<Change>,
         ]
       : []),

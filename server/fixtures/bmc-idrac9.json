@@ -1,0 +1,253 @@
+{
+  "collectedAt": "2026-10-26T09:00:00.000Z",
+  "service": {
+    "vendor": "Dell",
+    "product": "Integrated Dell Remote Access Controller",
+    "redfishVersion": "1.11.0",
+    "uuid": "324c4c45-4458-3510-8032-b7c04f523333"
+  },
+  "systems": [
+    {
+      "id": "System.Embedded.1",
+      "manufacturer": "Dell Inc.",
+      "model": "PowerEdge R650",
+      "serial": "CNIVC0022B0123",
+      "sku": "7XQ2R33",
+      "biosVersion": "1.10.2",
+      "powerState": "On",
+      "health": "Critical",
+      "hostName": "db-1",
+      "uuid": "4c4c4544-0058-5110-8032-b7c04f523333",
+      "processors": {
+        "count": 2,
+        "model": "Intel(R) Xeon(R) Gold 6330 CPU @ 2.00GHz"
+      },
+      "memoryGiB": 256
+    }
+  ],
+  "chassis": [
+    {
+      "id": "System.Embedded.1",
+      "name": "Computer System Chassis",
+      "model": "PowerEdge R650",
+      "serial": "CNIVC0022B0123",
+      "health": "Critical",
+      "powerWatts": 312,
+      "powerSupplies": [
+        {
+          "name": "PS1 Status",
+          "model": "PWR SPLY,1400W,RDNT,LTON",
+          "serial": "CNLOD0021P0001",
+          "firmware": "00.1B.53",
+          "capacityWatts": 1400,
+          "health": "OK"
+        },
+        {
+          "name": "PS2 Status",
+          "model": "PWR SPLY,1400W,RDNT,LTON",
+          "serial": "CNLOD0021P0002",
+          "firmware": "00.1B.53",
+          "capacityWatts": 1400,
+          "health": "Critical"
+        }
+      ],
+      "fans": [
+        {
+          "name": "System Board Fan1A",
+          "reading": 7920,
+          "units": "RPM",
+          "health": "OK"
+        },
+        {
+          "name": "System Board Fan1B",
+          "reading": 7680,
+          "units": "RPM",
+          "health": "OK"
+        }
+      ],
+      "temperatures": [
+        {
+          "name": "CPU1 Temp",
+          "celsius": 52,
+          "criticalCelsius": 98,
+          "health": "OK"
+        },
+        {
+          "name": "System Board Inlet Temp",
+          "celsius": 23,
+          "criticalCelsius": 47,
+          "health": "OK"
+        }
+      ]
+    },
+    {
+      "id": "Enclosure.Internal.0-1:RAID.Integrated.1-1",
+      "name": "PERC H755 Front Backplane",
+      "model": "BP15G+ 0:1",
+      "serial": null,
+      "health": "OK",
+      "powerWatts": null,
+      "powerSupplies": [],
+      "fans": [],
+      "temperatures": []
+    }
+  ],
+  "managers": [
+    {
+      "id": "iDRAC.Embedded.1",
+      "model": "15G Monolithic",
+      "type": "BMC",
+      "firmware": "6.10.30.00",
+      "health": "OK",
+      "protocols": [
+        {
+          "name": "HTTP",
+          "enabled": true,
+          "port": 80
+        },
+        {
+          "name": "HTTPS",
+          "enabled": true,
+          "port": 443
+        },
+        {
+          "name": "IPMI",
+          "enabled": true,
+          "port": 623
+        },
+        {
+          "name": "SSH",
+          "enabled": true,
+          "port": 22
+        },
+        {
+          "name": "SNMP",
+          "enabled": false,
+          "port": 161
+        },
+        {
+          "name": "VirtualMedia",
+          "enabled": true,
+          "port": 443
+        },
+        {
+          "name": "KVMIP",
+          "enabled": true,
+          "port": 5900
+        },
+        {
+          "name": "NTP",
+          "enabled": true,
+          "port": null
+        },
+        {
+          "name": "SSDP",
+          "enabled": false,
+          "port": 1900
+        }
+      ]
+    }
+  ],
+  "firmware": [
+    {
+      "id": "Installed-159-1.10.2",
+      "name": "BIOS",
+      "version": "1.10.2",
+      "updateable": true
+    },
+    {
+      "id": "Installed-25227-6.10.30.00",
+      "name": "Integrated Dell Remote Access Controller",
+      "version": "6.10.30.00",
+      "updateable": true
+    },
+    {
+      "id": "Installed-101548-52.16.1-4405",
+      "name": "PERC H755 Front",
+      "version": "52.16.1-4405",
+      "updateable": true
+    },
+    {
+      "id": "Installed-108255-22.31.6",
+      "name": "Broadcom Gigabit Ethernet BCM5720 - 00:62:0B:AA:BB:01",
+      "version": "22.31.6",
+      "updateable": true
+    }
+  ],
+  "storage": [
+    {
+      "system": "System.Embedded.1",
+      "id": "RAID.Integrated.1-1",
+      "controllers": [
+        {
+          "name": "PERC H755 Front",
+          "model": "PERC H755 Front",
+          "firmware": "52.16.1-4405",
+          "health": "OK"
+        }
+      ],
+      "drives": [
+        {
+          "id": "Disk.Bay.0:Enclosure.Internal.0-1:RAID.Integrated.1-1",
+          "name": "Solid State Disk 0:1:0",
+          "model": "MZ7L3960HCJR0D3",
+          "serial": "S6KMNA0T401234",
+          "capacityBytes": 960197124096,
+          "media": "SSD",
+          "protocol": "SATA",
+          "health": "OK",
+          "lifeLeftPercent": 99
+        },
+        {
+          "id": "Disk.Bay.1:Enclosure.Internal.0-1:RAID.Integrated.1-1",
+          "name": "Solid State Disk 0:1:1",
+          "model": "MZ7L3960HCJR0D3",
+          "serial": "S6KMNA0T405678",
+          "capacityBytes": 960197124096,
+          "media": "SSD",
+          "protocol": "SATA",
+          "health": "Warning",
+          "lifeLeftPercent": 4
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "user": "root",
+      "role": "Administrator",
+      "enabled": true,
+      "locked": false
+    },
+    {
+      "user": "openasy",
+      "role": "ReadOnly",
+      "enabled": true,
+      "locked": false
+    }
+  ],
+  "events": [
+    {
+      "log": "Sel",
+      "id": "3",
+      "at": "2026-10-20T11:02:13-05:00",
+      "severity": "Critical",
+      "message": "The power input for power supply 2 is lost."
+    },
+    {
+      "log": "Sel",
+      "id": "2",
+      "at": "2026-10-12T03:14:00-05:00",
+      "severity": "Warning",
+      "message": "Disk 1 in Backplane 1 of Integrated RAID Controller 1 has reached its predicted end of life."
+    },
+    {
+      "log": "Sel",
+      "id": "1",
+      "at": "2026-09-01T08:00:00-05:00",
+      "severity": "OK",
+      "message": "Log cleared."
+    }
+  ],
+  "unreadable": []
+}

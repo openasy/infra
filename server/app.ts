@@ -168,11 +168,12 @@ export function createApp({ db, infra, version, auth, webDir, docsDir, openapi, 
     res.writeHead(204, SECURITY_HEADERS).end();
   };
   const accepted = (res: ServerResponse) => (json(res, 202, { status: "requested" }), undefined);
-  const changesOf = (url: URL, kind?: "host" | "cluster", id?: string) => {
+  const changesOf = (url: URL, kind?: "host" | "cluster" | "bmc", id?: string) => {
     const kindParam = url.searchParams.get("kind");
-    if (kindParam !== null && kindParam !== "host" && kindParam !== "cluster") throw new InfraError(422, "invalid-body", "kind is host or cluster.");
+    if (kindParam !== null && kindParam !== "host" && kindParam !== "cluster" && kindParam !== "bmc")
+      throw new InfraError(422, "invalid-body", "kind is host, cluster or bmc.");
     return infra.changes({
-      kind: kind ?? (kindParam as "host" | "cluster" | null) ?? undefined,
+      kind: kind ?? (kindParam as "host" | "cluster" | "bmc" | null) ?? undefined,
       id,
       category: url.searchParams.get("category") ?? undefined,
       since: timeOf(url, "since"),
@@ -228,6 +229,8 @@ export function createApp({ db, infra, version, auth, webDir, docsDir, openapi, 
       auth: "viewer",
       handle: ({ url, params }) => (infra.host(params[0]!), changesOf(url, "host", params[0]!)),
     },
+    // The host as its BMC sees it, and its reboots with what the BMC logged around each (ADR 0055).
+    { method: "GET", path: "/api/v1/hosts/:id/hardware", auth: "viewer", handle: ({ params }) => infra.hostHardware(params[0]!) },
     {
       method: "POST",
       path: "/api/v1/hosts/:id/collect",
@@ -241,6 +244,40 @@ export function createApp({ db, infra, version, auth, webDir, docsDir, openapi, 
       path: "/api/v1/hosts/:id/host-key/accept",
       auth: "admin",
       handle: async ({ params, body }) => infra.acceptHostKey(params[0]!, (await body()).fingerprint),
+    },
+
+    // BMCs over Redfish (ADR 0055), from the hosts file's bmcs: list only.
+    { method: "GET", path: "/api/v1/bmcs", auth: "viewer", handle: () => ({ bmcs: infra.listBmcs() }) },
+    { method: "GET", path: "/api/v1/bmcs/:id", auth: "viewer", handle: ({ params }) => infra.bmc(params[0]!) },
+    {
+      method: "GET",
+      path: "/api/v1/bmcs/:id/facts",
+      auth: "viewer",
+      handle: ({ url, params }) => {
+        const f = infra.bmcFacts(params[0]!, timeOf(url, "at"));
+        if (!f) throw new InfraError(404, "not-found", "Nothing collected from this BMC yet.");
+        return f;
+      },
+    },
+    {
+      method: "GET",
+      path: "/api/v1/bmcs/:id/changes",
+      auth: "viewer",
+      handle: ({ url, params }) => (infra.bmc(params[0]!), changesOf(url, "bmc", params[0]!)),
+    },
+    {
+      method: "POST",
+      path: "/api/v1/bmcs/:id/collect",
+      auth: "editor",
+      handle: ({ res, params }) => (infra.requestCollect("bmc", params[0]!), accepted(res)),
+    },
+    // Its TLS certificate: ask the BMC again, and accept one after checking its fingerprint on the BMC.
+    { method: "POST", path: "/api/v1/bmcs/:id/certificate", auth: "admin", handle: ({ params }) => infra.requestCertificate(params[0]!) },
+    {
+      method: "POST",
+      path: "/api/v1/bmcs/:id/certificate/accept",
+      auth: "admin",
+      handle: async ({ params, body }) => infra.acceptCertificate(params[0]!, (await body()).fingerprint),
     },
 
     // Kubernetes through its API.

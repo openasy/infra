@@ -58,7 +58,7 @@ const metricsPort = process.env.INFRA_METRICS_PORT ? Number(process.env.INFRA_ME
 // The install's servers, one file for every product that reaches them (ADR 0052).
 const hostsPath = process.env.OPENASY_HOSTS?.trim() || undefined;
 const hostsFile = hostsPath
-  ? watchHosts(hostsPath, (list) => infra.syncFile(list), {
+  ? watchHosts(hostsPath, (list, bmcs) => infra.syncFile(list, bmcs), {
       onChange: (s) =>
         s.error
           ? log("error", "hosts file not applied; the hosts from its last good version stay", { path: s.path, error: s.error })

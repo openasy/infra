@@ -2,7 +2,7 @@
 // were added, removed or changed. Values that move all the time (CPU, memory in use, PIDs, uptime) are not items,
 // so the timeline shows decisions and events, not noise.
 import { createHash } from "node:crypto";
-import type { Facts } from "./facts.ts";
+import type { BmcFacts, Facts } from "./facts.ts";
 
 export type Category =
   | "system"
@@ -23,7 +23,15 @@ export type Category =
   | "interface"
   | "route"
   | "process"
-  | "container";
+  | "container"
+  // A BMC's (ADR 0055).
+  | "hardware"
+  | "firmware"
+  | "power"
+  | "health"
+  | "drive"
+  | "bmc-account"
+  | "bmc-service";
 
 export interface Item {
   category: Category;
@@ -86,6 +94,63 @@ export function hostItems(f: Facts): Item[] {
       ports: c.ports,
       privileged: c.privileged,
     });
+  return out;
+}
+
+/**
+ * A BMC's items: what the machine is, its firmware, the health of its parts, who may manage it and which services the
+ * BMC opens. Readings (temperatures, fan speeds, watts) and the event log move all the time and are not items; a part
+ * that turns Warning or Critical is.
+ */
+export function bmcItems(f: BmcFacts): Item[] {
+  const out: Item[] = [];
+  const add = (category: Category, key: string, value: unknown) => {
+    if (value === null || value === undefined) return;
+    out.push({ category, key, value: typeof value === "string" ? value : JSON.stringify(value) });
+  };
+  for (const s of f.systems) {
+    add("hardware", `system ${s.id}`, {
+      manufacturer: s.manufacturer,
+      model: s.model,
+      serial: s.serial,
+      sku: s.sku,
+      cpu: `${s.processors.count ?? "?"} × ${s.processors.model ?? "?"}`,
+      memoryGiB: s.memoryGiB,
+    });
+    add("firmware", `BIOS of ${s.id}`, s.biosVersion);
+    add("power", s.id, s.powerState);
+    add("health", `system ${s.id}`, s.health);
+  }
+  for (const c of f.chassis) {
+    add("health", `chassis ${c.id}`, c.health);
+    for (const p of c.powerSupplies) {
+      add("hardware", `power supply ${c.id}/${p.name}`, { model: p.model, serial: p.serial, capacityWatts: p.capacityWatts });
+      add("health", `power supply ${c.id}/${p.name}`, p.health);
+    }
+    for (const x of c.fans) add("health", `fan ${c.id}/${x.name}`, x.health);
+    for (const x of c.temperatures) add("health", `temperature ${c.id}/${x.name}`, x.health);
+  }
+  for (const m of f.managers) {
+    add("firmware", `BMC ${m.id}`, m.firmware);
+    add("health", `BMC ${m.id}`, m.health);
+    for (const p of m.protocols ?? []) add("bmc-service", p.name, p.enabled ? `enabled${p.port !== null ? `, port ${p.port}` : ""}` : "disabled");
+  }
+  // By name, which stays the same across an update; two of the same name are told apart by their order.
+  const names = new Map<string, number>();
+  for (const x of f.firmware) {
+    const name = x.name ?? x.id;
+    const n = (names.get(name) ?? 0) + 1;
+    names.set(name, n);
+    add("firmware", n > 1 ? `${name} #${n}` : name, x.version ?? "?");
+  }
+  for (const st of f.storage) {
+    for (const c of st.controllers) add("health", `controller ${st.id}/${c.name}`, c.health);
+    for (const d of st.drives) {
+      add("drive", `${st.id}/${d.id}`, { model: d.model, serial: d.serial, capacityBytes: d.capacityBytes, media: d.media });
+      add("health", `drive ${d.name ?? d.id}`, d.health);
+    }
+  }
+  for (const a of f.accounts ?? []) add("bmc-account", a.user, { role: a.role, enabled: a.enabled, locked: a.locked });
   return out;
 }
 

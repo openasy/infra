@@ -9,6 +9,7 @@ export function countRequest(method: string, route: string, status: number) {
 export interface Gauges {
   hosts: Record<string, number>;
   clusters: Record<string, number>;
+  bmcs: Record<string, number>;
   containers: number;
   changesLastDay: number;
 }
@@ -27,6 +28,9 @@ export function renderMetrics(version: string, g: Gauges): string {
     "# HELP openasy_infra_clusters Kubernetes clusters by the status of their last collection.",
     "# TYPE openasy_infra_clusters gauge",
     ...Object.entries(g.clusters).map(([s, n]) => `openasy_infra_clusters{status="${s}"} ${n}`),
+    "# HELP openasy_infra_bmcs BMCs by the status of their last collection.",
+    "# TYPE openasy_infra_bmcs gauge",
+    ...Object.entries(g.bmcs).map(([s, n]) => `openasy_infra_bmcs{status="${s}"} ${n}`),
     "# HELP openasy_infra_containers Containers found on hosts.",
     "# TYPE openasy_infra_containers gauge",
     `openasy_infra_containers ${g.containers}`,

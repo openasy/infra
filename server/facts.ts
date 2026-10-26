@@ -73,6 +73,8 @@ export interface Facts {
     virtualization: string | null;
     hardware: Record<string, string>;
     serial: string | null;
+    /** The SMBIOS UUID, with the sudo rules; an older agent sends none. */
+    uuid?: string | null;
   };
   cpu: { model: string | null; threads: number; cores: number | null };
   memory: { totalKb: number; availableKb: number; swapTotalKb: number; swapFreeKb: number };
@@ -123,4 +125,91 @@ export function checkFacts(v: unknown): Facts {
   for (const a of ["ports", "services", "timers", "crontabUsers", "sudo", "authorizedKeys", "containers"] as const)
     if (f[a] !== null && !Array.isArray(f[a])) throw new Error(`facts.${a} must be a list or null`);
   return f as Facts;
+}
+
+/** What infra-agent reads from a BMC over Redfish (infra-agent agent/bmc.ts, the same shape; ADR 0055). */
+export interface BmcFacts {
+  collectedAt: string;
+  service: { vendor: string | null; product: string | null; redfishVersion: string; uuid: string | null };
+  systems: Array<{
+    id: string;
+    manufacturer: string | null;
+    model: string | null;
+    serial: string | null;
+    sku: string | null;
+    biosVersion: string | null;
+    powerState: string | null;
+    health: string | null;
+    hostName: string | null;
+    uuid: string | null;
+    processors: { count: number | null; model: string | null };
+    memoryGiB: number | null;
+  }>;
+  chassis: Array<{
+    id: string;
+    name: string | null;
+    model: string | null;
+    serial: string | null;
+    health: string | null;
+    powerWatts: number | null;
+    powerSupplies: Array<{
+      name: string;
+      model: string | null;
+      serial: string | null;
+      firmware: string | null;
+      capacityWatts: number | null;
+      health: string | null;
+    }>;
+    fans: Array<{ name: string; reading: number | null; units: string | null; health: string | null }>;
+    temperatures: Array<{ name: string; celsius: number | null; criticalCelsius: number | null; health: string | null }>;
+  }>;
+  managers: Array<{
+    id: string;
+    model: string | null;
+    type: string | null;
+    firmware: string | null;
+    health: string | null;
+    protocols: Array<{ name: string; enabled: boolean; port: number | null }> | null;
+  }>;
+  firmware: Array<{ id: string; name: string | null; version: string | null; updateable: boolean | null }>;
+  storage: Array<{
+    system: string;
+    id: string;
+    controllers: Array<{ name: string; model: string | null; firmware: string | null; health: string | null }>;
+    drives: Array<{
+      id: string;
+      name: string | null;
+      model: string | null;
+      serial: string | null;
+      capacityBytes: number | null;
+      media: string | null;
+      protocol: string | null;
+      health: string | null;
+      lifeLeftPercent: number | null;
+    }>;
+  }>;
+  accounts: Array<{ user: string; role: string | null; enabled: boolean | null; locked: boolean | null }> | null;
+  events: Array<{ log: string; id: string | null; at: string | null; severity: string | null; message: string | null }>;
+  unreadable: string[];
+}
+
+/** Checks that what an agent sent looks like a BMC's facts before anything is stored. */
+export function checkBmcFacts(v: unknown): BmcFacts {
+  const f = v as Partial<BmcFacts> | null;
+  if (!f || typeof f !== "object") throw new Error("facts must be an object");
+  if (typeof f.collectedAt !== "string" || Number.isNaN(Date.parse(f.collectedAt))) throw new Error("facts.collectedAt must be a date");
+  if (!f.service || typeof f.service !== "object" || typeof f.service.redfishVersion !== "string") throw new Error("facts.service is incomplete");
+  for (const a of ["systems", "chassis", "managers", "firmware", "storage", "events", "unreadable"] as const)
+    if (!Array.isArray(f[a])) throw new Error(`facts.${a} must be a list`);
+  if (f.accounts !== null && !Array.isArray(f.accounts)) throw new Error("facts.accounts must be a list or null");
+  const named = (list: unknown[], key: string) => list.every((x) => x && typeof x === "object" && typeof (x as Record<string, unknown>)[key] === "string");
+  if (!named(f.systems!, "id") || !named(f.chassis!, "id") || !named(f.managers!, "id") || !named(f.firmware!, "id") || !named(f.storage!, "id"))
+    throw new Error("facts: every system, chassis, manager, firmware and storage entry has an id");
+  if (f.accounts && !named(f.accounts, "user")) throw new Error("facts.accounts: every account has a user");
+  for (const c of f.chassis!) {
+    if (!Array.isArray(c.powerSupplies) || !Array.isArray(c.fans) || !Array.isArray(c.temperatures))
+      throw new Error("facts.chassis: powerSupplies, fans and temperatures are lists");
+  }
+  for (const s of f.storage!) if (!Array.isArray(s.controllers) || !Array.isArray(s.drives)) throw new Error("facts.storage: controllers and drives are lists");
+  return f as BmcFacts;
 }

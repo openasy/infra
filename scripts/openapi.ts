@@ -24,6 +24,13 @@ const STATUS = {
   description: "Of the last collection. new and host-key-pending wait for an admin to accept the host key.",
 };
 
+const BMC_STATUS = {
+  type: "string",
+  enum: ["new", "certificate-pending", "certificate-changed", "pending", "ok", "unreachable", "auth-failed", "timeout", "not-redfish", "error"],
+  description: "Of the last collection. new and certificate-pending wait for an admin to accept the BMC's TLS certificate.",
+};
+const health = { ...nul(str), description: "As Redfish says it: OK, Warning or Critical." };
+
 const schemas: Record<string, S> = {
   Problem: {
     type: "object",
@@ -104,6 +111,20 @@ const schemas: Record<string, S> = {
     lastSuccessAt: nul(dt),
     createdAt: dt,
     summary: ref("HostSummary"),
+    bmc: {
+      ...nul(
+        obj({
+          id: str,
+          name: str,
+          match: ref("MatchState"),
+          health,
+          unhealthy: { ...nul(int), description: "Its parts that say Warning or Critical, as the BMC last said." },
+          powerState: nul(str),
+        }),
+      ),
+      description:
+        "Its management controller: a BMC that says it is this machine (by SMBIOS UUID or serial), or that the hosts file names with server: this host (ADR 0055).",
+    },
     vulnerabilities: {
       ...nul(
         obj({
@@ -227,9 +248,103 @@ const schemas: Record<string, S> = {
     required: ["collectedAt", "version", "nodes", "workloads", "pods"],
     description: "Nodes, namespaces, workloads, pods, services, ingresses, volumes, cluster-admin bindings and recent warnings.",
   },
+  MatchState: {
+    type: "string",
+    enum: ["confirmed", "mismatch", "unverified", "found"],
+    description:
+      "confirmed: the host and the BMC report the same SMBIOS UUID or serial; mismatch: the file's server: reports another; unverified: nothing to compare yet (the host needs the sudo rules for its UUID and serial); found: matched by them, with no server: in the file.",
+  },
+  Match: obj({
+    host: nul(obj({ id: str, name: str })),
+    state: ref("MatchState"),
+    by: { ...nul({ type: "string", enum: ["uuid", "serial"] }), description: "What agreed." },
+    detail: { ...nul(str), description: "What differs, for a mismatch, and which host the BMC matches instead." },
+  }),
+  HostHardware: obj({
+    bmc: ref("Bmc"),
+    match: ref("Match"),
+    parts: { ...arr(obj({ kind: str, name: str, health })), description: "Parts the BMC says are Warning or Critical." },
+    reboots: {
+      ...arr(obj({ at: dt, events: arr(obj({ log: str, id: nul(str), at: nul(str), severity: nul(str), message: nul(str) })) })),
+      description: "The host's boots, newest first, each with the BMC's events from 30 minutes before to 5 minutes after.",
+    },
+  }),
+  BmcCertificate: obj({
+    fingerprint: { type: "string", pattern: "^([0-9A-F]{2}:){31}[0-9A-F]{2}$", description: "SHA-256, as openssl x509 -fingerprint -sha256 prints it." },
+    subject: str,
+    issuer: str,
+    validTo: str,
+  }),
+  BmcSummary: nul(
+    obj({
+      vendor: nul(str),
+      model: nul(str),
+      serial: nul(str),
+      sku: { ...nul(str), description: "Dell's service tag, HPE's product number." },
+      powerState: nul(str),
+      health,
+      biosVersion: nul(str),
+      bmcFirmware: nul(str),
+      unhealthy: { ...int, description: "Power supplies, fans, temperatures, controllers and drives that say Warning or Critical." },
+      services: { ...arr(str), description: "What the BMC offers on the network: HTTPS, IPMI, SSH, SNMP, KVMIP..." },
+      accounts: { ...nul(int), description: "Enabled accounts on the BMC; null when this account may not read them." },
+      administrators: nul(int),
+      unreadable: arr(str),
+    }),
+  ),
+  Bmc: obj({
+    id: str,
+    name: str,
+    address: str,
+    port: int,
+    user: { ...str, description: "The read-only account on the BMC." },
+    passwordFile: { ...str, description: "The file in the agent's key folder that holds its password. The password never reaches Infrastructure (ADR 0055)." },
+    agent: obj({ id: str, name: str }),
+    server: {
+      ...nul(obj({ name: str, id: nul(str) })),
+      description: "The server it manages, by its name in the hosts file; id when Infrastructure reads it too.",
+    },
+    match: {
+      ...nul(ref("Match")),
+      description: "Whether the host and the BMC say they are one machine; null when the file names no server and no host matches.",
+    },
+    fileCertificate: {
+      ...nul(str),
+      description:
+        "The fingerprint certificate gives in the hosts file: a BMC that presents it is trusted without an admin, and no other can be accepted here.",
+    },
+    intervalMinutes: int,
+    tags: map,
+    certificates: { ...arr(obj({ fingerprint: str })), description: "Pinned. The agent sends the password only to a BMC that presents one of them." },
+    pendingCertificate: { ...nul(ref("BmcCertificate")), description: "What the BMC presents now, waiting to be checked and accepted." },
+    status: BMC_STATUS,
+    statusDetail: nul(str),
+    lastAttemptAt: nul(dt),
+    lastSuccessAt: nul(dt),
+    createdAt: dt,
+    summary: ref("BmcSummary"),
+  }),
+  BmcFacts: {
+    type: "object",
+    description:
+      "What the BMC says over Redfish in one collection: systems, chassis with power supplies, fans and temperatures, managers with their network services, firmware, storage, accounts (never a password) and the newest event log entries.",
+    required: ["collectedAt", "service", "systems", "chassis", "managers", "firmware", "storage", "accounts", "events", "unreadable"],
+    properties: {
+      collectedAt: dt,
+      service: obj({ vendor: nul(str), product: nul(str), redfishVersion: str, uuid: nul(str) }),
+      systems: arr({ type: "object" }),
+      chassis: arr({ type: "object" }),
+      managers: arr({ type: "object" }),
+      firmware: arr(obj({ id: str, name: nul(str), version: nul(str), updateable: nul(bool) })),
+      storage: arr({ type: "object" }),
+      accounts: nul(arr(obj({ user: str, role: nul(str), enabled: nul(bool), locked: nul(bool) }))),
+      events: arr(obj({ log: str, id: nul(str), at: nul(str), severity: nul(str), message: nul(str) })),
+      unreadable: arr(str),
+    },
+  },
   Change: obj({
     id: int,
-    target: obj({ kind: { type: "string", enum: ["host", "cluster"] }, id: str, name: str }),
+    target: obj({ kind: { type: "string", enum: ["host", "cluster", "bmc"] }, id: str, name: str }),
     at: dt,
     category: str,
     item: str,
@@ -247,6 +362,7 @@ const schemas: Record<string, S> = {
     lastSeenAt: nul(dt),
     lastError: nul(str),
     hosts: int,
+    bmcs: int,
     createdAt: dt,
   }),
   NewAgent: obj({
@@ -284,11 +400,27 @@ const schemas: Record<string, S> = {
     target: obj({ address: str, port: int, user: str, hostKeys: arr(str), auth: { type: "string", enum: ["certificate", "key"] }, containers: bool }),
     jump: nul(obj({ address: str, port: int, user: str, hostKeys: arr(str) })),
   }),
+  BmcJob: obj({
+    id: str,
+    bmcId: str,
+    action: { type: "string", enum: ["bmc-collect", "bmc-certificate"] },
+    target: obj({ address: str, port: int, user: str, passwordFile: str, certificates: arr(str) }),
+  }),
   Result: {
     type: "object",
-    required: ["jobId", "hostId", "ok"],
-    description: "One of: facts (a collection), hostKeys (the keys a host presents), or error.",
-    properties: { jobId: str, hostId: str, ok: bool, facts: ref("Facts"), hostKeys: arr(str), error: obj({ kind: str, message: str }) },
+    required: ["jobId", "ok"],
+    description:
+      "For a host (hostId): facts (a collection), hostKeys (the keys it presents), or error. For a BMC (bmcId): facts, certificate (the one it presents), or error.",
+    properties: {
+      jobId: str,
+      hostId: str,
+      bmcId: str,
+      ok: bool,
+      facts: { anyOf: [ref("Facts"), ref("BmcFacts")] },
+      hostKeys: arr(str),
+      certificate: ref("BmcCertificate"),
+      error: obj({ kind: str, message: str }),
+    },
   },
   ProductLink: obj({
     id: { type: "string", description: "The product, as OpenAsy names it.", examples: ["vpn"] },
@@ -298,6 +430,7 @@ const schemas: Record<string, S> = {
     agents: { type: "object", additionalProperties: int },
     hosts: { type: "object", additionalProperties: int },
     clusters: { type: "object", additionalProperties: int },
+    bmcs: { type: "object", additionalProperties: int },
     containers: int,
     changesLastDay: int,
     hostsFile: { ...nul(ref("HostsFile")), description: "null when OPENASY_HOSTS is not set." },
@@ -310,7 +443,7 @@ const schemas: Record<string, S> = {
     ...obj({
       path: str,
       appliedAt: { ...nul(dt), description: "When it was last read and applied; null if it never was." },
-      entries: int,
+      entries: { ...int, description: "Servers in hosts:; its bmcs: are listed under /api/v1/bmcs." },
       error: { ...nul(str), description: "Why the file on disk is not applied." },
       warnings: { ...arr(str), description: "What to fix that did not stop the file from being applied, such as a host whose agent is not enrolled yet." },
     }),
@@ -324,7 +457,12 @@ const ok = (schema: S, description = "OK") => ({ description, content: { "applic
 const body = (schema: S) => ({ required: true, content: { "application/json": { schema } } });
 const id = { name: "id", in: "path", required: true, schema: str };
 const pageParams = [
-  { name: "category", in: "query", schema: str, description: "package, port, service, user, sudo, ssh-key, container, ..." },
+  {
+    name: "category",
+    in: "query",
+    schema: str,
+    description: "package, port, service, user, sudo, ssh-key, container, ...; for a BMC firmware, hardware, health, power, drive, bmc-account, bmc-service.",
+  },
   { name: "since", in: "query", schema: dt },
   { name: "cursor", in: "query", schema: str },
   { name: "limit", in: "query", schema: { type: "integer", minimum: 1, maximum: 500, default: 100 } },
@@ -361,13 +499,14 @@ const spec = {
     version: "0.6.0",
     summary: "Hosts, containers and Kubernetes, read without installing anything, with every change kept.",
     description:
-      "Every screen of Infrastructure uses this API, and so can your scripts (ADR 0014). Within `/api/v1` changes are additive only (ADR 0024). Errors use Problem Details (RFC 9457).\n\nHosts are read over SSH as an unprivileged `openasy` account with 5-minute certificates, and clusters through their API with a read-only token (ADR 0031). Each operation names the role it needs (`x-openasy-role`). Sign-in, members and API tokens are under `/api/v1/auth`, provided by [@openasy/auth](https://github.com/openasy/auth#routes).",
+      "Every screen of Infrastructure uses this API, and so can your scripts (ADR 0014). Within `/api/v1` changes are additive only (ADR 0024). Errors use Problem Details (RFC 9457).\n\nHosts are read over SSH as an unprivileged `openasy` account with 5-minute certificates, clusters through their API with a read-only token (ADR 0031), and BMCs over Redfish by the agent, with GET only and a read-only account (ADR 0055). Each operation names the role it needs (`x-openasy-role`). Sign-in, members and API tokens are under `/api/v1/auth`, provided by [@openasy/auth](https://github.com/openasy/auth#routes).",
     license: { name: "AGPL-3.0-only", identifier: "AGPL-3.0-only" },
   },
   servers: [{ url: "/", description: "This Infrastructure" }],
   tags: [
     { name: "Agents", description: "infra-agent: installed once, it reads hosts over SSH. Nothing is installed on the hosts (ADR 0031)." },
     { name: "Hosts", description: "Servers an agent reads over SSH." },
+    { name: "BMCs", description: "Servers' management controllers (iDRAC, iLO, XClarity), read by an agent over Redfish with GET only (ADR 0055)." },
     { name: "Clusters", description: "Kubernetes read through its API." },
     { name: "Changes", description: "What changed, and when." },
     { name: "Setup", description: "What to put on hosts and clusters." },
@@ -475,7 +614,7 @@ const spec = {
           "Called by infra-agent with its secret every few seconds. Each job is leased for 10 minutes. Answers 409 when the agent's version differs from infra's (ADR 0019).",
         body: ref("AgentReport"),
         security: AGENT_SEC,
-        responses: { "200": ok(obj({ jobs: arr(ref("Job")) })), ...P(400, 401, 409, 422) },
+        responses: { "200": ok(obj({ jobs: arr({ anyOf: [ref("Job"), ref("BmcJob")] }) })), ...P(400, 401, 409, 422) },
       }),
     },
     "/api/v1/agent/results": {
@@ -539,6 +678,18 @@ const spec = {
         responses: { "200": ok(ref("Changes")), ...R("v"), ...P(404, 422) },
       }),
     },
+    "/api/v1/hosts/{id}/hardware": {
+      get: op({
+        id: "hostHardware",
+        tag: "Hosts",
+        summary: "The host as its BMC sees it",
+        description:
+          "Its BMC and whether they match, the parts that are not OK, and its reboots with what the BMC logged around each (ADR 0055). 404 when no BMC is matched with it.",
+        role: "viewer",
+        params: [id],
+        responses: { "200": ok(ref("HostHardware")), ...R("v"), ...P(404) },
+      }),
+    },
     "/api/v1/hosts/{id}/collect": {
       post: op({
         id: "collectHost",
@@ -569,6 +720,74 @@ const spec = {
         params: [id],
         body: obj({ fingerprint: str }),
         responses: { "200": ok(ref("Host")), ...R("a"), ...P(400, 404, 409, 422) },
+      }),
+    },
+    "/api/v1/bmcs": {
+      get: op({
+        id: "listBmcs",
+        tag: "BMCs",
+        summary: "List BMCs",
+        description: "The BMCs come from the bmcs: list of the hosts file (OPENASY_HOSTS, ADR 0052, 0055); no route adds or changes one.",
+        role: "viewer",
+        responses: { "200": ok(obj({ bmcs: arr(ref("Bmc")) })), ...R("v") },
+      }),
+    },
+    "/api/v1/bmcs/{id}": {
+      get: op({ id: "getBmc", tag: "BMCs", summary: "Get a BMC", role: "viewer", params: [id], responses: { "200": ok(ref("Bmc")), ...R("v"), ...P(404) } }),
+    },
+    "/api/v1/bmcs/{id}/facts": {
+      get: op({
+        id: "bmcFacts",
+        tag: "BMCs",
+        summary: "What the BMC says about its server",
+        description: "The last collection, or with `at` the one in effect at that time.",
+        role: "viewer",
+        params: [id, { name: "at", in: "query", schema: dt }],
+        responses: { "200": ok(obj({ facts: ref("BmcFacts"), collectedAt: dt })), ...R("v"), ...P(404, 422) },
+      }),
+    },
+    "/api/v1/bmcs/{id}/changes": {
+      get: op({
+        id: "bmcChanges",
+        tag: "Changes",
+        summary: "What changed on a BMC",
+        description: "Firmware, hardware, the health of its parts, power, accounts and network services.",
+        role: "viewer",
+        params: [id, ...pageParams],
+        responses: { "200": ok(ref("Changes")), ...R("v"), ...P(404, 422) },
+      }),
+    },
+    "/api/v1/bmcs/{id}/collect": {
+      post: op({
+        id: "collectBmc",
+        tag: "BMCs",
+        summary: "Collect now",
+        role: "editor",
+        params: [id],
+        responses: { "202": ok(obj({ status: str }), "Requested"), ...R("e"), ...P(404, 409) },
+      }),
+    },
+    "/api/v1/bmcs/{id}/certificate": {
+      post: op({
+        id: "fetchBmcCertificate",
+        tag: "BMCs",
+        summary: "Ask the BMC for its certificate again",
+        role: "admin",
+        params: [id],
+        responses: { "200": ok(ref("Bmc")), ...R("a"), ...P(404) },
+      }),
+    },
+    "/api/v1/bmcs/{id}/certificate/accept": {
+      post: op({
+        id: "acceptBmcCertificate",
+        tag: "BMCs",
+        summary: "Accept a BMC's certificate",
+        description:
+          "After checking on the BMC that its certificate has this fingerprint, for example with `openssl s_client -connect <address>:443 </dev/null | openssl x509 -noout -fingerprint -sha256`.",
+        role: "admin",
+        params: [id],
+        body: obj({ fingerprint: str }),
+        responses: { "200": ok(ref("Bmc")), ...R("a"), ...P(400, 404, 409, 422) },
       }),
     },
     "/api/v1/clusters": {
@@ -660,7 +879,7 @@ const spec = {
         tag: "Changes",
         summary: "What changed everywhere",
         role: "viewer",
-        params: [{ name: "kind", in: "query", schema: { type: "string", enum: ["host", "cluster"] } }, ...pageParams],
+        params: [{ name: "kind", in: "query", schema: { type: "string", enum: ["host", "cluster", "bmc"] } }, ...pageParams],
         responses: { "200": ok(ref("Changes")), ...R("v"), ...P(422) },
       }),
     },

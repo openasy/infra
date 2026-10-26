@@ -2,9 +2,9 @@ import { readFileSync } from "node:fs";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { OPENAPI } from "../scripts/openapi.ts";
-import { parseHosts } from "./hosts.ts";
+import { parseHosts, parseInventory } from "./hosts.ts";
 import { fingerprint } from "./infra.ts";
-import { CA_KEY, facts, HOST_KEY, OTHER_KEY, REPORT, startApp } from "./test-app.ts";
+import { BMC_CERT, bmcFacts, CA_KEY, facts, HOST_KEY, OTHER_CERT, OTHER_KEY, REPORT, startApp } from "./test-app.ts";
 
 // Contract tests (ADR 0024): every response matches openapi.json and every operation is called. The scenario is
 // also the behaviour test: agents, roles, host keys, collections, changes.
@@ -107,10 +107,11 @@ describe("agents", () => {
   });
 });
 
+// Hosts come from the hosts file only (ADR 0052): the tests keep one and apply it as the product does.
+const file = new Map<string, Record<string, unknown>>();
+
 describe("hosts", () => {
   let web: Host;
-  // Hosts come from the hosts file only (ADR 0052): the tests keep one and apply it as the product does.
-  const file = new Map<string, Record<string, unknown>>();
   const setHost = (entry: Record<string, unknown> & { name: string }) => (file.set(entry.name, entry), apply());
   const dropHost = (name: string) => (file.delete(name), apply());
   const apply = () => app.infra.syncFile(parseHosts(JSON.stringify({ hosts: [...file.values()] })));
@@ -315,6 +316,190 @@ describe("hosts", () => {
     expect(setHost({ name: "old-2", address: "10.3.0.2", agent: "dc-main" })).toEqual([]);
     expect((await call("viewer", "GET", "/api/v1/hosts/{id}", { concrete: hostPath("ui-old-2") })).body).toMatchObject({ source: "file", address: "10.3.0.2" });
     dropHost("old-2");
+  });
+});
+
+describe("BMCs", () => {
+  type Bmc = { id: string; status: string; statusDetail: string | null; pendingCertificate: { fingerprint: string } | null; summary: any; server: any };
+  const bmcPath = (id: string, rest = "") => `/api/v1/bmcs/${id}${rest}`;
+  // A BMC names its server; the file keeps both lists (ADR 0055).
+  const apply = (bmcs: Array<Record<string, unknown>>) => {
+    const { hosts, bmcs: list } = parseInventory(JSON.stringify({ hosts: [...file.values()], bmcs }));
+    return app.infra.syncFile(hosts, list);
+  };
+  const entry = { name: "web-1-idrac", address: "10.0.9.5", server: "web-1", passwordFile: "web-1-bmc", tags: { rack: "r1" } };
+  let bmc: Bmc;
+
+  it("come from the file, and the password stays with the agent", async () => {
+    agent.bmcs.set("10.0.9.5", { certificate: BMC_CERT, facts: bmcFacts("idrac9") });
+    expect(apply([entry])).toEqual([]);
+    const listed = (await call("viewer", "GET", "/api/v1/bmcs")).body as { bmcs: Array<Bmc & { passwordFile: string }> };
+    expect(listed.bmcs).toMatchObject([{ name: "web-1-idrac", status: "new", passwordFile: "web-1-bmc", server: { name: "web-1" } }]);
+    bmc = listed.bmcs[0]!;
+    // No route adds one.
+    expect((await app.admin("/api/v1/bmcs", { method: "POST", body: JSON.stringify(entry) })).status).toBe(404);
+    expect((await call("editor", "POST", "/api/v1/bmcs/{id}/collect", { concrete: bmcPath(bmc.id, "/collect") })).status).toBe(409);
+  });
+
+  it("wait for their certificate to be checked, and nothing is read before", async () => {
+    const jobs = await agent.round();
+    const job = jobs.find((j) => j.bmcId === bmc.id) as unknown as { action: string; target: Record<string, unknown> };
+    // The agent is told which file holds the password, never the password.
+    expect(job).toMatchObject({
+      action: "bmc-certificate",
+      target: { address: "10.0.9.5", port: 443, user: "openasy", passwordFile: "web-1-bmc", certificates: [] },
+    });
+    bmc = (await call("viewer", "GET", "/api/v1/bmcs/{id}", { concrete: bmcPath(bmc.id) })).body as Bmc;
+    expect(bmc).toMatchObject({ status: "certificate-pending", pendingCertificate: { fingerprint: BMC_CERT.fingerprint, subject: "CN=idrac-db-1" } });
+    expect((await agent.round()).filter((j) => j.bmcId)).toEqual([]);
+    const wrong = await call("admin", "POST", "/api/v1/bmcs/{id}/certificate/accept", {
+      concrete: bmcPath(bmc.id, "/certificate/accept"),
+      body: { fingerprint: OTHER_CERT.fingerprint },
+    });
+    expect(wrong.status).toBe(422);
+    expect(
+      (
+        await call("editor", "POST", "/api/v1/bmcs/{id}/certificate/accept", {
+          concrete: bmcPath(bmc.id, "/certificate/accept"),
+          body: { fingerprint: BMC_CERT.fingerprint },
+        })
+      ).status,
+    ).toBe(403);
+    const accepted = await call("admin", "POST", "/api/v1/bmcs/{id}/certificate/accept", {
+      concrete: bmcPath(bmc.id, "/certificate/accept"),
+      body: { fingerprint: BMC_CERT.fingerprint.toLowerCase() },
+    });
+    expect(accepted.body).toMatchObject({ status: "pending", certificates: [{ fingerprint: BMC_CERT.fingerprint }], pendingCertificate: null });
+  });
+
+  it("are read: what the machine is, the health of its parts, and who may manage it", async () => {
+    const collect = (await agent.round()).find((j) => j.bmcId === bmc.id) as unknown as { action: string; target: { certificates: string[] } };
+    expect(collect).toMatchObject({ action: "bmc-collect", target: { certificates: [BMC_CERT.fingerprint] } });
+    bmc = (await call("viewer", "GET", "/api/v1/bmcs/{id}", { concrete: bmcPath(bmc.id) })).body as Bmc;
+    expect(bmc.status).toBe("ok");
+    expect(bmc.summary).toMatchObject({
+      vendor: "Dell",
+      model: "PowerEdge R650",
+      serial: "CNIVC0022B0123",
+      health: "Critical",
+      bmcFirmware: "6.10.30.00",
+      unhealthy: 2,
+      accounts: 2,
+      administrators: 1,
+    });
+    expect(bmc.summary.services).toEqual(expect.arrayContaining(["IPMI", "SSH", "KVMIP"]));
+    const f = (await call("viewer", "GET", "/api/v1/bmcs/{id}/facts", { concrete: bmcPath(bmc.id, "/facts") })).body as { facts: { events: unknown[] } };
+    expect(f.facts.events).toHaveLength(3);
+    // The host's page links to its BMC.
+    const host = ((await call("viewer", "GET", "/api/v1/hosts")).body as { hosts: Array<{ name: string; bmc: unknown }> }).hosts.find(
+      (h) => h.name === "web-1",
+    )!;
+    // The file names web-1, but web-1 has not said which machine it is on: nothing to compare yet.
+    expect(host.bmc).toEqual({ id: bmc.id, name: "web-1-idrac", match: "unverified", health: "Critical", unhealthy: 2, powerState: "On" });
+  });
+
+  it("are matched with their host by what both say, and show its reboots next to the BMC's events", async () => {
+    // web-1 with the sudo rules says its UUID and its Dell service tag, and that it booted at 16:10 UTC on October 20.
+    const web = agent.hosts.get("10.0.0.5")!;
+    web.facts = {
+      ...web.facts,
+      system: { ...web.facts.system, serial: "7XQ2R33", uuid: "4c4c4544-0058-5110-8032-b7c04f523333", bootedAt: "2026-10-20T16:10:00.000Z" },
+    };
+    const hostId = ((await call("viewer", "GET", "/api/v1/hosts")).body as { hosts: Array<{ id: string; name: string }> }).hosts.find(
+      (h) => h.name === "web-1",
+    )!.id;
+    await app.editor(hostPath(hostId, "/collect"), { method: "POST" });
+    await agent.round();
+    bmc = (await call("viewer", "GET", "/api/v1/bmcs/{id}", { concrete: bmcPath(bmc.id) })).body as Bmc;
+    expect((bmc as unknown as { match: unknown }).match).toEqual({ host: { id: hostId, name: "web-1" }, state: "confirmed", by: "uuid", detail: null });
+    const hw = (await call("viewer", "GET", "/api/v1/hosts/{id}/hardware", { concrete: hostPath(hostId, "/hardware") })).body as {
+      match: { state: string };
+      parts: Array<{ kind: string; name: string; health: string }>;
+      reboots: Array<{ at: string; events: Array<{ message: string }> }>;
+    };
+    expect(hw.match.state).toBe("confirmed");
+    expect(hw.parts).toEqual([
+      { kind: "power-supply", name: "PS2 Status", health: "Critical" },
+      { kind: "drive", name: "Solid State Disk 0:1:1", health: "Warning" },
+    ]);
+    // The power supply that lost its input, eight minutes before the host came back up.
+    expect(hw.reboots[0]).toEqual({
+      at: "2026-10-20T16:10:00.000Z",
+      events: [expect.objectContaining({ message: "The power input for power supply 2 is lost." })],
+    });
+    // A host no BMC is matched with has no hardware view.
+    const other = await app.viewer(hostPath("nope", "/hardware"));
+    expect(other.status).toBe(404);
+    expect((await call("viewer", "GET", "/api/v1/hosts/{id}/hardware", { concrete: hostPath("nope", "/hardware") })).status).toBe(404);
+  });
+
+  it("keep what changed: firmware, a new administrator, a service turned on, a part that failed", async () => {
+    const next = bmcFacts("idrac9");
+    next.managers[0]!.firmware = "7.00.00.00";
+    next.managers[0]!.protocols = next.managers[0]!.protocols!.map((p) => (p.name === "SNMP" ? { ...p, enabled: true } : p));
+    next.accounts!.push({ user: "mallory", role: "Administrator", enabled: true, locked: false });
+    next.chassis[0]!.fans[0]!.health = "Critical";
+    // A reading that moves is not a change.
+    next.chassis[0]!.temperatures[0]!.celsius = 71;
+    agent.bmcs.set("10.0.9.5", { certificate: BMC_CERT, facts: next });
+    expect((await call("editor", "POST", "/api/v1/bmcs/{id}/collect", { concrete: bmcPath(bmc.id, "/collect") })).status).toBe(202);
+    await agent.round();
+    const { changes } = (await call("viewer", "GET", "/api/v1/bmcs/{id}/changes", { concrete: bmcPath(bmc.id, "/changes") })).body as {
+      changes: Array<{ category: string; item: string; change: string; before: string | null; after: string | null; target: { kind: string } }>;
+    };
+    expect(changes.map((c) => `${c.category} ${c.item} ${c.change}`).sort()).toEqual([
+      "bmc-account mallory added",
+      "bmc-service SNMP changed",
+      "firmware BMC iDRAC.Embedded.1 changed",
+      "health fan System.Embedded.1/System Board Fan1A changed",
+    ]);
+    expect(changes[0]!.target.kind).toBe("bmc");
+    const all = (await call("viewer", "GET", "/api/v1/changes", { concrete: "/api/v1/changes?kind=bmc" })).body as {
+      changes: Array<{ target: { name: string } }>;
+    };
+    expect(all.changes.every((c) => c.target.name === "web-1-idrac")).toBe(true);
+  });
+
+  it("stop when the BMC presents another certificate, until an admin accepts it", async () => {
+    agent.bmcs.set("10.0.9.5", { certificate: OTHER_CERT, facts: bmcFacts("idrac9") });
+    await call("editor", "POST", "/api/v1/bmcs/{id}/collect", { concrete: bmcPath(bmc.id, "/collect") });
+    await agent.round();
+    bmc = (await call("viewer", "GET", "/api/v1/bmcs/{id}", { concrete: bmcPath(bmc.id) })).body as Bmc;
+    expect(bmc).toMatchObject({ status: "certificate-changed", pendingCertificate: { fingerprint: OTHER_CERT.fingerprint } });
+    expect((await call("editor", "POST", "/api/v1/bmcs/{id}/collect", { concrete: bmcPath(bmc.id, "/collect") })).status).toBe(409);
+    expect((await call("admin", "POST", "/api/v1/bmcs/{id}/certificate", { concrete: bmcPath(bmc.id, "/certificate") })).body).toMatchObject({ id: bmc.id });
+    // A certificate the file names is trusted without an admin, and none other can be accepted here.
+    apply([{ ...entry, certificate: OTHER_CERT.fingerprint.toLowerCase() }]);
+    bmc = (await call("viewer", "GET", "/api/v1/bmcs/{id}", { concrete: bmcPath(bmc.id) })).body as Bmc;
+    expect(bmc).toMatchObject({ status: "new", certificates: [] });
+    await agent.round();
+    expect((await call("viewer", "GET", "/api/v1/bmcs/{id}", { concrete: bmcPath(bmc.id) })).body).toMatchObject({
+      certificates: [{ fingerprint: OTHER_CERT.fingerprint }],
+      fileCertificate: OTHER_CERT.fingerprint,
+    });
+    const refused = await call("admin", "POST", "/api/v1/bmcs/{id}/certificate/accept", {
+      concrete: bmcPath(bmc.id, "/certificate/accept"),
+      body: { fingerprint: BMC_CERT.fingerprint },
+    });
+    expect(refused.status).toBe(409);
+  });
+
+  it("say why they cannot be read, and leave with the file", async () => {
+    agent.bmcs.set("10.0.9.5", { certificate: OTHER_CERT, facts: bmcFacts("idrac9"), fail: { kind: "auth-failed", message: "the BMC refused openasy" } });
+    await call("editor", "POST", "/api/v1/bmcs/{id}/collect", { concrete: bmcPath(bmc.id, "/collect") });
+    await agent.round();
+    expect((await call("viewer", "GET", "/api/v1/bmcs/{id}", { concrete: bmcPath(bmc.id) })).body).toMatchObject({
+      status: "auth-failed",
+      statusDetail: "the BMC refused openasy",
+    });
+    // Facts for a BMC whose certificate is not pinned are refused, even from its agent.
+    apply([{ ...entry, address: "10.0.9.50" }]);
+    const res = await agent.post("/api/v1/agent/results", { jobId: "x", bmcId: bmc.id, ok: true, facts: bmcFacts("idrac9") });
+    expect(res.status).toBe(409);
+    expect((await call("viewer", "GET", "/api/v1/bmcs/{id}/facts", { concrete: bmcPath(bmc.id, "/facts?at=2000-01-01T00:00:00Z") })).status).toBe(404);
+    apply([]);
+    expect((await call("viewer", "GET", "/api/v1/bmcs/{id}", { concrete: bmcPath(bmc.id) })).status).toBe(404);
+    expect(app.db.prepare("SELECT COUNT(*) AS n FROM changes WHERE target_kind = 'bmc'").get()).toEqual({ n: 0 });
   });
 });
 

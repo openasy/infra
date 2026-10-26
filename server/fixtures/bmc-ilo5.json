@@ -1,0 +1,149 @@
+{
+  "collectedAt": "2026-10-26T09:00:00.000Z",
+  "service": {
+    "vendor": "HPE",
+    "product": "ProLiant DL360 Gen10",
+    "redfishVersion": "1.6.0",
+    "uuid": "2f6e8a54-1a1b-5b0a-9c3e-7c1a0b2c3d4e"
+  },
+  "systems": [
+    {
+      "id": "1",
+      "manufacturer": "HPE",
+      "model": "ProLiant DL360 Gen10",
+      "serial": "CZJ0420ABC",
+      "sku": "867959-B21",
+      "biosVersion": "U32 v2.68 (07/14/2022)",
+      "powerState": "On",
+      "health": "OK",
+      "hostName": "spare",
+      "uuid": "36353738-3935-435a-4a30-343230414243",
+      "processors": {
+        "count": 1,
+        "model": "Intel(R) Xeon(R) Silver 4210R CPU @ 2.40GHz"
+      },
+      "memoryGiB": 64
+    }
+  ],
+  "chassis": [
+    {
+      "id": "1",
+      "name": "Computer System Chassis",
+      "model": "ProLiant DL360 Gen10",
+      "serial": "CZJ0420ABC",
+      "health": "OK",
+      "powerWatts": 141,
+      "powerSupplies": [
+        {
+          "name": "HpeServerPowerSupply",
+          "model": "865408-B21",
+          "serial": "5WBXK0B8JAB123",
+          "firmware": "1.00",
+          "capacityWatts": 500,
+          "health": "OK"
+        }
+      ],
+      "fans": [
+        {
+          "name": "Fan 1",
+          "reading": 23,
+          "units": "Percent",
+          "health": "OK"
+        }
+      ],
+      "temperatures": [
+        {
+          "name": "01-Inlet Ambient",
+          "celsius": 21,
+          "criticalCelsius": 42,
+          "health": "OK"
+        }
+      ]
+    }
+  ],
+  "managers": [
+    {
+      "id": "1",
+      "model": "iLO 5",
+      "type": "BMC",
+      "firmware": "iLO 5 v2.78",
+      "health": "OK",
+      "protocols": [
+        {
+          "name": "HTTP",
+          "enabled": true,
+          "port": 80
+        },
+        {
+          "name": "HTTPS",
+          "enabled": true,
+          "port": 443
+        },
+        {
+          "name": "IPMI",
+          "enabled": false,
+          "port": 623
+        },
+        {
+          "name": "SSH",
+          "enabled": true,
+          "port": 22
+        },
+        {
+          "name": "SNMP",
+          "enabled": true,
+          "port": 161
+        },
+        {
+          "name": "VirtualMedia",
+          "enabled": true,
+          "port": 17988
+        },
+        {
+          "name": "KVMIP",
+          "enabled": true,
+          "port": 17990
+        }
+      ]
+    }
+  ],
+  "firmware": [
+    {
+      "id": "1",
+      "name": "iLO 5",
+      "version": "2.78 Apr 28 2023",
+      "updateable": true
+    },
+    {
+      "id": "2",
+      "name": "System ROM",
+      "version": "U32 v2.68 (07/14/2022)",
+      "updateable": true
+    },
+    {
+      "id": "3",
+      "name": "HPE Ethernet 1Gb 4-port 331i Adapter - NIC",
+      "version": "20.20.41",
+      "updateable": false
+    }
+  ],
+  "storage": [],
+  "accounts": null,
+  "events": [
+    {
+      "log": "IML",
+      "id": "2",
+      "at": "2026-10-25T22:40:11Z",
+      "severity": "Warning",
+      "message": "Network Adapter Link Down (Slot 0, Port 2)"
+    },
+    {
+      "log": "IML",
+      "id": "1",
+      "at": "2026-08-02T10:00:00Z",
+      "severity": "OK",
+      "message": "Firmware flashed (iLO 5 2.78)"
+    }
+  ],
+  "unreadable": ["the BMC's accounts"]
+}

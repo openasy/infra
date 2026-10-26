@@ -1,15 +1,19 @@
 // End-to-end (ADR 0029): the infra and infra-agent images against real sshd hosts, a jump host, a fixed-key host,
-// Docker and a kind cluster. Nothing is faked. Run it with e2e/run.sh, which builds the images; KIND_CLUSTER names an existing kind
+// Docker, a BMC over Redfish and a kind cluster. Nothing is faked but the BMC, which answers from infra-agent's tree. Run it with e2e/run.sh, which builds the images; KIND_CLUSTER names an existing kind
 // cluster to read (skipped when unset).
 import { execFileSync } from "node:child_process";
 import { createHmac, randomBytes } from "node:crypto";
-import { chmodSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { X509Certificate } from "node:crypto";
+import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const IMAGE = process.env.INFRA_IMAGE ?? "infra:dev";
 const AGENT_IMAGE = process.env.AGENT_IMAGE ?? "infra-agent:dev";
 const TARGET = process.env.TARGET_IMAGE ?? "openasy-infra-target:dev";
+// The BMC runs on the image infra-agent is built from, which is already there.
+const NODE_IMAGE = "node:26.12.0-trixie-slim";
+const AGENT_DIR = process.env.AGENT_DIR ?? new URL("../../infra-agent", import.meta.url).pathname;
 const BASE = "http://localhost:18095";
 const PASSWORD = "correct horse battery staple";
 const sh = (cmd: string, args: string[], opts: { input?: string } = {}) =>
@@ -30,7 +34,7 @@ function cleanup() {
       // Already gone.
     }
   };
-  for (const c of ["e2e-infra", "e2e-agent", "e2e-web", "e2e-jump", "e2e-db", "e2e-key"]) quiet(["rm", "-f", c]);
+  for (const c of ["e2e-infra", "e2e-agent", "e2e-web", "e2e-jump", "e2e-db", "e2e-key", "e2e-bmc"]) quiet(["rm", "-f", c]);
   for (const n of ["e2e-infra-pub", "e2e-infra-int"]) quiet(["network", "rm", n]);
 }
 
@@ -55,8 +59,16 @@ try {
   mkdirSync(inventory);
   chmodSync(inventory, 0o755);
   const hostsFile = join(inventory, "hosts.yaml");
-  const writeHosts = (hosts: Array<Record<string, unknown>>) => (writeFileSync(hostsFile, JSON.stringify({ hosts })), chmodSync(hostsFile, 0o644));
+  let bmcs: Array<Record<string, unknown>> = [];
+  const writeHosts = (hosts: Array<Record<string, unknown>>) => (writeFileSync(hostsFile, JSON.stringify({ hosts, bmcs })), chmodSync(hostsFile, 0o644));
   writeHosts([]);
+  // The agent's key folder: here only the BMC's password, read by the agent alone (ADR 0055).
+  const keys = join(dir, "keys");
+  mkdirSync(keys);
+  chmodSync(keys, 0o755);
+  const BMC_PASSWORD = `bmc-${randomBytes(9).toString("base64url")}`;
+  writeFileSync(join(keys, "bmc-password"), `${BMC_PASSWORD}\n`);
+  chmodSync(join(keys, "bmc-password"), 0o644);
 
   // Like compose: read-only root, tmpfs for the per-connection keys, the KEK as a mounted file.
   docker(
@@ -146,6 +158,8 @@ try {
     "no-new-privileges",
     "-v",
     `${join(dir, "agent-kek")}:/run/secrets/openasy-agent-kek:ro`,
+    "-v",
+    `${keys}:/keys:ro`,
     "-e",
     "INFRA_URL=http://e2e-infra:8080",
     "-e",
@@ -314,6 +328,92 @@ try {
     docker("exec", "e2e-infra", "sh", "-c", "cat /data/infra.db* | tr -d '\\0' | grep -a -c 'PRIVATE KEY' || true") === "0",
     "infra: holds no SSH private key at all",
   );
+
+  // A BMC over Redfish, with a certificate of its own making as most have.
+  const bmcDir = join(dir, "bmc");
+  mkdirSync(join(bmcDir, "tls"), { recursive: true });
+  const bmcCert = () => {
+    sh("openssl", [
+      "req",
+      "-x509",
+      "-newkey",
+      "rsa:2048",
+      "-nodes",
+      "-days",
+      "2",
+      "-subj",
+      "/CN=e2e-bmc",
+      "-keyout",
+      join(bmcDir, "tls/key.pem"),
+      "-out",
+      join(bmcDir, "tls/cert.pem"),
+    ]);
+    for (const f of ["tls", "tls/key.pem", "tls/cert.pem"]) chmodSync(join(bmcDir, f), f === "tls" ? 0o755 : 0o644);
+    return new X509Certificate(readFileSync(join(bmcDir, "tls/cert.pem"))).fingerprint256;
+  };
+  copyFileSync(join(AGENT_DIR, "agent/fixtures/redfish-idrac9.json"), join(bmcDir, "tree.json"));
+  copyFileSync(new URL("./bmc.ts", import.meta.url).pathname, join(bmcDir, "bmc.ts"));
+  writeFileSync(join(bmcDir, "password"), BMC_PASSWORD);
+  for (const f of ["tree.json", "bmc.ts", "password"]) chmodSync(join(bmcDir, f), 0o644);
+  chmodSync(bmcDir, 0o755);
+  const startBmc = () => docker("run", "-d", "--name", "e2e-bmc", "--network", "e2e-infra-pub", "-v", `${bmcDir}:/bmc:ro`, NODE_IMAGE, "node", "/bmc/bmc.ts");
+  let fingerprint = bmcCert();
+  startBmc();
+  const bmcRequests = () =>
+    docker("logs", "e2e-bmc")
+      .split("\n")
+      .filter((l) => l.startsWith('{"method"'))
+      .map((l) => JSON.parse(l) as { method: string; path: string; auth: string });
+  bmcs = [{ name: "bmc", address: "e2e-bmc", server: "web", passwordFile: "bmc-password" }];
+  writeHosts(entries);
+  type Bmc = { id: string; status: string; statusDetail: string | null; pendingCertificate: { fingerprint: string } | null; lastSuccessAt: string | null };
+  const bmcState = async (until: (b: Bmc) => boolean) => {
+    for (let i = 0; i < 90; i++) {
+      const b = (await api<{ bmcs: Bmc[] }>("/api/v1/bmcs")).body.bmcs[0];
+      if (b && until(b)) return b;
+      await sleep(1000);
+    }
+    return (await api<{ bmcs: Bmc[] }>("/api/v1/bmcs")).body.bmcs[0];
+  };
+  const pending = await bmcState((b) => !!b.pendingCertificate);
+  ok(pending?.pendingCertificate?.fingerprint === fingerprint, "bmc: from the file, and the pending certificate is the one openssl prints for it");
+  ok(
+    bmcRequests().every((r) => r.auth === "none"),
+    "bmc: nothing signs in before its certificate is accepted",
+  );
+  await api(`/api/v1/bmcs/${pending?.id}/certificate/accept`, { fingerprint });
+  const read = await bmcState((b) => b.status === "ok" || b.status === "error" || b.status === "auth-failed");
+  ok(read?.status === "ok", `bmc: read over Redfish (${read?.status}${read?.statusDetail ? `: ${read.statusDetail}` : ""})`);
+  const bf = (await api<{ facts: any }>(`/api/v1/bmcs/${pending?.id}/facts`)).body.facts;
+  ok(
+    bf?.systems?.[0]?.model === "PowerEdge R650" && bf.accounts?.some((a: { user: string }) => a.user === "openasy"),
+    "bmc: the machine and its accounts are read",
+  );
+  ok((await api<{ bmc: { id: string } | null }>(`/api/v1/hosts/${web}`)).body.bmc?.id === pending?.id, "web: links to its BMC");
+  const seen = bmcRequests();
+  ok(seen.length > 10 && seen.every((r) => r.method === "GET"), `bmc: the agent sent GET only (${seen.length} requests)`);
+  ok(seen.every((r) => r.auth !== "wrong") && !seen.some((r) => r.path.includes("Actions")), "bmc: with the password from the key folder, and no action");
+  ok(
+    docker("exec", "e2e-infra", "sh", "-c", `cat /data/infra.db* | tr -d '\\0' | grep -a -c '${BMC_PASSWORD}' || true`) === "0",
+    "infra: holds no BMC password",
+  );
+
+  // A wrong password in the key folder: the BMC refuses it, and Infrastructure says so.
+  writeFileSync(join(keys, "bmc-password"), "not-the-password\n");
+  await api(`/api/v1/bmcs/${pending?.id}/collect`, {});
+  const refused = await bmcState((b) => b.status === "auth-failed");
+  ok(refused?.status === "auth-failed", `bmc: a wrong password is a refused login (${refused?.status})`);
+  writeFileSync(join(keys, "bmc-password"), `${BMC_PASSWORD}\n`);
+
+  // The BMC gets another certificate: the agent stops before it sends anything.
+  docker("rm", "-f", "e2e-bmc");
+  fingerprint = bmcCert();
+  startBmc();
+  await sleep(1500);
+  await api(`/api/v1/bmcs/${pending?.id}/collect`, {});
+  const changed = await bmcState((b) => b.status === "certificate-changed");
+  ok(changed?.status === "certificate-changed" && changed.pendingCertificate?.fingerprint === fingerprint, "bmc: a new certificate stops collection");
+  ok(bmcRequests().length === 0, "bmc: and nothing at all is sent to it");
 
   // Kubernetes through its API.
   if (process.env.KIND_CLUSTER) {

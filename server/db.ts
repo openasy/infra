@@ -109,6 +109,51 @@ const MIGRATIONS = [
      error TEXT,
      asset_id TEXT
    )`,
+  `-- BMCs from the hosts file's bmcs: list, read over Redfish by an agent (ADR 0055). Only the name of the password file
+   -- is kept: the agent reads the password itself. certificates are the pinned SHA-256 fingerprints of the BMC's TLS
+   -- certificate; pending_certificate is the one it presents now when it differs, as JSON.
+   CREATE TABLE bmcs (
+     id TEXT PRIMARY KEY,
+     name TEXT NOT NULL UNIQUE,
+     agent_id TEXT NOT NULL REFERENCES agents (id),
+     address TEXT NOT NULL,
+     port INTEGER NOT NULL DEFAULT 443,
+     bmc_user TEXT NOT NULL,
+     password_file TEXT NOT NULL,
+     server TEXT,
+     tags TEXT NOT NULL DEFAULT '{}',
+     interval_minutes INTEGER NOT NULL DEFAULT 15,
+     certificates TEXT NOT NULL DEFAULT '[]',
+     pending_certificate TEXT,
+     file_certificate TEXT,
+     status TEXT NOT NULL DEFAULT 'new',
+     status_detail TEXT,
+     last_attempt_at TEXT,
+     last_success_at TEXT,
+     collect_requested INTEGER NOT NULL DEFAULT 0,
+     certificate_requested INTEGER NOT NULL DEFAULT 1,
+     lease_until TEXT,
+     latest_facts BLOB,
+     created_at TEXT NOT NULL
+   );
+   -- snapshots names the kinds it holds in a CHECK, which SQLite cannot change in place: the table is copied.
+   CREATE TABLE snapshots_new (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     target_kind TEXT NOT NULL CHECK (target_kind IN ('host', 'cluster', 'bmc')),
+     target_id TEXT NOT NULL,
+     collected_at TEXT NOT NULL,
+     items_hash TEXT NOT NULL,
+     facts BLOB NOT NULL
+   );
+   INSERT INTO snapshots_new (id, target_kind, target_id, collected_at, items_hash, facts)
+     SELECT id, target_kind, target_id, collected_at, items_hash, facts FROM snapshots;
+   DROP TABLE snapshots;
+   ALTER TABLE snapshots_new RENAME TO snapshots;
+   CREATE INDEX snapshots_target ON snapshots (target_kind, target_id, collected_at)`,
+  `-- Which machine a host and a BMC say they are on, and the BMC's health, from their last collection, as JSON: a host
+   -- and its BMC are matched by them without reading every collection (ADR 0055).
+   ALTER TABLE hosts ADD COLUMN hardware TEXT;
+   ALTER TABLE bmcs ADD COLUMN hardware TEXT`,
 ];
 
 /** Opens the product's single SQLite file in WAL mode (ADR 0011) and migrates it forward. */

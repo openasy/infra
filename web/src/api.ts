@@ -1,9 +1,9 @@
 // The UI is an ordinary client of the public API (ADR 0014, 0018). Types follow openapi.json and server/facts.ts.
-import type { Container, Facts } from "../../server/facts.ts";
+import type { BmcFacts, Container, Facts } from "../../server/facts.ts";
 import type { ClusterFacts } from "../../server/k8s.ts";
 import type { ProductLink } from "../../server/products.ts";
 
-export type { Container, Facts, ClusterFacts, ProductLink };
+export type { BmcFacts, Container, Facts, ClusterFacts, ProductLink };
 
 export interface HostKey {
   type: string;
@@ -38,6 +38,7 @@ export interface Agent {
   lastSeenAt: string | null;
   lastError: string | null;
   hosts: number;
+  bmcs: number;
   createdAt: string;
 }
 
@@ -84,6 +85,70 @@ export interface Host {
   summary: HostSummary | null;
   /** When its packages last reached Vulnerabilities; null when Infrastructure does not send them. */
   vulnerabilities: { sentAt: string | null; error: string | null; assetId: string | null } | null;
+  /** Its management controller, when a BMC in the hosts file names this host as its server. */
+  bmc: {
+    id: string;
+    name: string;
+    match: MatchState;
+    health: string | null;
+    unhealthy: number | null;
+    powerState: string | null;
+  } | null;
+}
+
+/** A server's management controller, read over Redfish (ADR 0055). */
+/** Whether a host and a BMC say they are one machine (ADR 0055). */
+export type MatchState = "confirmed" | "mismatch" | "unverified" | "found";
+export interface Match {
+  host: { id: string; name: string } | null;
+  state: MatchState;
+  by: "uuid" | "serial" | null;
+  detail: string | null;
+}
+
+/** The host as its BMC sees it. */
+export interface HostHardware {
+  bmc: Bmc;
+  match: Match;
+  parts: Array<{ kind: string; name: string; health: string | null }>;
+  reboots: Array<{ at: string; events: BmcFacts["events"] }>;
+}
+
+export interface Bmc {
+  id: string;
+  name: string;
+  agent: { id: string; name: string };
+  address: string;
+  port: number;
+  user: string;
+  passwordFile: string;
+  server: { name: string; id: string | null } | null;
+  match: Match | null;
+  fileCertificate: string | null;
+  intervalMinutes: number;
+  tags: Record<string, string>;
+  certificates: Array<{ fingerprint: string }>;
+  pendingCertificate: { fingerprint: string; subject: string; issuer: string; validTo: string } | null;
+  status: string;
+  statusDetail: string | null;
+  lastAttemptAt: string | null;
+  lastSuccessAt: string | null;
+  createdAt: string;
+  summary: {
+    vendor: string | null;
+    model: string | null;
+    serial: string | null;
+    sku: string | null;
+    powerState: string | null;
+    health: string | null;
+    biosVersion: string | null;
+    bmcFirmware: string | null;
+    unhealthy: number;
+    services: string[];
+    accounts: number | null;
+    administrators: number | null;
+    unreadable: string[];
+  } | null;
 }
 
 export interface Cluster {
@@ -112,7 +177,7 @@ export interface Cluster {
 
 export interface Change {
   id: number;
-  target: { kind: "host" | "cluster"; id: string; name: string };
+  target: { kind: "host" | "cluster" | "bmc"; id: string; name: string };
   at: string;
   category: string;
   item: string;
@@ -129,6 +194,7 @@ export interface Summary {
   agents: Record<string, number>;
   hosts: Record<string, number>;
   clusters: Record<string, number>;
+  bmcs: Record<string, number>;
   containers: number;
   changesLastDay: number;
   hostsFile: HostsFile | null;

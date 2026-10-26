@@ -1,13 +1,14 @@
-// Hosts, agents and clusters, their collections, and what changed. Everything the API offers goes through here.
-// Infrastructure holds no SSH key and sends no commands: infra-agent asks for jobs ("collect this host"), runs its
-// own script and sends back what it found (ADR 0018, 0031).
+// Hosts, BMCs, agents and clusters, their collections, and what changed. Everything the API offers goes through here.
+// Infrastructure holds no SSH key, no BMC password and sends no commands: infra-agent asks for jobs ("collect this
+// host", "read this BMC"), runs its own script or Redfish reads and sends back what it found (ADR 0018, 0031, 0055).
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
 import { gunzipSync, gzipSync } from "node:zlib";
-import { diff, hostItems, itemsHash, type Change, type Item } from "./changes.ts";
-import { checkFacts, type Facts } from "./facts.ts";
+import { bmcItems, diff, hostItems, itemsHash, type Change, type Item } from "./changes.ts";
+import { checkBmcFacts, checkFacts, type BmcFacts, type Facts } from "./facts.ts";
+import { bmcHardware, hostHardware, matchBmcs, reboots, type BmcHardware, type HostHardware, type Match } from "./hardware.ts";
 import { clusterItems, collectCluster, K8sError, RBAC, type ClusterFacts } from "./k8s.ts";
-import type { HostEntry } from "./hosts.ts";
+import type { BmcEntry, HostEntry } from "./hosts.ts";
 import type { Keyring } from "./kek.ts";
 import type { VulnsLink } from "./vulns.ts";
 import { log } from "./log.ts";
@@ -25,7 +26,7 @@ export class InfraError extends Error {
   }
 }
 
-type Kind = "host" | "cluster";
+type Kind = "host" | "cluster" | "bmc";
 
 interface AgentRow {
   id: string;
@@ -68,6 +69,41 @@ interface HostRow {
   source: "ui" | "file";
   file_host_key: string | null;
   key_file: string | null;
+  hardware: string | null;
+}
+
+interface BmcRow {
+  id: string;
+  name: string;
+  agent_id: string;
+  address: string;
+  port: number;
+  bmc_user: string;
+  password_file: string;
+  server: string | null;
+  tags: string;
+  interval_minutes: number;
+  certificates: string;
+  pending_certificate: string | null;
+  file_certificate: string | null;
+  status: string;
+  status_detail: string | null;
+  last_attempt_at: string | null;
+  last_success_at: string | null;
+  collect_requested: number;
+  certificate_requested: number;
+  lease_until: string | null;
+  latest_facts: Uint8Array | null;
+  created_at: string;
+  hardware: string | null;
+}
+
+/** The TLS certificate a BMC presents, as the agent reports it. */
+interface BmcCertificate {
+  fingerprint: string;
+  subject: string;
+  issuer: string;
+  validTo: string;
 }
 
 interface ClusterRow {
@@ -90,6 +126,7 @@ interface ClusterRow {
 const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$/;
 const TAG = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,62}$/;
 const HOST_KEY = /^(ssh-ed25519|ecdsa-sha2-nistp(256|384|521)|ssh-rsa|sk-ssh-ed25519@openssh\.com) [A-Za-z0-9+/]+={0,2}$/;
+const CERTIFICATE = /^([0-9A-F]{2}:){31}[0-9A-F]{2}$/;
 const JOB_LEASE_MS = 10 * 60_000;
 const ENROLL_TTL_MS = 7 * 86_400_000;
 /** An agent that has not asked for work for this long is shown as offline. */
@@ -142,6 +179,7 @@ export function createInfra(
       lastSeenAt: a.last_seen_at,
       lastError: a.last_error,
       hosts: (db.prepare("SELECT COUNT(*) AS n FROM hosts WHERE agent_id = ?").get(a.id) as { n: number }).n,
+      bmcs: (db.prepare("SELECT COUNT(*) AS n FROM bmcs WHERE agent_id = ?").get(a.id) as { n: number }).n,
       createdAt: a.created_at,
     };
   }
@@ -171,8 +209,8 @@ export function createInfra(
 
   function deleteAgent(id: string) {
     requireAgent(id);
-    if (db.prepare("SELECT 1 FROM hosts WHERE agent_id = ?").get(id))
-      throw new InfraError(409, "conflict", "Hosts are read by this agent. Move or remove them first.");
+    if (db.prepare("SELECT 1 FROM hosts WHERE agent_id = ?").get(id) || db.prepare("SELECT 1 FROM bmcs WHERE agent_id = ?").get(id))
+      throw new InfraError(409, "conflict", "Hosts or BMCs are read by this agent. Move or remove them first.");
     db.prepare("DELETE FROM agents WHERE id = ?").run(id);
   }
 
@@ -275,28 +313,60 @@ export function createInfra(
     const leaseKey = db.prepare("UPDATE hosts SET lease_until = ? WHERE id = ?");
     const leaseCollect = db.prepare("UPDATE hosts SET lease_until = ?, last_attempt_at = ?, collect_requested = 0 WHERE id = ?");
     return {
-      jobs: jobs.flatMap(({ h, action }) => {
-        const jump = h.jump_host_id ? hostRow(h.jump_host_id) : undefined;
-        if (jump && !JSON.parse(jump.host_keys).length) return [];
-        if (action === "collect") leaseCollect.run(iso(t + JOB_LEASE_MS), iso(t), h.id);
-        else leaseKey.run(iso(t + JOB_LEASE_MS), h.id);
-        return [
-          {
-            id: randomUUID(),
-            hostId: h.id,
-            action,
-            target: { ...endpointOf(h), auth: h.auth, ...(h.auth === "key" && h.key_file && { keyFile: h.key_file }), containers: h.containers === 1 },
-            jump: jump ? endpointOf(jump) : null,
-          },
-        ];
-      }),
+      jobs: [
+        ...jobs.flatMap(({ h, action }) => {
+          const jump = h.jump_host_id ? hostRow(h.jump_host_id) : undefined;
+          if (jump && !JSON.parse(jump.host_keys).length) return [];
+          if (action === "collect") leaseCollect.run(iso(t + JOB_LEASE_MS), iso(t), h.id);
+          else leaseKey.run(iso(t + JOB_LEASE_MS), h.id);
+          return [
+            {
+              id: randomUUID(),
+              hostId: h.id,
+              action,
+              target: { ...endpointOf(h), auth: h.auth, ...(h.auth === "key" && h.key_file && { keyFile: h.key_file }), containers: h.containers === 1 },
+              jump: jump ? endpointOf(jump) : null,
+            },
+          ];
+        }),
+        ...bmcJobs(a, t),
+      ],
     };
+  }
+
+  /** BMCs whose certificate the agent should fetch, and BMCs that are due; leased like hosts. */
+  function bmcJobs(a: AgentRow, t: number) {
+    const free = (b: BmcRow) => !b.lease_until || Date.parse(b.lease_until) <= t;
+    const rows = (db.prepare("SELECT * FROM bmcs WHERE agent_id = ?").all(a.id) as unknown as BmcRow[]).filter(free);
+    const jobs = [
+      ...rows.filter((b) => b.certificate_requested === 1).map((b) => ({ b, action: "bmc-certificate" as const })),
+      ...rows
+        .filter(
+          (b) =>
+            b.certificate_requested === 0 &&
+            bmcPinned(b) &&
+            (b.collect_requested === 1 || !b.last_attempt_at || Date.parse(b.last_attempt_at) + b.interval_minutes * 60_000 <= t),
+        )
+        .map((b) => ({ b, action: "bmc-collect" as const })),
+    ].slice(0, 16);
+    return jobs.map(({ b, action }) => {
+      if (action === "bmc-collect")
+        db.prepare("UPDATE bmcs SET lease_until = ?, last_attempt_at = ?, collect_requested = 0 WHERE id = ?").run(iso(t + JOB_LEASE_MS), iso(t), b.id);
+      else db.prepare("UPDATE bmcs SET lease_until = ? WHERE id = ?").run(iso(t + JOB_LEASE_MS), b.id);
+      return {
+        id: randomUUID(),
+        bmcId: b.id,
+        action,
+        target: { address: b.address, port: b.port, user: b.bmc_user, passwordFile: b.password_file, certificates: JSON.parse(b.certificates) as string[] },
+      };
+    });
   }
 
   const FAILURES = new Set(["unreachable", "auth-failed", "host-key-changed", "host-key-unknown", "timeout", "error", "invalid-job"]);
 
   /** What the agent found for one job. */
   function result(a: AgentRow, b: Record<string, unknown>) {
+    if (b.bmcId !== undefined) return bmcResult(a, b);
     const h = typeof b.hostId === "string" ? hostRow(b.hostId) : undefined;
     // Only the agent that reads a host may report on it.
     if (!h || h.agent_id !== a.id) throw new InfraError(404, "not-found", "No such host for this agent.");
@@ -353,7 +423,12 @@ export function createInfra(
       // Our clock, not the host's: a host with a wrong clock must not reorder the timeline.
       const at = iso();
       const changes = record("host", h.id, facts, hostItems(facts), at);
-      db.prepare("UPDATE hosts SET status = 'ok', status_detail = NULL, last_success_at = ?, latest_facts = ? WHERE id = ?").run(at, pack(facts), h.id);
+      db.prepare("UPDATE hosts SET status = 'ok', status_detail = NULL, last_success_at = ?, latest_facts = ?, hardware = ? WHERE id = ?").run(
+        at,
+        pack(facts),
+        JSON.stringify(hostHardware(facts)),
+        h.id,
+      );
       if (changes.length) log("info", "host changed", { host: h.name, changes: changes.length });
       opts.vulns?.collected(h.id, facts);
       return { status: "accepted" };
@@ -372,6 +447,80 @@ export function createInfra(
       db.prepare("UPDATE hosts SET status = ?, status_detail = ? WHERE id = ?").run(e.kind === "host-key-unknown" ? "unreachable" : e.kind, message, h.id);
     }
     log("warn", "host collection failed", { host: h.name, kind: e.kind, error: message });
+    return { status: "accepted" };
+  }
+
+  const BMC_FAILURES = new Set(["unreachable", "auth-failed", "certificate-changed", "timeout", "not-redfish", "error", "invalid-job"]);
+
+  function checkCertificate(v: unknown): BmcCertificate | undefined {
+    const c = v as Partial<BmcCertificate> | null | undefined;
+    if (!c || typeof c !== "object" || typeof c.fingerprint !== "string" || !CERTIFICATE.test(c.fingerprint)) return undefined;
+    const text = (x: unknown) => (typeof x === "string" ? x.slice(0, 1024) : "");
+    return { fingerprint: c.fingerprint, subject: text(c.subject), issuer: text(c.issuer), validTo: text(c.validTo) };
+  }
+
+  /** What the agent found for a BMC: its certificate, its facts, or why it could not read it. */
+  function bmcResult(a: AgentRow, b: Record<string, unknown>) {
+    const r = typeof b.bmcId === "string" ? bmcRow(b.bmcId) : undefined;
+    if (!r || r.agent_id !== a.id) throw new InfraError(404, "not-found", "No such BMC for this agent.");
+    db.prepare("UPDATE bmcs SET lease_until = NULL WHERE id = ?").run(r.id);
+    const cert = checkCertificate(b.certificate);
+    const pinned = JSON.parse(r.certificates) as string[];
+    if (b.ok === true && cert && b.facts === undefined) {
+      // The hosts file vouches for the certificate by its fingerprint, or trusts the first one it sees (ADR 0052, 0055).
+      if ((r.file_certificate === "first" && !pinned.length) || (r.file_certificate !== "first" && r.file_certificate === cert.fingerprint)) {
+        db.prepare(
+          "UPDATE bmcs SET certificate_requested = 0, certificates = ?, pending_certificate = NULL, status = 'pending', status_detail = NULL, collect_requested = 1 WHERE id = ?",
+        ).run(JSON.stringify([cert.fingerprint]), r.id);
+        log("info", "BMC certificate trusted from the hosts file", { bmc: r.name, fingerprint: cert.fingerprint });
+        return { status: "accepted" };
+      }
+      const same = pinned.includes(cert.fingerprint);
+      db.prepare("UPDATE bmcs SET certificate_requested = 0, pending_certificate = ?, status = ?, status_detail = ? WHERE id = ?").run(
+        same ? null : JSON.stringify(cert),
+        same ? (r.status === "certificate-changed" ? "pending" : r.status) : pinned.length ? "certificate-changed" : "certificate-pending",
+        same
+          ? r.status_detail
+          : r.file_certificate && r.file_certificate !== "first"
+            ? `The BMC presents a certificate that is not ${r.file_certificate} from the hosts file. Check the BMC, then fix certificate in the file.`
+            : pinned.length
+              ? "The BMC presents a different certificate. Check it on the BMC, then accept it."
+              : "Check the fingerprint on the BMC, then accept it.",
+        r.id,
+      );
+      return { status: "accepted" };
+    }
+    if (b.ok === true && b.facts !== undefined) {
+      if (!bmcPinned(r)) throw new InfraError(409, "conflict", "The BMC's certificate is not accepted; facts are not stored.");
+      let facts: BmcFacts;
+      try {
+        facts = checkBmcFacts(b.facts);
+      } catch (err) {
+        throw new InfraError(422, "invalid-body", (err as Error).message);
+      }
+      const at = iso();
+      const changes = record("bmc", r.id, facts, bmcItems(facts), at);
+      db.prepare("UPDATE bmcs SET status = 'ok', status_detail = NULL, last_success_at = ?, latest_facts = ?, hardware = ? WHERE id = ?").run(
+        at,
+        pack(facts),
+        JSON.stringify(bmcHardware(facts)),
+        r.id,
+      );
+      if (changes.length) log("info", "BMC changed", { bmc: r.name, changes: changes.length });
+      return { status: "accepted" };
+    }
+    const e = b.error as { kind?: unknown; message?: unknown } | undefined;
+    if (b.ok !== false || !e || typeof e.kind !== "string" || !BMC_FAILURES.has(e.kind) || typeof e.message !== "string")
+      throw new InfraError(422, "invalid-body", "Expected facts, a certificate, or an error with kind and message.");
+    const message = e.message.slice(0, 1000);
+    if (e.kind === "certificate-changed")
+      db.prepare("UPDATE bmcs SET status = 'certificate-changed', status_detail = ?, pending_certificate = ? WHERE id = ?").run(
+        "The BMC presents another certificate. Check it on the BMC, then accept it.",
+        cert ? JSON.stringify(cert) : r.pending_certificate,
+        r.id,
+      );
+    else db.prepare("UPDATE bmcs SET status = ?, status_detail = ? WHERE id = ?").run(e.kind, message, r.id);
+    log("warn", "BMC collection failed", { bmc: r.name, kind: e.kind, error: message });
     return { status: "accepted" };
   }
 
@@ -405,7 +554,67 @@ export function createInfra(
     };
   }
 
-  function toHost(h: HostRow) {
+  // ---- A host and its BMC ---------------------------------------------------------------------------------------
+
+  /** Each BMC's host, by the file's server: and by what both say about the machine (ADR 0055). */
+  function matches(): Map<string, Match> {
+    const parse = <T>(v: string | null) => (v ? (JSON.parse(v) as T) : null);
+    const bmcs = db.prepare("SELECT id, server, hardware FROM bmcs ORDER BY name").all() as Array<{
+      id: string;
+      server: string | null;
+      hardware: string | null;
+    }>;
+    const hosts = db.prepare("SELECT id, name, hardware FROM hosts ORDER BY name").all() as Array<{ id: string; name: string; hardware: string | null }>;
+    return matchBmcs(
+      bmcs.map((b) => ({ ...b, hardware: parse<BmcHardware>(b.hardware) })),
+      hosts.map((h) => ({ ...h, hardware: parse<HostHardware>(h.hardware) })),
+    );
+  }
+
+  const RANK: Record<Match["state"], number> = { confirmed: 0, found: 1, unverified: 2, mismatch: 3 };
+  /** The BMC of a host: the one that says it is this machine, before one that only the file names. */
+  function bmcOf(hostId: string, m: Map<string, Match>) {
+    const linked = [...m.entries()].filter(([, x]) => x.host?.id === hostId).sort((a, b) => RANK[a[1].state] - RANK[b[1].state]);
+    if (!linked.length) return null;
+    const [id, match] = linked[0]!;
+    const b = bmcRow(id)!;
+    const hw = b.hardware ? (JSON.parse(b.hardware) as BmcHardware) : null;
+    return { id: b.id, name: b.name, match: match.state, health: hw?.health ?? null, unhealthy: hw?.unhealthy ?? null, powerState: hw?.powerState ?? null };
+  }
+
+  /** The host's hardware as its BMC sees it, and its reboots with what the BMC logged around each. */
+  function hostHardwareView(id: string) {
+    const h = requireHost(id);
+    const m = matches();
+    const linked = bmcOf(h.id, m);
+    if (!linked) throw new InfraError(404, "not-found", "No BMC is matched with this host. List it under bmcs: in the hosts file with server: this host.");
+    const b = bmcRow(linked.id)!;
+    const f = b.latest_facts ? unpack<BmcFacts>(b.latest_facts) : null;
+    const hostFactsNow = h.latest_facts ? unpack<Facts>(h.latest_facts) : null;
+    // Boots: the one the host reports now, and the earlier ones its changes kept.
+    const changed = db
+      .prepare(
+        "SELECT before, after FROM changes WHERE target_kind = 'host' AND target_id = ? AND category = 'system' AND item = 'booted' ORDER BY id DESC LIMIT 50",
+      )
+      .all(h.id) as Array<{ before: string | null; after: string | null }>;
+    const boots = [hostFactsNow?.system.bootedAt, ...changed.flatMap((c) => [c.after, c.before])].filter((x): x is string => !!x);
+    const parts = f
+      ? [
+          ...f.chassis.flatMap((c) => [
+            ...c.powerSupplies.map((p) => ({ kind: "power-supply", name: p.name, health: p.health })),
+            ...c.fans.map((p) => ({ kind: "fan", name: p.name, health: p.health })),
+            ...c.temperatures.map((p) => ({ kind: "temperature", name: p.name, health: p.health })),
+          ]),
+          ...f.storage.flatMap((s) => [
+            ...s.controllers.map((p) => ({ kind: "controller", name: p.name, health: p.health })),
+            ...s.drives.map((p) => ({ kind: "drive", name: p.name ?? p.id, health: p.health })),
+          ]),
+        ].filter((p) => p.health === "Warning" || p.health === "Critical")
+      : [];
+    return { bmc: toBmc(b, m), match: m.get(b.id)!, parts, reboots: reboots(boots, f?.events ?? []) };
+  }
+
+  function toHost(h: HostRow, m: Map<string, Match> = matches()) {
     const jump = h.jump_host_id ? hostRow(h.jump_host_id) : undefined;
     const agent = agentRow(h.agent_id)!;
     return {
@@ -433,6 +642,8 @@ export function createInfra(
       summary: hostSummary(h.latest_facts ? unpack<Facts>(h.latest_facts) : null),
       // When its packages last reached Vulnerabilities; null when Infrastructure does not send them.
       vulnerabilities: opts.vulns ? (opts.vulns.state(h.id) ?? { sentAt: null, error: null, assetId: null }) : null,
+      // Its management controller, when a BMC in the file names it as its server.
+      bmc: bmcOf(h.id, m),
     };
   }
 
@@ -484,10 +695,10 @@ export function createInfra(
    * made before is kept rather than removed with its history. A new address, port or agent, or another hostKey than
    * the pinned key, is a new trust decision, as in the UI. Returns what to fix.
    */
-  function syncFile(entries: HostEntry[]): string[] {
+  function syncFile(entries: HostEntry[], bmcs: BmcEntry[] = []): string[] {
     const warnings: string[] = [];
     const agents = db.prepare("SELECT id, name FROM agents").all() as Array<{ id: string; name: string }>;
-    const agentOf = (e: HostEntry) => {
+    const agentOf = (e: { name: string; agent: string | null }) => {
       if (e.agent) {
         const a = agents.find((x) => x.name === e.agent);
         if (!a) warnings.push(`${e.name}: no agent is named ${e.agent}; it is added once one is.`);
@@ -556,7 +767,152 @@ export function createInfra(
       if (through.length) warnings.push(`${h.name} left the file but stays: ${through.map((x) => x.name).join(", ")} is reached through it.`);
       else removeHost(h.id);
     }
+    syncBmcs(bmcs, agentOf);
     return warnings;
+  }
+
+  /**
+   * Makes the BMCs match the file's bmcs: list. As for hosts, a new address, port or agent, or another certificate
+   * than the pinned one, is a new trust decision; one that cannot be added yet is a warning, and one that left the
+   * file goes with its history.
+   */
+  function syncBmcs(entries: BmcEntry[], agentOf: (e: BmcEntry) => string | undefined) {
+    for (const e of entries) {
+      const agentId = agentOf(e);
+      if (!agentId) continue;
+      const b = db.prepare("SELECT * FROM bmcs WHERE name = ?").get(e.name) as BmcRow | undefined;
+      if (!b) {
+        db.prepare(
+          "INSERT INTO bmcs (id, name, agent_id, address, port, bmc_user, password_file, server, tags, file_certificate, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ).run(randomUUID(), e.name, agentId, e.address, e.port, e.user, e.passwordFile, e.server, JSON.stringify(e.tags), e.certificate, iso());
+        continue;
+      }
+      const pinned = JSON.parse(b.certificates) as string[];
+      const moved = e.address !== b.address || e.port !== b.port || agentId !== b.agent_id;
+      const vouchesOther =
+        !!e.certificate && e.certificate !== "first" && e.certificate !== b.file_certificate && pinned.length > 0 && !pinned.includes(e.certificate);
+      db.prepare(
+        "UPDATE bmcs SET agent_id = ?, address = ?, port = ?, bmc_user = ?, password_file = ?, server = ?, tags = ?, file_certificate = ? WHERE id = ?",
+      ).run(agentId, e.address, e.port, e.user, e.passwordFile, e.server, JSON.stringify(e.tags), e.certificate, b.id);
+      if (moved || vouchesOther)
+        db.prepare(
+          "UPDATE bmcs SET certificates = '[]', pending_certificate = NULL, status = 'new', status_detail = NULL, certificate_requested = 1, lease_until = NULL WHERE id = ?",
+        ).run(b.id);
+      else if (e.certificate && e.certificate !== b.file_certificate && !pinned.length)
+        db.prepare("UPDATE bmcs SET certificate_requested = 1, lease_until = NULL WHERE id = ?").run(b.id);
+    }
+    const named = new Set(entries.map((e) => e.name));
+    for (const b of db.prepare("SELECT id, name FROM bmcs").all() as Array<{ id: string; name: string }>) if (!named.has(b.name)) removeBmc(b.id);
+  }
+
+  // ---- BMCs -------------------------------------------------------------------------------------------------------
+
+  const bmcRow = (id: string) => db.prepare("SELECT * FROM bmcs WHERE id = ?").get(id) as BmcRow | undefined;
+  const requireBmc = (id: string) => {
+    const b = bmcRow(id);
+    if (!b) throw new InfraError(404, "not-found", "No such BMC.");
+    return b;
+  };
+  const bmcPinned = (b: BmcRow) => JSON.parse(b.certificates).length > 0 && b.status !== "certificate-changed" && b.status !== "certificate-pending";
+
+  function bmcSummary(f: BmcFacts | null) {
+    if (!f) return null;
+    const system = f.systems[0];
+    const parts = [
+      ...f.chassis.flatMap((c) => [...c.powerSupplies, ...c.fans, ...c.temperatures]),
+      ...f.storage.flatMap((s) => [...s.controllers, ...s.drives]),
+    ];
+    return {
+      vendor: f.service.vendor,
+      model: system?.model ?? f.chassis[0]?.model ?? null,
+      serial: system?.serial ?? f.chassis[0]?.serial ?? null,
+      sku: system?.sku ?? null,
+      powerState: system?.powerState ?? null,
+      health: system?.health ?? f.chassis[0]?.health ?? null,
+      biosVersion: system?.biosVersion ?? null,
+      bmcFirmware: f.managers[0]?.firmware ?? null,
+      // Parts that say Warning or Critical: a failed power supply, a disk near the end of its life.
+      unhealthy: parts.filter((p) => p.health === "Warning" || p.health === "Critical").length,
+      services: (f.managers[0]?.protocols ?? []).filter((p) => p.enabled).map((p) => p.name),
+      accounts: f.accounts?.filter((a) => a.enabled !== false).length ?? null,
+      administrators: f.accounts?.filter((a) => a.enabled !== false && a.role === "Administrator").length ?? null,
+      unreadable: f.unreadable,
+    };
+  }
+
+  function toBmc(b: BmcRow, m: Map<string, Match> = matches()) {
+    const agent = agentRow(b.agent_id)!;
+    const server = b.server ? (db.prepare("SELECT id FROM hosts WHERE name = ?").get(b.server) as { id: string } | undefined) : undefined;
+    return {
+      id: b.id,
+      name: b.name,
+      agent: { id: agent.id, name: agent.name },
+      address: b.address,
+      port: b.port,
+      user: b.bmc_user,
+      passwordFile: b.password_file,
+      // The server it manages, by its name in the file, and the host when Infrastructure reads it too.
+      server: b.server ? { name: b.server, id: server?.id ?? null } : null,
+      // Whether the host and the BMC say they are one machine, or the host they say it is when the file names none.
+      match: m.get(b.id) ?? null,
+      fileCertificate: b.file_certificate === "first" ? null : b.file_certificate,
+      intervalMinutes: b.interval_minutes,
+      tags: JSON.parse(b.tags) as Record<string, string>,
+      certificates: (JSON.parse(b.certificates) as string[]).map((fingerprint) => ({ fingerprint })),
+      pendingCertificate: b.pending_certificate ? (JSON.parse(b.pending_certificate) as BmcCertificate) : null,
+      status: b.status,
+      statusDetail: b.status_detail,
+      lastAttemptAt: b.last_attempt_at,
+      lastSuccessAt: b.last_success_at,
+      createdAt: b.created_at,
+      summary: bmcSummary(b.latest_facts ? unpack<BmcFacts>(b.latest_facts) : null),
+    };
+  }
+
+  function requestCertificate(id: string) {
+    requireBmc(id);
+    db.prepare("UPDATE bmcs SET certificate_requested = 1, lease_until = NULL WHERE id = ?").run(id);
+    return toBmc(requireBmc(id));
+  }
+
+  function acceptCertificate(id: string, fp: unknown) {
+    const b = requireBmc(id);
+    if (b.file_certificate && b.file_certificate !== "first")
+      throw new InfraError(409, "conflict", "This BMC's certificate is the one the hosts file names; change certificate there to trust another.");
+    const pending = b.pending_certificate ? (JSON.parse(b.pending_certificate) as BmcCertificate) : undefined;
+    if (typeof fp !== "string" || !pending || pending.fingerprint !== fp.toUpperCase())
+      throw new InfraError(422, "invalid-body", "fingerprint must be the pending certificate's, as AB:CD:...");
+    db.prepare(
+      "UPDATE bmcs SET certificates = ?, pending_certificate = NULL, status = 'pending', status_detail = NULL, collect_requested = 1, lease_until = NULL WHERE id = ?",
+    ).run(JSON.stringify([pending.fingerprint]), id);
+    return toBmc(requireBmc(id));
+  }
+
+  function removeBmc(id: string) {
+    db.exec("BEGIN");
+    try {
+      db.prepare("DELETE FROM snapshots WHERE target_kind = 'bmc' AND target_id = ?").run(id);
+      db.prepare("DELETE FROM changes WHERE target_kind = 'bmc' AND target_id = ?").run(id);
+      db.prepare("DELETE FROM bmcs WHERE id = ?").run(id);
+      db.exec("COMMIT");
+    } catch (err) {
+      db.exec("ROLLBACK");
+      throw err;
+    }
+  }
+
+  function bmcFacts(id: string, at?: string): { facts: BmcFacts; collectedAt: string } | null {
+    const b = requireBmc(id);
+    if (at) {
+      const row = db
+        .prepare(
+          "SELECT facts, collected_at FROM snapshots WHERE target_kind = 'bmc' AND target_id = ? AND collected_at <= ? ORDER BY collected_at DESC, id DESC LIMIT 1",
+        )
+        .get(id, at) as { facts: Uint8Array; collected_at: string } | undefined;
+      return row ? { facts: unpack<BmcFacts>(row.facts), collectedAt: row.collected_at } : null;
+    }
+    if (!b.latest_facts) return null;
+    return { facts: unpack<BmcFacts>(b.latest_facts), collectedAt: b.last_success_at ?? "" };
   }
 
   // ---- Snapshots and changes --------------------------------------------------------------------------------------
@@ -567,7 +923,9 @@ export function createInfra(
     const last = db.prepare("SELECT items_hash, facts FROM snapshots WHERE target_kind = ? AND target_id = ? ORDER BY id DESC LIMIT 1").get(kind, id) as
       { items_hash: string; facts: Uint8Array } | undefined;
     if (last?.items_hash === hash) return [];
-    const changes = last ? diff(kind === "host" ? hostItems(unpack<Facts>(last.facts)) : clusterItems(unpack<ClusterFacts>(last.facts)), items) : [];
+    const itemsOf = (f: Uint8Array) =>
+      kind === "host" ? hostItems(unpack<Facts>(f)) : kind === "bmc" ? bmcItems(unpack<BmcFacts>(f)) : clusterItems(unpack<ClusterFacts>(f));
+    const changes = last ? diff(itemsOf(last.facts), items) : [];
     db.exec("BEGIN");
     try {
       db.prepare("INSERT INTO snapshots (target_kind, target_id, collected_at, items_hash, facts) VALUES (?, ?, ?, ?, ?)").run(kind, id, at, hash, pack(facts));
@@ -734,6 +1092,9 @@ export function createInfra(
       const h = requireHost(id);
       if (!keyPinned(h)) throw new InfraError(409, "conflict", "Accept the host key first.");
       db.prepare("UPDATE hosts SET collect_requested = 1, lease_until = NULL WHERE id = ?").run(id);
+    } else if (kind === "bmc") {
+      if (!bmcPinned(requireBmc(id))) throw new InfraError(409, "conflict", "Accept the BMC's certificate first.");
+      db.prepare("UPDATE bmcs SET collect_requested = 1, lease_until = NULL WHERE id = ?").run(id);
     } else {
       requireCluster(id);
       db.prepare("UPDATE clusters SET collect_requested = 1 WHERE id = ?").run(id);
@@ -788,7 +1149,8 @@ export function createInfra(
       if (!names.has(key))
         names.set(
           key,
-          (db.prepare(`SELECT name FROM ${k === "host" ? "hosts" : "clusters"} WHERE id = ?`).get(id) as { name: string } | undefined)?.name ?? id,
+          (db.prepare(`SELECT name FROM ${k === "host" ? "hosts" : k === "bmc" ? "bmcs" : "clusters"} WHERE id = ?`).get(id) as { name: string } | undefined)
+            ?.name ?? id,
         );
       return names.get(key)!;
     };
@@ -827,6 +1189,7 @@ export function createInfra(
       >,
       hosts: count(db.prepare("SELECT status, COUNT(*) AS n FROM hosts GROUP BY status").all() as Array<{ status: string; n: number }>),
       clusters: count(db.prepare("SELECT status, COUNT(*) AS n FROM clusters GROUP BY status").all() as Array<{ status: string; n: number }>),
+      bmcs: count(db.prepare("SELECT status, COUNT(*) AS n FROM bmcs GROUP BY status").all() as Array<{ status: string; n: number }>),
       containers: containers().length,
       changesLastDay: (db.prepare("SELECT COUNT(*) AS n FROM changes WHERE at >= ?").get(iso(now() - 86_400_000)) as { n: number }).n,
       changeDays: changeDays(),
@@ -869,13 +1232,25 @@ export function createInfra(
     work,
     result,
     kubernetesRbac: () => RBAC,
-    listHosts: () => (db.prepare("SELECT * FROM hosts ORDER BY name").all() as unknown as HostRow[]).map(toHost),
+    listHosts: () => {
+      const m = matches();
+      return (db.prepare("SELECT * FROM hosts ORDER BY name").all() as unknown as HostRow[]).map((h) => toHost(h, m));
+    },
+    hostHardware: hostHardwareView,
     host: (id: string) => toHost(requireHost(id)),
     deleteHost,
     syncFile,
     requestHostKey,
     acceptHostKey,
     hostFacts,
+    listBmcs: () => {
+      const m = matches();
+      return (db.prepare("SELECT * FROM bmcs ORDER BY name").all() as unknown as BmcRow[]).map((b) => toBmc(b, m));
+    },
+    bmc: (id: string) => toBmc(requireBmc(id)),
+    requestCertificate,
+    acceptCertificate,
+    bmcFacts,
     listClusters: () => (db.prepare("SELECT * FROM clusters ORDER BY name").all() as unknown as ClusterRow[]).map(toCluster),
     cluster: (id: string) => toCluster(requireCluster(id)),
     createCluster,

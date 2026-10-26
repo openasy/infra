@@ -3,6 +3,7 @@ import { useAuth } from "@openasy/auth/react";
 import { ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Agent, Host, Summary } from "./api.ts";
+import { Health } from "./bmcs.tsx";
 import { duration, List, Status, Usage, useData, type Call } from "./shared.tsx";
 import { useT } from "./i18n.ts";
 
@@ -65,6 +66,23 @@ export function HostsPage({ call }: { call: Call }) {
       width: "120px",
       cell: (h) => (h.summary?.fullestDisk ? <Usage pct={h.summary.fullestDisk.pct} /> : "–"),
       sortValue: (h) => h.summary?.fullestDisk?.pct ?? -1,
+    },
+    {
+      id: "hardware",
+      header: t("hostsPage.hardware"),
+      width: "130px",
+      cell: (h) =>
+        h.bmc ? (
+          <span className="flex flex-wrap items-center gap-1">
+            <a href={`/bmcs/${h.bmc.id}`} title={h.bmc.name}>
+              <Health health={h.bmc.health} />
+            </a>
+            {h.bmc.match === "mismatch" && <Badge tone="danger">{t("bmcs.mismatch")}</Badge>}
+          </span>
+        ) : (
+          "–"
+        ),
+      sortValue: (h) => (h.bmc ? (({ Critical: 0, Warning: 1, OK: 2 } as Record<string, number>)[h.bmc.health ?? ""] ?? 3) : 4),
     },
     { id: "seen", header: t("hostsPage.collected"), width: "110px", cell: (h) => ago(h.lastSuccessAt), sortValue: (h) => h.lastSuccessAt ?? "" },
   ];

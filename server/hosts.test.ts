@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { missingHosts, parseHosts, watchHosts } from "./hosts.ts";
+import { missingHosts, parseHosts, parseInventory, watchHosts } from "./hosts.ts";
 import { fingerprint } from "./infra.ts";
 import { facts, HOST_KEY, OTHER_KEY, startApp } from "./test-app.ts";
 
@@ -26,7 +26,7 @@ describe("the hosts file", () => {
   it("says which entry and field to fix, and refuses values ssh could read as options", () => {
     const one = (entry: string) => () => parseHosts(`hosts:\n  - ${entry}`);
     expect(() => parseHosts("hosts: [")).toThrow(/Not valid YAML/);
-    expect(() => parseHosts("endpoints: []")).toThrow(/one list, hosts:/);
+    expect(() => parseHosts("endpoints: []")).toThrow(/two lists, hosts: and bmcs:/);
     expect(one("{ address: 10.0.0.1 }")).toThrow(/hosts\[0\]\.name is required/);
     expect(one("{ name: a, address: -oProxyCommand=sh }")).toThrow(/address is required/);
     expect(one("{ name: a, address: 10.0.0.1, user: -oX }")).toThrow(/user is a Unix account/);
@@ -44,6 +44,32 @@ describe("the hosts file", () => {
     expect(() => parseHosts("hosts:\n  - { name: a, address: x }\n  - { name: A, address: y }")).toThrow(/A is in the file twice/);
   });
 
+  it("reads the servers' BMCs, with the password left in the agent's key folder", () => {
+    const { bmcs } = parseInventory(FIXTURE);
+    expect(bmcs.map((b) => `${b.name} ${b.address}:${b.port} ${b.user} ${b.passwordFile} ${b.server ?? "-"} ${b.agent ?? "-"}`)).toEqual([
+      "db-1-idrac 10.0.9.6:443 openasy db-1-bmc db-1 dc1",
+      "spare-ilo bmc-spare.example.com:8443 reader@example.com spare-ilo - -",
+    ]);
+    expect(bmcs[0]).toMatchObject({ certificate: null, tags: {} });
+    // The fingerprint as openssl prints it, in capitals as Node and the agent compare it.
+    expect(bmcs[1]).toMatchObject({ certificate: `${"AB:CD:EF:01:23:45:67:89:".repeat(4).slice(0, -1)}`, tags: { rack: "r2" } });
+    expect(parseInventory("hosts: []")).toEqual({ hosts: [], bmcs: [] });
+    const one = (entry: string) => () => parseInventory(`hosts:\n  - { name: web-1, address: 10.0.0.5 }\nbmcs:\n  - ${entry}`);
+    expect(one("{ name: b, address: 10.0.9.1, passwordFile: b, certificate: first }")()).toMatchObject({ bmcs: [{ certificate: "first", server: null }] });
+    expect(one("{ name: b, address: 10.0.9.1 }")).toThrow(/bmcs\[0\] \(b\)\.passwordFile is required/);
+    for (const file of ["../shadow", "keys/b", ".b", "/etc/shadow"])
+      expect(one(`{ name: b, address: 10.0.9.1, passwordFile: '${file}' }`)).toThrow(/passwordFile/);
+    expect(one("{ name: b, address: 10.0.9.1, passwordFile: b, password: hunter2 }")).toThrow(/unknown password/);
+    expect(one("{ name: b, address: 10.0.9.1, passwordFile: b, server: web-2 }")).toThrow(/web-2 is not a host in the file/);
+    expect(one("{ name: b, address: 10.0.9.1, passwordFile: b, certificate: SHA256:abc }")).toThrow(/openssl x509 -fingerprint -sha256/);
+    expect(one("{ name: b, address: 10.0.9.1, passwordFile: b, user: 'a b' }")).toThrow(/user is the BMC account/);
+    expect(() => parseInventory("bmcs:\n  - { name: b, address: x, passwordFile: b }\n  - { name: B, address: y, passwordFile: b }")).toThrow(
+      /B is in bmcs twice/,
+    );
+    // A BMC may share its server's name: they are two lists.
+    expect(one("{ name: web-1, address: 10.0.9.1, passwordFile: b, server: web-1 }")()).toMatchObject({ bmcs: [{ name: "web-1" }] });
+  });
+
   it("says which servers a product has nothing for, by name, full name or address", () => {
     const list = parseHosts(FIXTURE);
     expect(missingHosts(list, []).map((h) => h.name)).toEqual(["bastion", "web-1", "db-1"]);
@@ -56,7 +82,8 @@ describe("the hosts file", () => {
     writeFileSync(path, FIXTURE);
     let agentEnrolled = false;
     const applied: number[] = [];
-    const w = watchHosts(path, (list) => (applied.push(list.length), agentEnrolled ? [] : ["web-1: no agent is named dc1"]));
+    const bmcs: number[] = [];
+    const w = watchHosts(path, (list, b) => (applied.push(list.length), bmcs.push(b.length), agentEnrolled ? [] : ["web-1: no agent is named dc1"]));
     try {
       expect(w.state).toMatchObject({ entries: 3, error: null, warnings: ["web-1: no agent is named dc1"] });
       agentEnrolled = true;
@@ -64,6 +91,7 @@ describe("the hosts file", () => {
       expect(w.state.warnings).toEqual([]);
       w.read(); // the same file and no warnings: nothing to do
       expect(applied).toEqual([3, 3]);
+      expect(bmcs).toEqual([2, 2]);
       writeFileSync(path, "hosts: [");
       utimesSync(path, new Date(), new Date(Date.now() + 1000));
       w.read();

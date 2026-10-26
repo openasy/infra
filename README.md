@@ -4,20 +4,20 @@
 [![Node.js 26 LTS](https://img.shields.io/badge/node-26%20LTS-339933?logo=nodedotjs&logoColor=white)](./.nvmrc)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue)](./LICENSE)
 
-The [OpenAsy](https://github.com/openasy) Infrastructure product: every host, container and Kubernetes cluster, in
-detail, with every change kept. **Nothing is installed on what it reads** (ADR 0018, 0031): one
-[infra-agent](https://github.com/openasy/infra-agent) per network reads the hosts there over SSH, and infra reads
-clusters through their API.
+The [OpenAsy](https://github.com/openasy) Infrastructure product: every host, BMC, container and Kubernetes cluster,
+in detail, with every change kept. **Nothing is installed on what it reads** (ADR 0018, 0031): one
+[infra-agent](https://github.com/openasy/infra-agent) per network reads the hosts there over SSH and their BMCs over
+Redfish, and infra reads clusters through their API.
 
 ```
-browser ──▶ infra (API, UI, changes) ◀── asks for jobs, sends results ── infra-agent ── SSH, 5-minute certificate ──▶ hosts
-              │                                                          (keeps the SSH CA)
+browser ──▶ infra (API, UI, changes) ◀── asks for jobs, sends results ── infra-agent ─┬─ SSH, 5-minute certificate ──▶ hosts
+              │                                  (keeps the SSH CA and BMC passwords) └─ Redfish, GET only ─────────▶ BMCs
               └── Kubernetes API, read-only token ──▶ clusters
 ```
 
-infra holds no SSH key and sends no commands. It tells an agent which host to read; the agent runs the collection
-script built into it, with certificates for the `openasy` account only. A compromised infra cannot run commands on
-your hosts.
+infra holds no SSH key or BMC password and sends no commands. It tells an agent which host or BMC to read; the agent
+runs the collection script built into it, with certificates for the `openasy` account only, or the Redfish reads
+built into it, with GET only. A compromised infra cannot run commands on your hosts or change your BMCs.
 
 ## What it reads
 
@@ -30,6 +30,7 @@ your hosts.
 | Storage and network | File systems and usage, disks, interfaces, addresses, routes, DNS |
 | Containers | Docker and Podman: image and digest, state, health, restarts, ports, mounts, limits, privileged, labels, environment variable names |
 | Kubernetes | Nodes, namespaces, workloads, pods and restarts, services, ingresses, volumes, who is cluster-admin, recent warnings |
+| BMCs | iDRAC, iLO, XClarity and other Redfish BMCs: model, serial and service tag, BIOS and every firmware version, the health of power supplies, fans, temperatures, controllers and drives, power state, the BMC's accounts and roles (never a password), its network services, the newest hardware events |
 
 Every collection is compared with the last one. What was added, removed or changed (a package version, a new
 account, a port that opened, an image that changed) is kept with its time; values that move all the time (CPU,
@@ -175,6 +176,62 @@ hosts:
   is a warning, and it is added once it can be. A host removed from the file is removed with its history.
 - A file with a mistake is not applied at all: the hosts from its last good version stay, and the Hosts page and the
   log say what to fix. Endpoints in the endpoints file name these hosts with `server:`.
+
+## Read a BMC
+
+A server's BMC (Dell iDRAC, HPE iLO, Lenovo XClarity, Supermicro and others that speak Redfish) is read by the agent
+of its network, over HTTPS, with GET requests only (ADR 0055). Nothing is installed or changed on it.
+
+1. **Make a read-only account on the BMC**, with Redfish's `ReadOnly` role (iDRAC's Login privilege). Most BMCs take
+   it in one call; iDRAC fills a free slot instead, with `PATCH /redfish/v1/AccountService/Accounts/3` and the same
+   body.
+
+   ```bash
+   curl -k -u admin -X POST https://10.0.9.6/redfish/v1/AccountService/Accounts \
+     -H 'Content-Type: application/json' \
+     -d '{"UserName": "openasy", "Password": "...", "RoleId": "ReadOnly", "Enabled": true}'
+   ```
+
+2. **Put its password in the agent's key folder**, in a file of its own (`/keys/db-1-bmc`, one line). The agent reads
+   it for each collection; Infrastructure keeps and sends only the file name.
+3. **List the BMC under `bmcs:` in the hosts file**, next to `hosts:`:
+
+   ```yaml
+   bmcs:
+     - name: db-1-idrac
+       address: 10.0.9.6
+       port: 443                       # 443 by default
+       user: openasy                   # openasy by default
+       passwordFile: db-1-bmc          # a file name in the agent's /keys folder, never the password
+       server: db-1                    # optional: its server in hosts:, whose page then links to it
+       agent: dc1
+       certificate: AB:CD:...          # optional: the fingerprint below, or first
+       tags: { rack: r2 }
+   ```
+
+4. **Check its certificate.** BMCs mostly present a certificate of their own making, so it is pinned like a host
+   key: the agent reports the SHA-256 fingerprint the BMC presents, and an admin compares it before accepting it, or
+   the file names it with `certificate:`. The agent sends the password only on a connection that presents a pinned
+   certificate; a new certificate stops collection until it is accepted.
+
+   ```bash
+   openssl s_client -connect 10.0.9.6:443 </dev/null 2>/dev/null | openssl x509 -noout -fingerprint -sha256
+   ```
+
+The agent follows the BMC's own links from `/redfish/v1`, only under it and never to an action, with at most 600
+requests per collection, every 15 minutes. A firmware version, a new account or role, a network service turned on, a
+part that turns Warning or Critical, and the power state are changes; temperatures, fan speeds and watts are shown,
+not changes. The BMC's page says so when IPMI over LAN or Telnet is on.
+
+**A host and its BMC are put together.** The host says its SMBIOS UUID and serial (with the sudo rules from Setup),
+the BMC the same UUID and its serial or service tag. When they agree, `server:` is confirmed; when they do not, both
+pages say the file names the wrong machine and which host the BMC does match. A BMC without `server:` is matched by
+them, and its page shows the line to add. The host's page then has a Hardware tab: the parts that are not OK, and each
+reboot next to what the BMC logged from 30 minutes before to 5 minutes after it. The Hosts list shows each host's
+hardware health.
+
+What this means if something is compromised: infra holds no BMC password and can only start reads. The agent holds
+the passwords of the BMCs of its network; with `ReadOnly` accounts they read and nothing more.
 
 ## Add a Kubernetes cluster
 
