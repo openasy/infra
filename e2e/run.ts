@@ -391,7 +391,21 @@ try {
   );
   ok((await api<{ bmc: { id: string } | null }>(`/api/v1/hosts/${web}`)).body.bmc?.id === pending?.id, "web: links to its BMC");
   const seen = bmcRequests();
-  ok(seen.length > 10 && seen.every((r) => r.method === "GET"), `bmc: the agent sent GET only (${seen.length} requests)`);
+  const signIns = seen.filter((r) => r.method === "POST");
+  const signOuts = seen.filter((r) => r.method === "DELETE");
+  ok(
+    seen.length > 10 &&
+      seen.every((r) => r.method === "GET" || r.method === "POST" || r.method === "DELETE") &&
+      signIns.length > 0 &&
+      signIns.every((r) => r.path === "/redfish/v1/SessionService/Sessions") &&
+      signOuts.length === signIns.length &&
+      signOuts.every((r) => /^\/redfish\/v1\/SessionService\/Sessions\/\d+$/.test(r.path)),
+    `bmc: the agent read with GET in sessions it signed out of (${seen.length} requests, ${signIns.length} sessions)`,
+  );
+  ok(
+    seen.filter((r) => r.method === "GET" && r.path !== "/redfish/v1").every((r) => r.auth === "token"),
+    "bmc: every read after the service root carries the session's token",
+  );
   ok(seen.every((r) => r.auth !== "wrong") && !seen.some((r) => r.path.includes("Actions")), "bmc: with the password from the key folder, and no action");
   ok(
     docker("exec", "e2e-infra", "sh", "-c", `cat /data/infra.db* | tr -d '\\0' | grep -a -c '${BMC_PASSWORD}' || true`) === "0",
