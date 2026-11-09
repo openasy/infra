@@ -6,7 +6,7 @@ import type { Change, Container, Facts, Host } from "./api.ts";
 import { HostHardwareTab } from "./bmcs.tsx";
 import { HostKeyCheck } from "./hosts.tsx";
 import { bytes, ChangeList, duration, List, Pairs, Status, Usage, useData, type Call } from "./shared.tsx";
-import { useT, type T } from "./i18n.ts";
+import { useT, type T, viewerLocale, fixed } from "./i18n.ts";
 
 type Tab = "overview" | "ports" | "processes" | "services" | "access" | "packages" | "containers" | "network" | "storage" | "hardware" | "changes";
 
@@ -42,7 +42,7 @@ function Processes({ f }: { f: F }) {
   const cols: Column<F["processes"][number]>[] = [
     { id: "pid", header: "PID", width: "80px", align: "right", mono: true, cell: (p) => p.pid, sortValue: (p) => p.pid },
     { id: "user", header: t("processes.user"), width: "120px", cell: (p) => p.user, sortValue: (p) => p.user },
-    { id: "cpu", header: t("processes.cpu"), width: "80px", align: "right", mono: true, cell: (p) => p.cpu.toFixed(1), sortValue: (p) => p.cpu },
+    { id: "cpu", header: t("processes.cpu"), width: "80px", align: "right", mono: true, cell: (p) => fixed(p.cpu, 1), sortValue: (p) => p.cpu },
     { id: "rss", header: t("processes.memory"), width: "90px", align: "right", mono: true, cell: (p) => bytes(p.rssKb * 1024), sortValue: (p) => p.rssKb },
     { id: "age", header: t("processes.running"), width: "90px", cell: (p) => duration(p.ageSec), sortValue: (p) => p.ageSec },
     { id: "cmd", header: t("processes.command"), cell: (p) => <span className="infra-wrap font-mono text-xs">{p.command}</span> },
@@ -361,7 +361,7 @@ function Overview({ f, host }: { f: F; host: Host }) {
   return (
     <div className="flex flex-col gap-4">
       <KpiGrid>
-        <KpiCard label={t("overview.load1Min")} value={f.system.load[0].toFixed(2)} footer={t("overview.threads", { threads: f.cpu.threads })} />
+        <KpiCard label={t("overview.load1Min")} value={fixed(f.system.load[0], 2)} footer={t("overview.threads", { threads: f.cpu.threads })} />
         <KpiCard
           label={t("overview.memoryUsed")}
           value={memPct}
@@ -372,7 +372,7 @@ function Overview({ f, host }: { f: F; host: Host }) {
         <KpiCard
           label={t("overview.up")}
           value={duration(f.system.uptimeSec)}
-          footer={t("overview.since", { value: new Date(f.system.bootedAt).toLocaleString() })}
+          footer={t("overview.since", { value: new Date(f.system.bootedAt).toLocaleString(viewerLocale()) })}
         />
         <KpiCard label={t("overview.listeningPorts")} value={f.ports?.length ?? "–"} footer={t("overview.processes", { length: f.processes.length })} />
       </KpiGrid>

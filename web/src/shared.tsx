@@ -3,7 +3,7 @@ import { useAuth } from "@openasy/auth/react";
 import { Copy } from "lucide-react";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { api, MfaSetupRequired, Unauthorized, type Change } from "./api.ts";
-import { useT, type T } from "./i18n.ts";
+import { useT, type T, viewerLocale, fixed } from "./i18n.ts";
 
 /** Data loading with the session; when it ends, the sign-in screen comes back. */
 export function useApi() {
@@ -59,7 +59,7 @@ export const bytes = (n: number | null | undefined) => {
   let i = 0;
   let v = n;
   while (v >= 1024 && i < u.length - 1) ((v /= 1024), i++);
-  return `${v >= 10 || i === 0 ? Math.round(v) : v.toFixed(1)} ${u[i]}`;
+  return `${v >= 10 || i === 0 ? Math.round(v) : fixed(v, 1)} ${u[i]}`;
 };
 
 export const STATUS = (t: T): Record<string, { tone: "success" | "warning" | "danger" | "info" | "neutral"; label: string }> => ({
@@ -183,7 +183,7 @@ export function ChangeList({ changes, showTarget = false }: { changes: Change[] 
       id: "at",
       header: t("changeList.when"),
       width: "120px",
-      cell: (c) => <span title={new Date(c.at).toLocaleString()}>{ago(c.at)}</span>,
+      cell: (c) => <span title={new Date(c.at).toLocaleString(viewerLocale())}>{ago(c.at)}</span>,
       sortValue: (c) => c.at,
     },
     ...(showTarget

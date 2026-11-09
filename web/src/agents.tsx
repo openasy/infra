@@ -4,7 +4,7 @@ import { Check, Plus, RotateCw, Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import type { Agent, NewAgent } from "./api.ts";
 import { Code, List, useData, type Call } from "./shared.tsx";
-import { useT, type T } from "./i18n.ts";
+import { useT, type T, viewerLocale } from "./i18n.ts";
 
 const STATUS = (t: T): Record<string, { tone: "success" | "warning" | "danger" | "info"; label: string }> => ({
   online: { tone: "success", label: t("status.online") },
@@ -25,7 +25,7 @@ function EnrollCommand({ token, expiresAt, version, onDone }: { token: string; e
       icon={<Check aria-hidden className="size-4" />}
       iconTone="success"
       title={t("enrollCommand.startTheAgentWithThis")}
-      description={t("enrollCommand.itWorksOnceUntilAnd", { value: new Date(expiresAt).toLocaleString() })}
+      description={t("enrollCommand.itWorksOnceUntilAnd", { value: new Date(expiresAt).toLocaleString(viewerLocale()) })}
       footer={
         <Button variant="primary" onClick={onDone}>
           {t("enrollCommand.done")}

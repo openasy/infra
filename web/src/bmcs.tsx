@@ -4,7 +4,7 @@ import { Play, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import type { Bmc, BmcFacts, Change, HostHardware, Summary } from "./api.ts";
 import { bytes, ChangeList, List, Pairs, Status, useData, type Call } from "./shared.tsx";
-import { useT } from "./i18n.ts";
+import { useT, viewerLocale } from "./i18n.ts";
 
 type Tab = "overview" | "hardware" | "storage" | "firmware" | "access" | "events" | "changes";
 type F = BmcFacts;
@@ -62,7 +62,7 @@ export function BmcsPage({ call }: { call: Call }) {
       {data?.bmcs.length === 0 ? (
         <EmptyState title={t("bmcs.noBmcsYet")}>
           {t("bmcs.listThemInTheHostsFile")}
-          <pre className="mt-3 mb-0 text-left font-mono text-xs">{EXAMPLE}</pre>
+          <pre className="mt-3 mb-0 text-start font-mono text-xs">{EXAMPLE}</pre>
         </EmptyState>
       ) : (
         <Panel flush>
@@ -172,14 +172,14 @@ export function HostHardwareTab({ call, hostId }: { call: Call; hostId: string }
           <ul className="infra-list flex flex-col gap-3 text-sm">
             {data.reboots.map((r) => (
               <li key={r.at} className="flex flex-col gap-1">
-                <strong>{new Date(r.at).toLocaleString()}</strong>
+                <strong>{new Date(r.at).toLocaleString(viewerLocale())}</strong>
                 {r.events.length === 0 ? (
                   <span className="text-fg-muted">{t("bmcs.theBmcLoggedNothing")}</span>
                 ) : (
                   r.events.map((e) => (
                     <span key={`${e.log}${e.id}${e.at}`} className="flex flex-wrap items-center gap-2">
                       <Health health={e.severity} />
-                      <span className="text-xs text-fg-muted">{e.at ? new Date(e.at).toLocaleTimeString() : ""}</span>
+                      <span className="text-xs text-fg-muted">{e.at ? new Date(e.at).toLocaleTimeString(viewerLocale()) : ""}</span>
                       <span className="infra-wrap">{e.message}</span>
                     </span>
                   ))
@@ -233,7 +233,7 @@ function CertificateCheck({ bmc, call, onDone }: { bmc: Bmc; call: Call; onDone:
         <span className="flex flex-wrap items-center gap-2">
           <code className="infra-wrap font-mono text-sm">{c.fingerprint}</code>
           <span className="text-xs text-fg-muted">
-            {c.subject} · {t("bmcs.validTo", { date: new Date(c.validTo).toLocaleDateString() })}
+            {c.subject} · {t("bmcs.validTo", { date: new Date(c.validTo).toLocaleDateString(viewerLocale()) })}
           </span>
           {can("admin") && !bmc.fileCertificate && (
             <Button size="sm" icon={<ShieldCheck />} onClick={() => void accept(c.fingerprint)}>
@@ -495,7 +495,13 @@ function Events({ f }: { f: F }) {
       getRowId={(e) => `${e.log}${e.id}${e.at}`}
       empty={t("bmcs.noEvents")}
       columns={[
-        { id: "at", header: t("changeList.when"), width: "170px", cell: (e) => (e.at ? new Date(e.at).toLocaleString() : "–"), sortValue: (e) => e.at ?? "" },
+        {
+          id: "at",
+          header: t("changeList.when"),
+          width: "170px",
+          cell: (e) => (e.at ? new Date(e.at).toLocaleString(viewerLocale()) : "–"),
+          sortValue: (e) => e.at ?? "",
+        },
         { id: "sev", header: t("bmcs.severity"), width: "100px", cell: (e) => <Health health={e.severity} /> },
         { id: "log", header: t("bmcs.log"), width: "80px", cell: (e) => e.log },
         { id: "msg", header: t("bmcs.message"), cell: (e) => <span className="infra-wrap text-sm">{e.message ?? "–"}</span> },

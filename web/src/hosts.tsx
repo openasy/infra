@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import type { Agent, Host, Summary } from "./api.ts";
 import { Health } from "./bmcs.tsx";
 import { duration, List, Status, Usage, useData, type Call } from "./shared.tsx";
-import { useT } from "./i18n.ts";
+import { useT, fixed } from "./i18n.ts";
 
 export function HostsPage({ call }: { call: Call }) {
   const ago = useAgo();
@@ -50,7 +50,7 @@ export function HostsPage({ call }: { call: Call }) {
       width: "70px",
       align: "right",
       mono: true,
-      cell: (h) => (h.summary ? h.summary.load[0]!.toFixed(2) : "–"),
+      cell: (h) => (h.summary ? fixed(h.summary.load[0]!, 2) : "–"),
       sortValue: (h) => h.summary?.load[0] ?? -1,
     },
     {
@@ -129,7 +129,7 @@ export function HostsPage({ call }: { call: Call }) {
         <EmptyState title={t("hostsPage.noHostsYet")}>
           {t("hostsPage.prepareAHostWithThe")} <a href="/setup">{t("hostsPage.setup")}</a>
           {t("hostsPage.thenListItInTheHostsFile")}
-          <pre className="mt-3 mb-0 text-left font-mono text-xs">{EXAMPLE}</pre>
+          <pre className="mt-3 mb-0 text-start font-mono text-xs">{EXAMPLE}</pre>
         </EmptyState>
       ) : (
         <Panel flush>

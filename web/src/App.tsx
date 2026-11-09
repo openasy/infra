@@ -36,7 +36,7 @@ import { ClusterPage, ClustersPage } from "./clusters.tsx";
 import { ContainerTable, HostPage } from "./host.tsx";
 import { HostsPage } from "./hosts.tsx";
 import { ChangeList, Code, List, Status, STATUS, useApi, useData, type Call } from "./shared.tsx";
-import { useT, type T } from "./i18n.ts";
+import { useT, type T, viewerLocale, setViewerLocale } from "./i18n.ts";
 import { search } from "./search.ts";
 
 export const PAGES = [
@@ -150,7 +150,7 @@ function OverviewPage({ call }: { call: Call }) {
             <StackedBarChart
               label={t("overviewPage.changesEachDayByKind")}
               categories={s.changeDays.map((d) =>
-                new Date(`${d.day}T00:00:00Z`).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" }),
+                new Date(`${d.day}T00:00:00Z`).toLocaleDateString(viewerLocale(), { month: "short", day: "numeric", timeZone: "UTC" }),
               )}
               segments={[
                 { id: "added", name: t("overviewPage.added"), color: TONE_COLORS.success },
@@ -425,6 +425,7 @@ export function App() {
   const installBrand = useInstallBrand();
   const [theme] = useThemePreference();
   const [locale] = useLocalePreference();
+  setViewerLocale(locale);
   return (
     // The install's brand from config/brand.env (ADR 0053); OpenAsy's own look where it sets none.
     <BrandProvider theme={theme} locale={locale} brand={{ name: "OpenAsy", organization: undefined, ...installBrand }} className="min-h-screen">
