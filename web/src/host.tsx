@@ -495,8 +495,8 @@ export function HostPage({ call, id, vulnsUrl }: { call: Call; id: string; vulns
       )}
       {f && f.unreadable.length > 0 && (
         <Callout tone="info" title={t("hostPage.someDetailsNeedTheSudo")}>
-          {t("hostPage.notReadableAsTheOpenasy")} {f.unreadable.join(", ")}. Add the sudoers file from <a href="/setup">{t("hostPage.setup")}</a> to this host
-          to read them.
+          {t("hostPage.notReadableAsTheOpenasy")} {f.unreadable.join(", ")}. {t("hostPage.addTheSudoersFrom")} <a href="/setup">{t("hostPage.setup")}</a>{" "}
+          {t("hostPage.toThisHostToRead")}
         </Callout>
       )}
       {f && (

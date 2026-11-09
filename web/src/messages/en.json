@@ -70,7 +70,8 @@
     "kubectlApplyFThisFile": "kubectl apply -f this file, then add the cluster with its API server URL, CA and the token from the openasy-infra-token Secret. It cannot read Secrets or ConfigMaps or change anything.",
     "kubernetesRole": "Kubernetes role",
     "optionalDetailsThatNeedRoot": "Optional: details that need root",
-    "theCommandsAboveIncludeA": "The commands above include a sudoers file that allows only fixed, read-only commands: which process listens on a port, SSH keys that may log in, sudo rules, the SSH server settings and the firewall rules."
+    "theCommandsAboveIncludeA": "The commands above include a sudoers file that allows only fixed, read-only commands: which process listens on a port, SSH keys that may log in, sudo rules, the SSH server settings and the firewall rules.",
+    "authorizedKeysLine": "authorized_keys line"
   },
   "product": {
     "overview": "Overview",
@@ -363,7 +364,9 @@
     "packagesInVulnerabilities": "Packages sent to Vulnerabilities",
     "packagesNotSent": "The packages did not reach Vulnerabilities",
     "triedAgain": "Infrastructure tries again every few minutes.",
-    "itsBmc": "BMC: {{name}}"
+    "itsBmc": "BMC: {{name}}",
+    "addTheSudoersFrom": "Add the sudoers file from",
+    "toThisHostToRead": "to this host to read them."
   },
   "hostsPage": {
     "host": "Host",

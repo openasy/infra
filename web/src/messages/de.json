@@ -70,7 +70,8 @@
     "kubectlApplyFThisFile": "Wenden Sie diese Datei mit kubectl apply -f an und fügen Sie dann den Cluster mit der URL seines API-Servers, seiner CA und dem Token aus dem Secret openasy-infra-token hinzu. Es kann keine Secrets oder ConfigMaps lesen und nichts ändern.",
     "kubernetesRole": "Kubernetes-Rolle",
     "optionalDetailsThatNeedRoot": "Optional: Details, die root brauchen",
-    "theCommandsAboveIncludeA": "Die Befehle oben enthalten eine sudoers-Datei, die nur feste, lesende Befehle erlaubt: welcher Prozess an einem Port lauscht, SSH-Schlüssel, die sich anmelden dürfen, sudo-Regeln, die Einstellungen des SSH-Servers und die Firewall-Regeln."
+    "theCommandsAboveIncludeA": "Die Befehle oben enthalten eine sudoers-Datei, die nur feste, lesende Befehle erlaubt: welcher Prozess an einem Port lauscht, SSH-Schlüssel, die sich anmelden dürfen, sudo-Regeln, die Einstellungen des SSH-Servers und die Firewall-Regeln.",
+    "authorizedKeysLine": "authorized_keys-Zeile"
   },
   "product": {
     "overview": "Übersicht",
@@ -363,7 +364,9 @@
     "packagesInVulnerabilities": "Pakete an Vulnerabilities gesendet",
     "packagesNotSent": "Die Pakete haben Vulnerabilities nicht erreicht",
     "triedAgain": "Infrastructure versucht es alle paar Minuten erneut.",
-    "itsBmc": "BMC: {{name}}"
+    "itsBmc": "BMC: {{name}}",
+    "addTheSudoersFrom": "Fügen Sie die sudoers-Datei aus",
+    "toThisHostToRead": "diesem Host hinzu, um sie zu lesen."
   },
   "hostsPage": {
     "host": "Host",

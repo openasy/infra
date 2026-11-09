@@ -284,7 +284,7 @@ function SetupPage({ call }: { call: Call }) {
             )}
             {s && tab === "key" && (
               <Panel title={t("setupPage.oneFixedKey")} description={t("setupPage.forHostsWhereSshdConfig")}>
-                <Code label="authorized_keys line">{`# ~openasy/.ssh/authorized_keys\n${s.authorizedKey}`}</Code>
+                <Code label={t("setupPage.authorizedKeysLine")}>{`# ~openasy/.ssh/authorized_keys\n${s.authorizedKey}`}</Code>
               </Panel>
             )}
           </>

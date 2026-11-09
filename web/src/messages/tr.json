@@ -70,7 +70,8 @@
     "kubectlApplyFThisFile": "kubectl apply -f ile bu dosyayı uygulayın, sonra kümeyi API sunucusu URL'si, CA'sı ve openasy-infra-token Secret'ındaki token ile ekleyin. Secret'ları ya da ConfigMap'leri okuyamaz ve hiçbir şeyi değiştiremez.",
     "kubernetesRole": "Kubernetes rolü",
     "optionalDetailsThatNeedRoot": "İsteğe bağlı: root gerektiren ayrıntılar",
-    "theCommandsAboveIncludeA": "Yukarıdaki komutlar, yalnızca sabit, salt okunur komutlara izin veren bir sudoers dosyası içerir: bir portu hangi sürecin dinlediği, oturum açabilecek SSH anahtarları, sudo kuralları, SSH sunucusu ayarları ve güvenlik duvarı kuralları."
+    "theCommandsAboveIncludeA": "Yukarıdaki komutlar, yalnızca sabit, salt okunur komutlara izin veren bir sudoers dosyası içerir: bir portu hangi sürecin dinlediği, oturum açabilecek SSH anahtarları, sudo kuralları, SSH sunucusu ayarları ve güvenlik duvarı kuralları.",
+    "authorizedKeysLine": "authorized_keys satırı"
   },
   "product": {
     "overview": "Genel bakış",
@@ -363,7 +364,9 @@
     "packagesInVulnerabilities": "Paketler Vulnerabilities'e gönderildi",
     "packagesNotSent": "Paketler Vulnerabilities'e ulaşmadı",
     "triedAgain": "Infrastructure birkaç dakikada bir yeniden dener.",
-    "itsBmc": "BMC: {{name}}"
+    "itsBmc": "BMC: {{name}}",
+    "addTheSudoersFrom": "Bunları okumak için",
+    "toThisHostToRead": "sayfasındaki sudoers dosyasını bu sunucuya ekleyin."
   },
   "hostsPage": {
     "host": "Sunucu",
