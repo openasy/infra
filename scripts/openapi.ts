@@ -1,6 +1,9 @@
 // Writes openapi.json (ADR 0014, 0024). Run `node scripts/openapi.ts` after changing the API; a test fails when the
 // file is out of date. Sign-in routes come from @openasy/auth and are merged in when the description is served.
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
+
+// The release's version, so a release changes package.json only.
+const { version } = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
 
 type S = Record<string, unknown>;
 const ref = (n: string) => ({ $ref: `#/components/schemas/${n}` });
@@ -496,7 +499,7 @@ const spec = {
   openapi: "3.1.1",
   info: {
     title: "OpenAsy Infrastructure API",
-    version: "0.7.1",
+    version,
     summary: "Hosts, containers and Kubernetes, read without installing anything, with every change kept.",
     description:
       "Every screen of Infrastructure uses this API, and so can your scripts (ADR 0014). Within `/api/v1` changes are additive only (ADR 0024). Errors use Problem Details (RFC 9457).\n\nHosts are read over SSH as an unprivileged `openasy` account with 5-minute certificates, clusters through their API with a read-only token (ADR 0031), and BMCs over Redfish by the agent, with GET only and a read-only account (ADR 0055). Each operation names the role it needs (`x-openasy-role`). Sign-in, members and API tokens are under `/api/v1/auth`, provided by [@openasy/auth](https://github.com/openasy/auth#routes).",
